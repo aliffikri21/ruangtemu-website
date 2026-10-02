@@ -130,24 +130,26 @@ export async function renderPhotoboothFrame(
       ctx.restore();
     }
 
-    // Draw Footer Text & Branding
+    // Draw Footer Text & Branding (only if no full PNG overlay, or if textContent is explicitly defined)
     const footerY = height - footerHeight + padding;
     ctx.textAlign = "center";
     ctx.fillStyle = config.textColor || "#ffffff";
 
     // Sticker
-    if (config.sticker) {
+    if (config.sticker && !customOverlay) {
       ctx.font = `${32 * scale}px sans-serif`;
       ctx.fillText(config.sticker, width / 2, footerY + 36 * scale);
     }
 
     // Title Text
-    ctx.font = `bold ${24 * scale}px ${config.fontFamily || "sans-serif"}`;
-    ctx.fillText(
-      config.textContent || "RUANGTEMU PHOTOBOOTH",
-      width / 2,
-      footerY + 76 * scale
-    );
+    if (config.textContent || !customOverlay) {
+      ctx.font = `bold ${24 * scale}px ${config.fontFamily || "sans-serif"}`;
+      ctx.fillText(
+        config.textContent || "RUANGTEMU PHOTOBOOTH",
+        width / 2,
+        footerY + 76 * scale
+      );
+    }
 
     // Subtitle Text
     if (config.subTextContent) {
@@ -157,9 +159,11 @@ export async function renderPhotoboothFrame(
     }
 
     // Small Brand Tag
-    ctx.font = `italic ${10 * scale}px sans-serif`;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.fillText("RUANGTEMU DIGITAL • PALOPO", width / 2, height - 16 * scale);
+    if (!customOverlay) {
+      ctx.font = `italic ${10 * scale}px sans-serif`;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fillText("RUANGTEMU DIGITAL • PALOPO", width / 2, height - 16 * scale);
+    }
 
   } else if (config.type === "grid_4") {
     const footerHeight = 160 * scale;

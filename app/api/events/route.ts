@@ -31,6 +31,28 @@ export async function POST(req: NextRequest) {
         .replace(/(^-|-$)/g, "")
     );
 
+    const assigned_frames = Array.isArray(body.assigned_frames) && body.assigned_frames.length > 0
+      ? body.assigned_frames.map((fr: any, idx: number) => ({
+          id: fr.id || `frm-${Date.now()}-${idx}`,
+          name: fr.name || `Frame ${idx + 1}`,
+          slug: fr.slug || `frame-${idx + 1}-${Date.now()}`,
+          template_type: fr.template_type || "strip_3",
+          preview_url: fr.preview_url || fr.config_json?.customOverlayUrl || "",
+          config_json: {
+            type: fr.template_type || "strip_3",
+            backgroundColor: fr.config_json?.backgroundColor || "#0f172a",
+            borderColor: fr.config_json?.borderColor || "#ffffff",
+            fontFamily: fr.config_json?.fontFamily || "serif",
+            textColor: fr.config_json?.textColor || "#ffffff",
+            padding: 16,
+            borderRadius: 12,
+            customOverlayUrl: fr.preview_url || fr.config_json?.customOverlayUrl || "",
+            ...fr.config_json,
+          },
+          is_active: true,
+        }))
+      : [];
+
     const eventPayload: Omit<EventItem, "id" | "created_at"> = {
       slug,
       title: body.title,
@@ -48,18 +70,21 @@ export async function POST(req: NextRequest) {
       allow_guestbook: body.allow_guestbook ?? true,
       allow_voice_note: body.allow_voice_note ?? true,
       allow_custom_frame: body.allow_custom_frame ?? true,
-      default_frame_config: body.default_frame_config || {
-        type: "strip_3",
-        backgroundColor: "#0f172a",
-        borderColor: "#38bdf8",
-        textContent: body.host_name,
-        subTextContent: `${body.date || "2026"} • ${body.venue || "Palopo"}`,
-        fontFamily: "serif",
-        textColor: "#ffffff",
-        padding: 16,
-        borderRadius: 12,
-        sticker: "💍",
-      },
+      assigned_frames: assigned_frames.length > 0 ? assigned_frames : undefined,
+      default_frame_config: assigned_frames.length > 0
+        ? assigned_frames[0].config_json
+        : body.default_frame_config || {
+            type: "strip_3",
+            backgroundColor: "#0f172a",
+            borderColor: "#38bdf8",
+            textContent: body.host_name,
+            subTextContent: `${body.date || "2026"} • ${body.venue || "Palopo"}`,
+            fontFamily: "serif",
+            textColor: "#ffffff",
+            padding: 16,
+            borderRadius: 12,
+            sticker: "💍",
+          },
     };
 
     const newEvent = await createEvent(eventPayload);

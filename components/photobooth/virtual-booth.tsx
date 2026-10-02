@@ -37,7 +37,29 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const [guestName, setGuestName] = useState("");
   const [guestMessage, setGuestMessage] = useState("");
 
-  const [frameConfig, setFrameConfig] = useState<FrameConfig>(event.default_frame_config);
+  const assignedFrames = event.assigned_frames && event.assigned_frames.length > 0
+    ? event.assigned_frames
+    : null;
+
+  const [selectedFrameId, setSelectedFrameId] = useState<string>(() => {
+    if (assignedFrames && assignedFrames.length > 0) {
+      return assignedFrames[0].id;
+    }
+    return "default";
+  });
+
+  const [frameConfig, setFrameConfig] = useState<FrameConfig>(() => {
+    if (assignedFrames && assignedFrames.length > 0) {
+      const first = assignedFrames[0];
+      return {
+        ...first.config_json,
+        type: first.template_type,
+        customOverlayUrl: first.preview_url || first.config_json?.customOverlayUrl,
+      };
+    }
+    return event.default_frame_config;
+  });
+
   const [selectedFilter, setSelectedFilter] = useState<CameraFilter>("normal");
 
   // Camera
@@ -69,7 +91,17 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const requiredShots = FRAME_TEMPLATES.find((t) => t.type === frameConfig.type)?.shots || 3;
+  const getShotsForType = (type: FrameType): number => {
+    switch (type) {
+      case "grid_4": return 4;
+      case "polaroid": return 1;
+      case "deluxe": return 2;
+      case "strip_3":
+      default: return 3;
+    }
+  };
+
+  const requiredShots = getShotsForType(frameConfig.type);
 
   // ─── Camera Lifecycle ─────────────────────────────────────────
 
@@ -347,6 +379,15 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     setSaveError(null);
     setSelectedFilter("normal");
     setCurrentShotIndex(0);
+    if (assignedFrames && assignedFrames.length > 0) {
+      const first = assignedFrames[0];
+      setSelectedFrameId(first.id);
+      setFrameConfig({
+        ...first.config_json,
+        type: first.template_type,
+        customOverlayUrl: first.preview_url || first.config_json?.customOverlayUrl,
+      });
+    }
   };
 
   // ─── Render ───────────────────────────────────────────────────
@@ -428,7 +469,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-[#c47a5a] font-medium">Langkah 1 / 3</div>
-                <h3 className="text-lg font-semibold text-white">Pilih Frame</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  {assignedFrames ? "Pilih Frame Acara" : "Pilih Frame"}
+                </h3>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  {assignedFrames
+                    ? `Pilih 1 dari ${assignedFrames.length} frame yang telah disiapkan untuk acara ini`
+                    : "Pilih format tampilan foto Anda"}
+                </p>
               </div>
               <button
                 onClick={() => setCurrentStep("welcome")}
@@ -440,56 +488,135 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
             {/* Frame Cards */}
             <div className="space-y-3">
-              {FRAME_TEMPLATES.map((tmpl) => {
-                const isSelected = frameConfig.type === tmpl.type;
-                return (
-                  <button
-                    key={tmpl.type}
-                    onClick={() => setFrameConfig({ ...frameConfig, type: tmpl.type })}
-                    className={`w-full min-h-[64px] p-4 flex items-center justify-between border rounded-lg transition-colors active:scale-[0.98] ${
-                      isSelected
-                        ? "bg-white/10 border-white/40"
-                        : "bg-stone-900/60 border-stone-800 active:bg-stone-800"
-                    }`}
-                  >
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-white">{tmpl.name}</div>
-                      <div className="text-xs text-stone-400">{tmpl.description}</div>
-                    </div>
-                    <div className="shrink-0 ml-3">
-                      {isSelected ? (
-                        <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {assignedFrames ? (
+                assignedFrames.map((frame, index) => {
+                  const isSelected = selectedFrameId === frame.id;
+                  const shots = getShotsForType(frame.template_type);
+                  const overlayUrl = frame.preview_url || frame.config_json?.customOverlayUrl;
+
+                  return (
+                    <button
+                      key={frame.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedFrameId(frame.id);
+                        setFrameConfig({
+                          ...frame.config_json,
+                          type: frame.template_type,
+                          customOverlayUrl: overlayUrl,
+                        });
+                      }}
+                      className={`w-full min-h-[92px] p-3.5 flex items-center gap-3.5 border rounded-xl transition-all text-left active:scale-[0.98] ${
+                        isSelected
+                          ? "bg-stone-900 border-white ring-1 ring-white/60 shadow-lg"
+                          : "bg-stone-900/60 border-stone-800 hover:border-stone-700 active:bg-stone-800"
+                      }`}
+                    >
+                      {/* Frame PNG Visual Preview Thumbnail */}
+                      <div
+                        className="w-16 h-20 shrink-0 bg-stone-950 border border-stone-800 rounded-lg p-1 flex items-center justify-center relative overflow-hidden"
+                        style={{
+                          backgroundImage: `radial-gradient(#444 1px, transparent 1px)`,
+                          backgroundSize: "6px 6px",
+                        }}
+                      >
+                        {overlayUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={overlayUrl}
+                            alt={frame.name}
+                            className="max-h-full max-w-full object-contain drop-shadow"
+                          />
+                        ) : (
+                          <span className="text-[10px] font-mono text-stone-500">PNG</span>
+                        )}
+                      </div>
+
+                      {/* Frame Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">
+                            Frame {index + 1}
+                          </span>
+                          <span className="text-[11px] text-[#c47a5a] font-medium">
+                            {shots} Foto
+                          </span>
                         </div>
-                      ) : (
-                        <div className="w-6 h-6 rounded-full border-2 border-stone-600" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+                        <div className="text-sm font-semibold text-white mt-1 truncate">
+                          {frame.name}
+                        </div>
+                        <div className="text-xs text-stone-400 mt-0.5">
+                          {isSelected ? "Sedang dipilih untuk sesi foto" : "Ketuk untuk memilih frame ini"}
+                        </div>
+                      </div>
+
+                      {/* Selected Checkmark Indicator */}
+                      <div className="shrink-0">
+                        {isSelected ? (
+                          <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-stone-950 shadow">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </div>
+                        ) : (
+                          <div className="w-7 h-7 rounded-full border-2 border-stone-700" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                FRAME_TEMPLATES.map((tmpl) => {
+                  const isSelected = frameConfig.type === tmpl.type;
+                  return (
+                    <button
+                      key={tmpl.type}
+                      onClick={() => setFrameConfig({ ...frameConfig, type: tmpl.type })}
+                      className={`w-full min-h-[64px] p-4 flex items-center justify-between border rounded-lg transition-colors active:scale-[0.98] ${
+                        isSelected
+                          ? "bg-white/10 border-white/40"
+                          : "bg-stone-900/60 border-stone-800 active:bg-stone-800"
+                      }`}
+                    >
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-white">{tmpl.name}</div>
+                        <div className="text-xs text-stone-400">{tmpl.description}</div>
+                      </div>
+                      <div className="shrink-0 ml-3">
+                        {isSelected ? (
+                          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full border-2 border-stone-600" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
 
-            {/* Sticker Picker */}
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-stone-400">Aksen Ikon</div>
-              <div className="flex gap-2 flex-wrap">
-                {["✦", "💍", "❤️", "🥂", "🎉", "⭐"].map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setFrameConfig({ ...frameConfig, sticker: emoji })}
-                    className={`min-w-[48px] min-h-[48px] flex items-center justify-center text-lg border rounded-lg transition-colors ${
-                      frameConfig.sticker === emoji
-                        ? "bg-white text-stone-950 border-white"
-                        : "bg-stone-900/60 border-stone-700 active:bg-stone-800"
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+            {/* Sticker Picker only if not using full custom overlay */}
+            {!assignedFrames && (
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-stone-400">Aksen Ikon</div>
+                <div className="flex gap-2 flex-wrap">
+                  {["✦", "💍", "❤️", "🥂", "🎉", "⭐"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setFrameConfig({ ...frameConfig, sticker: emoji })}
+                      className={`min-w-[48px] min-h-[48px] flex items-center justify-center text-lg border rounded-lg transition-colors ${
+                        frameConfig.sticker === emoji
+                          ? "bg-white text-stone-950 border-white"
+                          : "bg-stone-900/60 border-stone-700 active:bg-stone-800"
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* CTA */}
             <button

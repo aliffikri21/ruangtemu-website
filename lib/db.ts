@@ -98,6 +98,63 @@ let mockPackages: Package[] = [
   },
 ];
 
+const defaultDemoFrames: FrameItem[] = [
+  {
+    id: "frame-strip-1",
+    name: "Classic Floral Strip",
+    slug: "classic-floral-strip",
+    template_type: "strip_3",
+    preview_url: "/frames/frame-strip-floral.png",
+    config_json: {
+      type: "strip_3",
+      backgroundColor: "#0f172a",
+      borderColor: "#d4af37",
+      customOverlayUrl: "/frames/frame-strip-floral.png",
+      fontFamily: "serif",
+      textColor: "#ffffff",
+      padding: 16,
+      borderRadius: 12,
+    },
+    is_active: true,
+  },
+  {
+    id: "frame-strip-2",
+    name: "Midnight Navy Gold",
+    slug: "midnight-navy-gold",
+    template_type: "strip_3",
+    preview_url: "/frames/frame-strip-navy-gold.png",
+    config_json: {
+      type: "strip_3",
+      backgroundColor: "#0a0f1e",
+      borderColor: "#e2b93b",
+      customOverlayUrl: "/frames/frame-strip-navy-gold.png",
+      fontFamily: "serif",
+      textColor: "#ffffff",
+      padding: 16,
+      borderRadius: 12,
+    },
+    is_active: true,
+  },
+  {
+    id: "frame-strip-3",
+    name: "Modern Minimalist",
+    slug: "modern-minimalist",
+    template_type: "strip_3",
+    preview_url: "/frames/frame-strip-minimal.png",
+    config_json: {
+      type: "strip_3",
+      backgroundColor: "#121214",
+      borderColor: "#ffffff",
+      customOverlayUrl: "/frames/frame-strip-minimal.png",
+      fontFamily: "sans-serif",
+      textColor: "#ffffff",
+      padding: 16,
+      borderRadius: 12,
+    },
+    is_active: true,
+  },
+];
+
 let mockEvents: EventItem[] = [
   {
     id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -118,6 +175,7 @@ let mockEvents: EventItem[] = [
     allow_voice_note: true,
     allow_custom_frame: true,
     created_at: new Date().toISOString(),
+    assigned_frames: defaultDemoFrames,
     default_frame_config: {
       type: "strip_3",
       backgroundColor: "#0f172a",
@@ -129,6 +187,7 @@ let mockEvents: EventItem[] = [
       padding: 16,
       borderRadius: 12,
       sticker: "💍",
+      customOverlayUrl: "/frames/frame-strip-floral.png",
     },
     stats: {
       total_photos: 0,
@@ -155,6 +214,7 @@ let mockEvents: EventItem[] = [
     allow_voice_note: true,
     allow_custom_frame: true,
     created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+    assigned_frames: defaultDemoFrames,
     default_frame_config: {
       type: "strip_3",
       backgroundColor: "#0f172a",
@@ -166,6 +226,7 @@ let mockEvents: EventItem[] = [
       padding: 16,
       borderRadius: 12,
       sticker: "💍",
+      customOverlayUrl: "/frames/frame-strip-floral.png",
     },
     stats: {
       total_photos: 18,
@@ -383,7 +444,37 @@ export async function getEvents(): Promise<EventItem[]> {
       ORDER BY e.date DESC
     `);
     if (rows && rows.length > 0) {
-      return rows.map((r) => mapEventRow(r));
+      const frameMap: Record<string, FrameItem[]> = {};
+      try {
+        const allFrameRows = await query<any>(`
+          SELECT ef.event_id, f.*
+          FROM event_frames ef
+          JOIN frames f ON f.id = ef.frame_id
+          ORDER BY ef.sort_order ASC
+        `);
+        if (allFrameRows && allFrameRows.length > 0) {
+          for (const fr of allFrameRows) {
+            const evId = String(fr.event_id);
+            if (!frameMap[evId]) frameMap[evId] = [];
+            frameMap[evId].push({
+              id: String(fr.id),
+              name: String(fr.name),
+              slug: String(fr.slug),
+              template_type: fr.template_type,
+              preview_url: fr.preview_url || undefined,
+              config_json: parseJsonField(fr.config_json, {} as any),
+              is_active: Boolean(fr.is_active),
+            });
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      return rows.map((r) => {
+        const frames = frameMap[String(r.id)] || defaultDemoFrames;
+        return mapEventRow(r, frames);
+      });
     }
   } catch (err: any) {
     // fallback
@@ -428,6 +519,10 @@ export async function getEventBySlug(slug: string): Promise<EventItem | null> {
         }
       } catch {
         // ignore frame join error
+      }
+
+      if (assignedFrames.length === 0) {
+        assignedFrames = defaultDemoFrames;
       }
 
       return mapEventRow(row, assignedFrames.length > 0 ? assignedFrames : undefined);
@@ -475,6 +570,27 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
         JSON.stringify(newEvent.default_frame_config || {}),
       ]
     );
+
+    if (newEvent.assigned_frames && newEvent.assigned_frames.length > 0) {
+      for (let i = 0; i < newEvent.assigned_frames.length; i++) {
+        const fr = newEvent.assigned_frames[i];
+        try {
+          await query(
+            `INSERT INTO frames (id, name, slug, template_type, preview_url, config_json, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE name = VALUES(name), preview_url = VALUES(preview_url), config_json = VALUES(config_json)`,
+            [fr.id, fr.name, fr.slug, fr.template_type, fr.preview_url || null, JSON.stringify(fr.config_json || {})]
+          );
+          await query(
+            `INSERT IGNORE INTO event_frames (id, event_id, frame_id, sort_order)
+             VALUES (?, ?, ?, ?)`,
+            [randomUUID(), newEvent.id, fr.id, i + 1]
+          );
+        } catch (fErr) {
+          // ignore individual frame insert error
+        }
+      }
+    }
   } catch (err: any) {
     console.warn("[MySQL] createEvent error, keeping in mock memory:", err?.message);
   }

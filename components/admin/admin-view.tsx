@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { EventItem, Booking, Package, GalleryEntry, BookingStatus } from "@/types";
+import { EventItem, Booking, Package, GalleryEntry, BookingStatus, FrameItem, FrameType } from "@/types";
 import { formatRupiah, formatDate } from "@/lib/utils";
 
 interface AdminViewProps {
@@ -11,6 +11,35 @@ interface AdminViewProps {
   initialPackages: Package[];
   initialEntries: GalleryEntry[];
 }
+
+interface FrameUploadSlot {
+  id: string;
+  name: string;
+  template_type: FrameType;
+  previewUrl: string;
+  fileName?: string;
+  fileSize?: string;
+  error?: string;
+}
+
+const INITIAL_FRAME_SLOTS: FrameUploadSlot[] = [
+  {
+    id: "slot-1",
+    name: "Classic Floral Strip",
+    template_type: "strip_3",
+    previewUrl: "/frames/frame-strip-floral.png",
+    fileName: "frame-strip-floral.png (Preset)",
+    fileSize: "14 KB",
+  },
+  {
+    id: "slot-2",
+    name: "Midnight Navy Gold",
+    template_type: "strip_3",
+    previewUrl: "/frames/frame-strip-navy-gold.png",
+    fileName: "frame-strip-navy-gold.png (Preset)",
+    fileSize: "13 KB",
+  },
+];
 
 export function AdminView({
   initialEvents,
@@ -40,6 +69,103 @@ export function AdminView({
     description: "",
   });
 
+  const [frameSlots, setFrameSlots] = useState<FrameUploadSlot[]>(INITIAL_FRAME_SLOTS);
+
+  const handleFrameFileUpload = (index: number, file: File | null) => {
+    if (!file) return;
+
+    const isPng = file.type === "image/png" || file.name.toLowerCase().endsWith(".png");
+    if (!isPng) {
+      setFrameSlots((prev) =>
+        prev.map((slot, i) =>
+          i === index
+            ? { ...slot, error: "Format file wajib PNG (.png) dengan transparansi." }
+            : slot
+        )
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setFrameSlots((prev) =>
+        prev.map((slot, i) =>
+          i === index
+            ? {
+                ...slot,
+                previewUrl: dataUrl,
+                fileName: file.name,
+                fileSize: `${Math.round(file.size / 1024)} KB`,
+                error: undefined,
+              }
+            : slot
+        )
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFrameNameChange = (index: number, name: string) => {
+    setFrameSlots((prev) =>
+      prev.map((slot, i) => (i === index ? { ...slot, name } : slot))
+    );
+  };
+
+  const handleFrameTypeChange = (index: number, template_type: FrameType) => {
+    setFrameSlots((prev) =>
+      prev.map((slot, i) => (i === index ? { ...slot, template_type } : slot))
+    );
+  };
+
+  const handleAddFrameSlot = () => {
+    if (frameSlots.length >= 3) return;
+    const nextNum = frameSlots.length + 1;
+    const newSlot: FrameUploadSlot = {
+      id: `slot-${Date.now()}`,
+      name: `Modern Minimalist (${nextNum})`,
+      template_type: "strip_3",
+      previewUrl: "/frames/frame-strip-minimal.png",
+      fileName: "frame-strip-minimal.png (Preset)",
+      fileSize: "13 KB",
+    };
+    setFrameSlots([...frameSlots, newSlot]);
+  };
+
+  const handleRemoveFrameSlot = (index: number) => {
+    if (frameSlots.length <= 1) return;
+    setFrameSlots(frameSlots.filter((_, i) => i !== index));
+  };
+
+  const handleResetPresetFrames = () => {
+    setFrameSlots([
+      {
+        id: "slot-1",
+        name: "Classic Floral Strip",
+        template_type: "strip_3",
+        previewUrl: "/frames/frame-strip-floral.png",
+        fileName: "frame-strip-floral.png (Preset)",
+        fileSize: "14 KB",
+      },
+      {
+        id: "slot-2",
+        name: "Midnight Navy Gold",
+        template_type: "strip_3",
+        previewUrl: "/frames/frame-strip-navy-gold.png",
+        fileName: "frame-strip-navy-gold.png (Preset)",
+        fileSize: "13 KB",
+      },
+      {
+        id: "slot-3",
+        name: "Modern Minimalist",
+        template_type: "strip_3",
+        previewUrl: "/frames/frame-strip-minimal.png",
+        fileName: "frame-strip-minimal.png (Preset)",
+        fileSize: "13 KB",
+      },
+    ]);
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (
@@ -67,13 +193,37 @@ export function AdminView({
 
   const handleCreateEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const assigned_frames: FrameItem[] = frameSlots
+      .filter((s) => s.previewUrl)
+      .map((s, idx) => ({
+        id: `frm-${Date.now()}-${idx}`,
+        name: s.name || `Frame ${idx + 1}`,
+        slug: `frame-${idx + 1}-${Date.now()}`,
+        template_type: s.template_type,
+        preview_url: s.previewUrl,
+        config_json: {
+          type: s.template_type,
+          backgroundColor: "#0f172a",
+          borderColor: "#e7e5e4",
+          textContent: newEvent.host_name,
+          subTextContent: `${newEvent.date} • ${newEvent.venue}, ${newEvent.city}`,
+          fontFamily: "serif",
+          textColor: "#ffffff",
+          padding: 16,
+          borderRadius: 8,
+          customOverlayUrl: s.previewUrl,
+        },
+        is_active: true,
+      }));
+
     const eventPayload = {
       slug: newEvent.slug || newEvent.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
       title: newEvent.title,
       host_name: newEvent.host_name,
       client_name: newEvent.host_name,
       event_name: newEvent.title,
-      event_type: "wedding",
+      event_type: "wedding" as const,
       date: newEvent.date || new Date().toISOString().split("T")[0],
       venue: newEvent.venue || "Banua Subur Hall",
       city: newEvent.city,
@@ -82,18 +232,21 @@ export function AdminView({
       allow_guestbook: true,
       allow_voice_note: true,
       allow_custom_frame: true,
-      default_frame_config: {
-        type: "strip_3",
-        backgroundColor: "#18181b",
-        borderColor: "#e7e5e4",
-        textContent: newEvent.host_name,
-        subTextContent: `${newEvent.date} • ${newEvent.venue}, ${newEvent.city}`,
-        fontFamily: "sans",
-        textColor: "#ffffff",
-        padding: 16,
-        borderRadius: 0,
-        sticker: "✦",
-      },
+      assigned_frames,
+      default_frame_config: assigned_frames.length > 0
+        ? assigned_frames[0].config_json
+        : {
+            type: "strip_3" as const,
+            backgroundColor: "#18181b",
+            borderColor: "#e7e5e4",
+            textContent: newEvent.host_name,
+            subTextContent: `${newEvent.date} • ${newEvent.venue}, ${newEvent.city}`,
+            fontFamily: "sans-serif",
+            textColor: "#ffffff",
+            padding: 16,
+            borderRadius: 0,
+            sticker: "✦",
+          },
     };
 
     try {
@@ -106,13 +259,12 @@ export function AdminView({
       if (data.success && data.event) {
         setEvents([data.event, ...events]);
       } else {
-        // Fallback local state if server returned custom status
         const created: EventItem = {
           ...eventPayload,
           id: `evt-${Date.now()}`,
           event_type: "wedding",
           created_at: new Date().toISOString(),
-          default_frame_config: eventPayload.default_frame_config as any,
+          default_frame_config: eventPayload.default_frame_config,
         };
         setEvents([created, ...events]);
       }
@@ -123,12 +275,13 @@ export function AdminView({
         id: `evt-${Date.now()}`,
         event_type: "wedding",
         created_at: new Date().toISOString(),
-        default_frame_config: eventPayload.default_frame_config as any,
+        default_frame_config: eventPayload.default_frame_config,
       };
       setEvents([fallback, ...events]);
     }
 
     setIsCreatingEvent(false);
+    setFrameSlots(INITIAL_FRAME_SLOTS);
     setNewEvent({
       title: "",
       host_name: "",
@@ -430,11 +583,159 @@ export function AdminView({
                   </div>
                 </div>
 
+                {/* ─── UPLOAD FRAME PNG (2-3 FRAME) ─── */}
+                <div className="pt-4 border-t border-stone-200 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="font-mono text-xs uppercase tracking-wider text-stone-900 flex items-center gap-2">
+                        <span>Frame Photobooth Acara (Format PNG)</span>
+                        <span className="px-2 py-0.5 bg-[#c47a5a]/10 text-[#c47a5a] text-[10px] rounded font-medium">
+                          2 - 3 Frame untuk Tamu
+                        </span>
+                      </div>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Unggah file frame dengan format PNG transparan. Tamu akan dapat memilih salah satu frame ini saat photobooth.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleResetPresetFrames}
+                        className="text-[11px] font-mono text-stone-600 hover:text-stone-900 underline"
+                      >
+                        Muat Preset Ruangtemu
+                      </button>
+                      {frameSlots.length < 3 && (
+                        <button
+                          type="button"
+                          onClick={handleAddFrameSlot}
+                          className="min-h-[32px] px-3 border border-stone-300 hover:border-stone-900 text-stone-800 text-xs font-mono transition-colors"
+                        >
+                          + Tambah Frame ke-{frameSlots.length + 1}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {frameSlots.map((slot, index) => (
+                      <div
+                        key={slot.id}
+                        className="p-4 bg-stone-50/70 border border-stone-200 space-y-3 relative group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-stone-500 font-semibold">
+                            Pilihan Frame {index + 1}
+                          </span>
+                          {frameSlots.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFrameSlot(index)}
+                              className="text-stone-400 hover:text-red-600 text-xs font-mono transition-colors"
+                              title="Hapus slot frame ini"
+                            >
+                              Hapus ✕
+                            </button>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase text-stone-600 mb-1">
+                            Nama Frame
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={slot.name}
+                            onChange={(e) => handleFrameNameChange(index, e.target.value)}
+                            placeholder={`contoh: Floral White ${index + 1}`}
+                            className="w-full min-h-[36px] px-2.5 py-1 bg-white border border-stone-200 text-xs text-stone-900 outline-none focus:border-stone-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase text-stone-600 mb-1">
+                            Format / Jumlah Jepretan
+                          </label>
+                          <select
+                            value={slot.template_type}
+                            onChange={(e) => handleFrameTypeChange(index, e.target.value as FrameType)}
+                            className="w-full min-h-[36px] px-2.5 py-1 bg-white border border-stone-200 text-xs text-stone-900 outline-none focus:border-stone-900"
+                          >
+                            <option value="strip_3">3 Foto Strip (Vertikal 1:3)</option>
+                            <option value="grid_4">4 Foto Grid (Kolase 2x2)</option>
+                            <option value="polaroid">1 Foto Polaroid (Vintage)</option>
+                            <option value="deluxe">2 Foto Duo Portrait</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase text-stone-600 mb-1">
+                            File PNG Frame (Transparan)
+                          </label>
+                          <div className="flex gap-3 items-center">
+                            <div
+                              className="w-14 h-24 shrink-0 bg-stone-950 border border-stone-300 rounded p-1 flex items-center justify-center relative overflow-hidden"
+                              style={{
+                                backgroundImage: `radial-gradient(#444 1px, transparent 1px)`,
+                                backgroundSize: "6px 6px",
+                              }}
+                            >
+                              {slot.previewUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={slot.previewUrl}
+                                  alt={slot.name}
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                              ) : (
+                                <span className="text-[9px] font-mono text-stone-500 text-center">PNG</span>
+                              )}
+                            </div>
+
+                            <div className="flex-1 space-y-1.5 min-w-0">
+                              <label className="inline-block cursor-pointer">
+                                <span className="min-h-[34px] px-3 py-1.5 bg-white border border-stone-300 hover:border-stone-900 text-stone-800 text-[11px] font-mono uppercase inline-flex items-center gap-1.5 transition-colors">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                  Pilih File PNG
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/png"
+                                  onChange={(e) => handleFrameFileUpload(index, e.target.files?.[0] || null)}
+                                  className="hidden"
+                                />
+                              </label>
+
+                              {slot.fileName && (
+                                <div className="text-[11px] text-stone-600 font-mono truncate" title={slot.fileName}>
+                                  {slot.fileName} {slot.fileSize ? `(${slot.fileSize})` : ""}
+                                </div>
+                              )}
+
+                              {slot.error && (
+                                <div className="text-[10px] text-red-600 font-mono leading-tight">
+                                  {slot.error}
+                                </div>
+                              )}
+
+                              <p className="text-[10px] text-stone-400 leading-tight">
+                                Format wajib PNG transparan.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   type="submit"
-                  className="min-h-[40px] px-6 py-2 bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs uppercase tracking-wider transition-colors"
+                  className="min-h-[44px] px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs uppercase tracking-wider transition-colors"
                 >
-                  Simpan Acara
+                  Simpan Acara & Frame
                 </button>
               </form>
             )}
@@ -456,6 +757,21 @@ export function AdminView({
                         <div className="font-medium text-stone-900">{evt.title}</div>
                         <div className="text-stone-500">{evt.host_name}</div>
                         <div className="font-mono text-[10px] text-stone-400 mt-0.5">/event/{evt.slug}</div>
+                        {evt.assigned_frames && evt.assigned_frames.length > 0 && (
+                          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                            <span className="font-mono text-[9px] uppercase tracking-wider text-stone-400">
+                              Frame PNG ({evt.assigned_frames.length}):
+                            </span>
+                            {evt.assigned_frames.map((fr, fIdx) => (
+                              <span
+                                key={fr.id || fIdx}
+                                className="inline-flex items-center px-1.5 py-0.5 bg-stone-100 border border-stone-200 text-[10px] text-stone-700 font-mono"
+                              >
+                                {fr.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="p-4">
                         <div className="font-mono text-stone-800">{evt.date}</div>
