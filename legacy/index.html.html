@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ruangtemu. — Virtual Photobooth & Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                        script: ['Dancing Script', 'cursive'],
+                        mono: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            50: '#f0f4f8',
+                            100: '#d9e2ec',
+                            200: '#bccadc',
+                            300: '#9fb3c8',
+                            400: '#829ab1',
+                            500: '#627d98',
+                            600: '#486581',
+                            700: '#334e68',
+                            800: '#243b53',
+                            900: '#102a43',
+                            950: '#0b1d33',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05);
+        }
+        .glass-card-dark {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f8fafc;
+        }
+        .glass-modal {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+        }
+        .glass-modal-dark {
+            background: rgba(11, 29, 51, 0.97);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.2);
+            border-radius: 9999px;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.05); }
+        }
+        .pulse-bg {
+            animation: pulseGlow 7s infinite ease-in-out;
+        }
+        .slide-fade-in {
+            animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-between selection:bg-blue-900 selection:text-white relative overflow-x-hidden">
+
+    <!-- Ambient Glow Background Effect -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-blue-900/15 via-blue-600/10 to-transparent blur-[130px] pointer-events-none z-0 pulse-bg"></div>
+
+    <header class="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap justify-between items-center gap-3 z-10 border-b border-slate-200/80 bg-white/70 backdrop-blur-md sticky top-0">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="goToSlide(1)">
+            <span class="text-2xl font-extrabold tracking-tight text-blue-950">ruangtemu<span class="text-blue-600">.</span></span>
+            <span id="nav-badge" class="text-[10px] font-extrabold bg-blue-900 text-white px-2.5 py-1 rounded-full border border-blue-800 tracking-wider">WEDDING EDITION</span>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs font-semibold">
+            <button onclick="goToSlide(6)" class="text-slate-700 hover:text-blue-900 hover:bg-slate-100 transition flex items-center gap-2 bg-white px-3.5 py-2 rounded-full border border-slate-200 shadow-sm">
+                <i class="fa-solid fa-images text-blue-600"></i> <span class="hidden sm:inline">Galeri & Ucapan</span>
+            </button>
+            
+            <button onclick="openModal('qr-modal')" class="text-slate-700 hover:text-blue-900 hover:bg-slate-100 transition flex items-center gap-2 bg-white px-3.5 py-2 rounded-full border border-slate-200 shadow-sm" title="QR Code Venue">
+                <i class="fa-solid fa-qrcode text-blue-900"></i> <span class="hidden md:inline">QR Code</span>
+            </button>
+
+            <button onclick="openModal('settings-modal')" class="text-slate-700 hover:text-blue-900 hover:bg-slate-100 transition flex items-center gap-2 bg-white px-3.5 py-2 rounded-full border border-slate-200 shadow-sm" title="Pengaturan Event">
+                <i class="fa-solid fa-gear text-amber-500"></i> <span class="hidden md:inline">Pengaturan</span>
+            </button>
+
+            <button onclick="openAdminPrompt()" class="text-slate-700 hover:text-blue-900 hover:bg-slate-100 transition flex items-center gap-2 bg-white px-3 py-2 rounded-full border border-slate-200 shadow-sm" title="Admin Panel">
+                <i class="fa-solid fa-user-shield text-emerald-600"></i> <span class="hidden lg:inline">Admin</span>
+            </button>
+        </div>
+    </header>
+
+    <div id="step-progress-wrapper" class="w-full max-w-xl mx-auto px-4 mt-4 hidden z-10">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+            <span id="step-indicator-text" class="text-blue-900">Langkah 1 dari 3</span>
+            <span id="step-title-text" class="text-slate-700">Nama Tamu</span>
+        </div>
+        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
+            <div id="progress-bar-fill" class="bg-blue-900 h-full w-1/3 transition-all duration-300"></div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT SLIDES -->
+    <main class="w-full max-w-5xl mx-auto px-4 py-6 flex-grow flex flex-col justify-center items-center z-10">
+
+        <section id="slide-1" class="w-full flex flex-col items-center text-center space-y-8 slide-fade-in my-auto">
+            <div class="relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-900 via-blue-700 to-indigo-900 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
+                <div class="relative w-72 h-80 sm:w-80 sm:h-96 rounded-3xl overflow-hidden border-2 border-white shadow-2xl bg-blue-950">
+                    <img id="cover-photo-img" src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=800" alt="Pengantin" class="w-full h-full object-cover contrast-105 hover:scale-105 transition duration-700">
+                    <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-blue-950 via-blue-950/80 to-transparent p-6 text-left">
+                        <p class="text-xs text-blue-300 font-bold uppercase tracking-widest mb-1" id="banner-tag">THE WEDDING OF</p>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="banner-title">Dimas & Sarah</h2>
+                        <p class="text-xs text-slate-300 mt-1 flex items-center gap-2">
+                            <i class="fa-regular fa-calendar text-blue-400"></i> <span id="banner-date">24.08.2026</span>
+                            <span>•</span>
+                            <i class="fa-solid fa-location-dot text-blue-400"></i> <span id="banner-location">Jakarta</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-md space-y-3">
+                <h1 class="text-3xl font-extrabold sm:text-4xl tracking-tight leading-tight text-blue-950">Virtual Photobooth & Studio Frame ✨</h1>
+                <p class="text-slate-600 text-sm leading-relaxed">Abadikan momen serumu, kustomisasi frame fotomu sendiri, dan kirimkan ucapan terhangat untuk kedua mempelai!</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full max-w-sm justify-center pt-2">
+                <button onclick="goToSlide(2)" class="w-full sm:w-auto group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-300 bg-blue-900 rounded-full hover:bg-blue-950 shadow-lg shadow-blue-900/30 hover:scale-105 active:scale-95 text-sm">
+                    <span>Mulai Photobooth</span>
+                    <i class="fa-solid fa-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </div>
+        </section>
+
+        <section id="slide-2" class="hidden w-full max-w-md flex-col items-center text-center space-y-6 slide-fade-in my-auto">
+            <div class="space-y-1">
+                <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Langkah 1 dari 3</span>
+                <h2 class="text-2xl font-extrabold text-blue-950">Siapa Nama Anda? 👤</h2>
+                <p class="text-xs text-slate-600">Nama akan ditampilkan pada bingkai foto dan buku tamu virtual.</p>
+            </div>
+
+            <div class="w-full glass-card p-6 rounded-3xl border border-slate-200/80 space-y-4 text-left shadow-xl">
+                <div class="w-12 h-12 rounded-2xl bg-blue-900/10 border border-blue-900/20 text-blue-900 flex items-center justify-center text-xl mx-auto">
+                    <i class="fa-solid fa-user-pen"></i>
+                </div>
+
+                <div>
+                    <label for="slide2-guest-name" class="block text-xs font-bold text-blue-950 uppercase tracking-wider mb-2">
+                        Nama Lengkap / Inisial Rombongan
+                    </label>
+                    <input type="text" id="slide2-guest-name" placeholder="Contoh: Budi & Partner / Kel. Handoko" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-sm text-slate-900 focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition">
+                </div>
+
+                <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 flex items-start gap-2.5 text-xs text-blue-900">
+                    <i class="fa-solid fa-circle-info text-blue-600 mt-0.5"></i>
+                    <span>Nama ini nantinya bisa kamu ubah kembali sebelum menyimpan hasil foto.</span>
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full justify-between pt-2">
+                <button onclick="goToSlide(1)" class="w-1/2 py-3.5 rounded-full bg-white border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-sm">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+                </button>
+                <button onclick="proceedFromSlide2()" class="w-1/2 py-3.5 rounded-full bg-blue-900 text-white text-xs font-bold hover:bg-blue-950 shadow-md shadow-blue-900/30 transition flex items-center justify-center gap-2">
+                    <span>Lanjut Pilih Frame</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <section id="slide-3" class="hidden w-full max-w-5xl flex-col items-center text-center space-y-6 slide-fade-in">
+            <div>
+                <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Langkah 2 dari 3</span>
+                <h2 class="text-2xl font-extrabold text-blue-950">Kustomisasi Frame Foto Mandiri 🖼️</h2>
+                <p class="text-xs text-slate-600 mt-1">Ubah tata letak, teks frame, warna, jumlah foto, hingga unggah file overlay buatanmu sendiri!</p>
+            </div>
+
+            <div class="flex bg-slate-200/80 p-1 rounded-2xl gap-1 max-w-md w-full text-xs font-bold">
+                <button id="tab-btn-presets" onclick="switchFrameTab('presets')" class="w-1/2 py-2.5 rounded-xl bg-white text-blue-950 shadow-sm transition">
+                    <i class="fa-solid fa-sliders mr-1"></i> Editor Layout & Teks
+                </button>
+                <button id="tab-btn-custom" onclick="switchFrameTab('custom')" class="w-1/2 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Upload Frame PNG
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full text-left">
+                
+                <div class="lg:col-span-7 space-y-5">
+                    <div id="tab-content-presets" class="space-y-4">
+                        <div class="glass-card p-5 rounded-2xl space-y-3">
+                            <label class="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-border-all text-blue-600"></i> 1. Jumlah Pose & Layout Foto
+                            </label>
+                            <div class="grid grid-cols-4 gap-2.5">
+                                <div id="card-strip" onclick="selectTemplate('strip')" class="template-card bg-white p-2.5 rounded-xl border-2 border-blue-900 cursor-pointer transition flex flex-col items-center text-center shadow-sm hover:border-blue-700">
+                                    <div class="w-9 h-14 bg-slate-100 border border-slate-300 rounded p-1 flex flex-col justify-between mb-1">
+                                        <div class="w-full h-3 bg-slate-300 rounded-xs"></div>
+                                        <div class="w-full h-3 bg-slate-300 rounded-xs"></div>
+                                        <div class="w-full h-3 bg-slate-300 rounded-xs"></div>
+                                    </div>
+                                    <span class="font-bold text-[11px] text-blue-950">3-Strip</span>
+                                </div>
+
+                                <div id="card-grid4" onclick="selectTemplate('grid4')" class="template-card bg-white p-2.5 rounded-xl border-2 border-slate-200 cursor-pointer transition flex flex-col items-center text-center shadow-sm hover:border-blue-700">
+                                    <div class="w-12 h-14 bg-slate-100 border border-slate-300 rounded p-1 grid grid-cols-2 gap-0.5 mb-1">
+                                        <div class="bg-slate-300 rounded-xs"></div>
+                                        <div class="bg-slate-300 rounded-xs"></div>
+                                        <div class="bg-slate-300 rounded-xs"></div>
+                                        <div class="bg-slate-300 rounded-xs"></div>
+                                    </div>
+                                    <span class="font-bold text-[11px] text-slate-700">4-Grid</span>
+                                </div>
+
+                                <div id="card-polaroid" onclick="selectTemplate('polaroid')" class="template-card bg-white p-2.5 rounded-xl border-2 border-slate-200 cursor-pointer transition flex flex-col items-center text-center shadow-sm hover:border-blue-700">
+                                    <div class="w-11 h-14 bg-slate-50 border border-slate-300 rounded p-1 flex flex-col justify-between mb-1">
+                                        <div class="w-full h-8 bg-slate-300 rounded-xs"></div>
+                                        <div class="w-6 h-1 bg-slate-400 rounded mx-auto"></div>
+                                    </div>
+                                    <span class="font-bold text-[11px] text-slate-700">Polaroid</span>
+                                </div>
+
+                                <div id="card-single" onclick="selectTemplate('single')" class="template-card bg-white p-2.5 rounded-xl border-2 border-slate-200 cursor-pointer transition flex flex-col items-center text-center shadow-sm hover:border-blue-700">
+                                    <div class="w-11 h-14 bg-slate-100 border border-slate-300 rounded p-1 flex items-center justify-center mb-1">
+                                        <div class="w-full h-full bg-slate-300 rounded-xs"></div>
+                                    </div>
+                                    <span class="font-bold text-[11px] text-slate-700">Deluxe</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card p-5 rounded-2xl space-y-3">
+                            <label class="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-font text-indigo-600"></i> 2. Input Teks & Tipografi Frame
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Judul Utama Frame</label>
+                                    <input type="text" id="custom-frame-header" oninput="updateCustomFrame()" placeholder="Dimas & Sarah" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-900">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Gaya Font Teks</label>
+                                    <select id="select-font-style" onchange="updateCustomFrame()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-900">
+                                        <option value="sans">Modern Sans-Serif</option>
+                                        <option value="serif">Elegant Serif (Playfair)</option>
+                                        <option value="script">Handwritten Script (Dancing)</option>
+                                        <option value="mono">Bold Monospace (Grotesk)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Sub-Judul / Tanggal</label>
+                                    <input type="text" id="custom-frame-subheader" oninput="updateCustomFrame()" placeholder="24.08.2026 • Happy Wedding" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-900">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Hashtag / Watermark Bottom</label>
+                                    <input type="text" id="custom-frame-watermark" oninput="updateCustomFrame()" placeholder="#DimasSarahWedding" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-900">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card p-5 rounded-2xl space-y-4">
+                            <label class="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-palette text-amber-500"></i> 3. Warna, Sliders & Stiker
+                            </label>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <label class="block font-semibold text-slate-600 mb-1">Warna Latar Frame</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" id="picker-bg-color" value="#0f172a" onchange="updateCustomFrame()" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border border-slate-300 flex-shrink-0">
+                                        <select id="preset-bg" onchange="setPresetBg(this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-900">
+                                            <option value="#0f172a">Dark Navy</option>
+                                            <option value="#ffffff">Clean White</option>
+                                            <option value="#1e3a8a">Deep Royal Blue</option>
+                                            <option value="#f1f5f9">Soft Ice White</option>
+                                            <option value="#fce7f3">Soft Pastel Pink</option>
+                                            <option value="#022c22">Emerald Dark</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block font-semibold text-slate-600 mb-1">Warna Garis Border & Teks</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" id="picker-border-color" value="#2563eb" onchange="updateCustomFrame()" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border border-slate-300 flex-shrink-0">
+                                        <select id="preset-border" onchange="setPresetBorder(this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-900">
+                                            <option value="#2563eb">Cobalt Blue</option>
+                                            <option value="#1e3a8a">Dark Navy</option>
+                                            <option value="#fbbf24">Gold Luxury</option>
+                                            <option value="#ffffff">Pure White</option>
+                                            <option value="#f43f5e">Rose Red</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
+                                <div>
+                                    <div class="flex justify-between font-semibold text-slate-600 mb-1">
+                                        <span>Jarak/Padding Foto</span>
+                                        <span id="padding-val">20px</span>
+                                    </div>
+                                    <input type="range" id="slider-padding" min="5" max="40" value="20" oninput="updateCustomFrame()" class="w-full accent-blue-900 cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between font-semibold text-slate-600 mb-1">
+                                        <span>Kebulatan Sudut (Radius)</span>
+                                        <span id="radius-val">12px</span>
+                                    </div>
+                                    <input type="range" id="slider-radius" min="0" max="30" value="12" oninput="updateCustomFrame()" class="w-full accent-blue-900 cursor-pointer">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
+                                <div>
+                                    <label class="block font-semibold text-slate-600 mb-1">Stiker / Aksen Frame</label>
+                                    <select id="select-sticker" onchange="updateCustomFrame()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-blue-900">
+                                        <option value="none">Tanpa Stiker</option>
+                                        <option value="heart">💖 Floating Hearts</option>
+                                        <option value="flower">🌸 Floral Garland</option>
+                                        <option value="sparkle" selected>✨ Golden Sparkles</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-600 mb-1">Efek Filter Kamera</label>
+                                    <select id="select-filter" onchange="setFilter(this.value)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-blue-900">
+                                        <option value="normal">Normal (Standard)</option>
+                                        <option value="grayscale">Monochrome (Hitam Putih)</option>
+                                        <option value="sepia">Warm Vintage (Sepia)</option>
+                                        <option value="softglow">Soft Glow (Dreamy)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-content-custom" class="hidden glass-card p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-900/10 text-blue-900 flex items-center justify-center text-lg font-bold">
+                                <i class="fa-solid fa-file-image"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-blue-950">Upload Custom Frame PNG Overlay</h4>
+                                <p class="text-xs text-slate-600">Unggah file bingkai buatanmu sendiri (format .PNG dengan area transparan)</p>
+                            </div>
+                        </div>
+
+                        <div class="border-2 border-dashed border-blue-300 hover:border-blue-600 rounded-2xl p-6 text-center bg-blue-50/50 hover:bg-blue-50 transition cursor-pointer relative" onclick="document.getElementById('custom-frame-file').click()">
+                            <input type="file" id="custom-frame-file" accept="image/png, image/jpeg" onchange="handleCustomFrameUpload(event)" class="hidden">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-blue-600 mb-2"></i>
+                            <p class="text-xs font-bold text-blue-950">Klik untuk upload bingkai PNG / JPG</p>
+                            <p class="text-[10px] text-slate-500 mt-1">Direkomendasikan rasio 3:4 atau 2:3 dengan latar transparan (Max 5MB)</p>
+                        </div>
+
+                        <div id="custom-overlay-info" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-900">
+                            <span class="flex items-center gap-2 font-semibold">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> Frame PNG tersimpan
+                            </span>
+                            <button onclick="removeCustomOverlay()" class="text-xs text-rose-600 font-bold hover:underline">Hapus</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Live Interactive Frame Preview Box -->
+                <div class="lg:col-span-5 glass-card p-5 rounded-2xl flex flex-col items-center justify-between space-y-4">
+                    <span class="text-xs font-bold text-blue-900 uppercase tracking-widest flex items-center gap-1.5">
+                        <i class="fa-solid fa-eye"></i> Pratinjau Desain Frame
+                    </span>
+                    
+                    <div id="frame-preview-box" class="w-52 h-72 rounded-2xl border-2 border-blue-600 shadow-2xl p-3 flex flex-col justify-between items-center text-center relative transition-all duration-300 overflow-hidden" style="background-color: #0f172a; border-color: #2563eb;">
+                        <div id="preview-sticker-top" class="text-xs text-blue-300">✨</div>
+                        
+                        <div id="preview-photo-grid" class="w-full flex-grow my-2 flex flex-col justify-center items-center gap-1.5">
+                            <div class="w-full h-12 bg-slate-800 rounded flex items-center justify-center text-[10px] text-slate-400">Pose 1</div>
+                            <div class="w-full h-12 bg-slate-800 rounded flex items-center justify-center text-[10px] text-slate-400">Pose 2</div>
+                            <div class="w-full h-12 bg-slate-800 rounded flex items-center justify-center text-[10px] text-slate-400">Pose 3</div>
+                        </div>
+
+                        <div class="w-full z-10">
+                            <p id="preview-header-text" class="text-xs font-bold text-white truncate">Dimas & Sarah</p>
+                            <p id="preview-subheader-text" class="text-[9px] text-slate-300 font-medium truncate">Guest: Anonim</p>
+                            <p id="preview-watermark-text" class="text-[9px] text-blue-300 font-bold truncate">#DimasSarahWedding</p>
+                        </div>
+                    </div>
+
+                    <div class="w-full flex gap-2 pt-2">
+                        <button onclick="goToSlide(2)" class="w-1/2 py-3 rounded-full bg-white border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-sm">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
+                        </button>
+                        <button onclick="proceedToCamera()" class="w-1/2 py-3 rounded-full bg-blue-900 text-white text-xs font-bold hover:bg-blue-950 shadow-md shadow-blue-900/30 transition flex items-center justify-center gap-1.5">
+                            <span>Lanjut Foto 📸</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="slide-4" class="hidden w-full max-w-md flex-col items-center text-center space-y-5 slide-fade-in">
+            <div>
+                <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Langkah 3 dari 3</span>
+                <h2 class="text-2xl font-bold mt-1 text-blue-950">Ambil Foto Pose 📸</h2>
+                <p id="shoot-instruction" class="text-xs text-slate-600 mt-1">Siapkan senyum terbaikmu...</p>
+            </div>
+
+            <div class="relative w-full aspect-[3/4] bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-300 shadow-2xl flex items-center justify-center">
+                <video id="webcam" autoplay playsinline class="w-full h-full object-cover transform -scale-x-100 transition-all duration-300"></video>
+                <canvas id="canvas-capture" class="hidden"></canvas>
+                <canvas id="canvas-composite" class="hidden"></canvas>
+                
+                <div id="shot-counter-badge" class="hidden absolute top-4 left-4 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-blue-500/30 text-xs font-bold text-blue-300">
+                    Foto <span id="current-shot-index">1</span> dari <span id="total-shots-index">3</span>
+                </div>
+
+                <div id="countdown" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center text-8xl font-black text-blue-400 animate-pulse">
+                    3
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full justify-center">
+                <button onclick="goToSlide(3)" class="px-5 py-3 rounded-full bg-white border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-sm">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Edit Frame
+                </button>
+                <button id="snap-btn" onclick="startCaptureSequence()" class="px-8 py-3 rounded-full bg-blue-900 text-white text-xs font-bold hover:bg-blue-950 shadow-lg shadow-blue-900/30 transition flex items-center gap-2">
+                    <i class="fa-solid fa-camera"></i> Ambil Foto ✨
+                </button>
+            </div>
+        </section>
+
+        <section id="slide-5" class="hidden w-full max-w-lg flex-col items-center text-center space-y-6 slide-fade-in">
+            <div>
+                <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Selesai Foto 🎉</span>
+                <h2 class="text-2xl font-bold mt-1 text-blue-950">Kirim Ucapan & Voice Note</h2>
+                <p class="text-xs text-slate-600 mt-1">Tulis pesan kebahagiaan untuk kedua mempelai</p>
+            </div>
+
+            <div class="relative group">
+                <div class="w-48 h-64 bg-slate-900 rounded-2xl overflow-hidden border border-slate-300 shadow-xl flex items-center justify-center p-2">
+                    <img id="captured-preview" src="" class="w-full h-full object-contain rounded-xl">
+                </div>
+                <button onclick="retakePhoto()" class="mt-2 text-xs text-blue-900 hover:text-blue-700 font-semibold flex items-center justify-center gap-1 mx-auto">
+                    <i class="fa-solid fa-rotate-left"></i> Foto Ulang
+                </button>
+            </div>
+
+            <form id="wishes-form" onsubmit="saveEntry(event)" class="w-full space-y-4 text-left glass-card p-6 rounded-2xl border border-slate-200 shadow-lg">
+                <div>
+                    <label class="block text-xs font-bold text-blue-950 mb-1">Nama Anda / Rombongan</label>
+                    <input type="text" id="guest-name" required placeholder="ex: Budi & Partner" class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-blue-950 mb-1">Pesan Ucapan & Doa</label>
+                    <textarea id="guest-message" rows="3" required placeholder="Happy wedding ya guys! Langgeng sampe tua & bahagia selalu..." class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition"></textarea>
+                </div>
+
+                <div id="voicenote-container">
+                    <label class="block text-xs font-bold text-blue-950 mb-1">Voice Note (Rekam Suara)</label>
+                    <div class="flex items-center gap-3 bg-slate-50 border border-slate-300 p-3 rounded-xl">
+                        <button type="button" id="record-btn" onclick="toggleRecord()" class="w-10 h-10 rounded-full bg-blue-900/10 text-blue-900 border border-blue-900/20 flex items-center justify-center hover:bg-blue-900 hover:text-white transition flex-shrink-0">
+                            <i class="fa-solid fa-microphone" id="mic-icon"></i>
+                        </button>
+                        <div class="flex-grow">
+                            <span id="record-status" class="text-xs text-slate-600 block font-medium">Klik icon untuk merekam (Max <span id="max-voice-dur">15</span>s)</span>
+                            <div id="voice-preview-container" class="hidden mt-1">
+                                <audio id="voice-audio-preview" controls class="h-7 w-full rounded-md bg-white border border-slate-200"></audio>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-950 shadow-lg shadow-blue-900/30 transition text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Simpan & Publish ke Galeri 🎉
+                </button>
+            </form>
+        </section>
+
+        <section id="slide-6" class="hidden w-full max-w-5xl flex-col items-center space-y-6 slide-fade-in">
+            <div class="flex flex-col sm:flex-row justify-between items-center w-full gap-4">
+                <div class="text-center sm:text-left">
+                    <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Memory Wall</span>
+                    <h2 class="text-3xl font-extrabold mt-1 text-blue-950">Galeri & Ucapan Tamu</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openSlideshowModal()" class="px-4 py-2.5 rounded-full bg-blue-950 text-white text-xs font-bold hover:bg-blue-900 shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-tv"></i> Mode Proyektor Venue
+                    </button>
+                    <button onclick="goToSlide(2)" class="px-4 py-2.5 rounded-full bg-blue-900/10 text-blue-950 border border-blue-900/20 text-xs font-bold hover:bg-blue-900 hover:text-white transition">
+                        <i class="fa-solid fa-plus"></i> Tambah Foto
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-grow">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="gallery-search" oninput="filterGallery()" placeholder="Cari nama tamu atau ucapan..." class="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-900 shadow-sm">
+                </div>
+                <select id="gallery-filter-type" onchange="filterGallery()" class="bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none shadow-sm">
+                    <option value="all">Semua Ucapan</option>
+                    <option value="audio">Hanya Voice Note</option>
+                </select>
+            </div>
+
+            <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                <!-- Dynamic Items Rendered via JS -->
+            </div>
+
+            <div class="pt-4">
+                <button onclick="goToSlide(1)" class="px-6 py-2.5 rounded-full bg-white border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-sm">
+                    <i class="fa-solid fa-house mr-1"></i> Kembali ke Beranda
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="qr-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-sm rounded-3xl p-6 text-center space-y-5 relative border border-slate-200">
+            <button onclick="closeModal('qr-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">SCAN UNTUK AKSES</span>
+                <h3 class="text-xl font-bold text-blue-950" id="qr-modal-title">Dimas & Sarah</h3>
+                <p class="text-xs text-slate-600">Scan QR Code ini dengan HP untuk membuka Photobooth</p>
+            </div>
+
+            <div id="qr-card-printable" class="bg-white p-5 rounded-2xl shadow-xl border border-slate-200 flex flex-col items-center justify-center text-slate-900 space-y-3">
+                <div id="qrcode-container" class="p-2 bg-white rounded-xl border border-slate-100"></div>
+                <div class="text-center">
+                    <p class="font-extrabold text-sm tracking-tight text-blue-950" id="qr-card-names">Dimas & Sarah</p>
+                    <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Virtual Photobooth & Guestbook</p>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="printQRCodeCard()" class="w-full py-2.5 rounded-xl bg-slate-100 border border-slate-300 hover:bg-slate-200 text-xs font-bold text-slate-800 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Standee
+                </button>
+                <button onclick="copyEventURL()" class="w-full py-2.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-xs font-bold text-white transition flex items-center justify-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-link"></i> Salin Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-lg rounded-3xl p-6 space-y-5 relative border border-slate-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onclick="closeModal('settings-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-blue-900/10 border border-blue-900/20 text-blue-900 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-blue-950">Pengaturan Event</h3>
+                    <p class="text-xs text-slate-600">Kustomisasi nama pengantin, tanggal, dan watermark frame</p>
+                </div>
+            </div>
+
+            <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-4 text-left text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Nama Mempelai / Event</label>
+                        <input type="text" id="cfg-bride-groom" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Tagline Banner (Subtext)</label>
+                        <input type="text" id="cfg-tagline" placeholder="THE WEDDING OF" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Tanggal Event</label>
+                        <input type="text" id="cfg-date" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Lokasi Event</label>
+                        <input type="text" id="cfg-location" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Text Watermark / Hashtag Frame Photo</label>
+                    <input type="text" id="cfg-watermark" placeholder="#DimasSarahWedding" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">URL Foto Sampul (Cover Image)</label>
+                    <input type="url" id="cfg-cover-url" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Durasi Maks Voice Note (Detik)</label>
+                        <input type="number" id="cfg-voice-dur" min="5" max="60" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Password Admin Panel</label>
+                        <input type="password" id="cfg-admin-pass" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-blue-900 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('settings-modal')" class="px-5 py-2.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 hover:bg-slate-200 font-semibold">Batal</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-950 shadow-md">Simpan Pengaturan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-auth-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-sm rounded-3xl p-6 text-center space-y-4 relative border border-slate-200">
+            <button onclick="closeModal('admin-auth-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center text-xl mx-auto">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-blue-950">Admin Verification</h3>
+                <p class="text-xs text-slate-600">Masukkan password admin untuk mengelola ucapan & data</p>
+            </div>
+            <form onsubmit="verifyAdminPass(event)" class="space-y-3">
+                <input type="password" id="admin-pass-input" placeholder="Masukkan password..." required class="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-900 text-center focus:outline-none focus:border-emerald-600">
+                <p id="admin-auth-error" class="text-[11px] text-rose-600 hidden">Password salah! Silahkan coba lagi.</p>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-sm">
+                    Masuk Dashboard Admin
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-dashboard-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal-dark w-full max-w-4xl rounded-3xl p-6 space-y-6 relative border border-slate-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onclick="closeModal('admin-dashboard-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Admin Management Dashboard</h3>
+                        <p class="text-xs text-slate-400">Kelola foto tamu, ucapan, ekspor data, dan reset</p>
+                    </div>
+                </div>
+                <button onclick="openSlideshowModal()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-tv"></i> Fullscreen Slideshow
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                    <span class="text-xs text-slate-400 block font-medium">Total Ucapan</span>
+                    <span class="text-2xl font-black text-blue-400 mt-1 block" id="stat-total-entries">0</span>
+                </div>
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                    <span class="text-xs text-slate-400 block font-medium">Foto Tersimpan</span>
+                    <span class="text-2xl font-black text-indigo-400 mt-1 block" id="stat-total-photos">0</span>
+                </div>
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                    <span class="text-xs text-slate-400 block font-medium">Voice Notes</span>
+                    <span class="text-2xl font-black text-amber-400 mt-1 block" id="stat-total-audio">0</span>
+                </div>
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                    <span class="text-xs text-slate-400 block font-medium">Storage Estimate</span>
+                    <span class="text-2xl font-black text-emerald-400 mt-1 block" id="stat-storage-size">0 KB</span>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h4 class="font-bold text-sm text-slate-200">Daftar Foto & Ucapan Tamu</h4>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportDataJSON()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300">
+                            <i class="fa-solid fa-download mr-1"></i> Export JSON
+                        </button>
+                        <button onclick="promptResetAllEntries()" class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 text-xs font-semibold transition">
+                            <i class="fa-solid fa-trash mr-1"></i> Reset Data
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-800">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider">
+                            <tr>
+                                <th class="p-3">Foto</th>
+                                <th class="p-3">Tamu</th>
+                                <th class="p-3">Ucapan</th>
+                                <th class="p-3">Voice Note</th>
+                                <th class="p-3 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body" class="divide-y divide-slate-800 bg-slate-950/50">
+                            <!-- Table rows rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-sm rounded-3xl p-6 text-center space-y-4 relative border border-slate-200">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center text-xl mx-auto">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 id="confirm-modal-title" class="text-lg font-bold text-blue-950">Konfirmasi</h3>
+                <p id="confirm-modal-msg" class="text-xs text-slate-600 mt-1">Apakah Anda yakin?</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button id="confirm-btn-cancel" onclick="closeModal('confirm-modal')" class="w-1/2 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">Batal</button>
+                <button id="confirm-btn-action" class="w-1/2 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition shadow-sm">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="slideshow-view" class="fixed inset-0 bg-slate-950 z-50 hidden flex flex-col justify-between p-8 sm:p-12">
+        <div class="flex justify-between items-center w-full z-10">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl font-black text-white">ruangtemu<span class="text-blue-500">.</span></span>
+                <span class="text-xs font-bold text-slate-300 bg-slate-900 px-3 py-1 rounded-full border border-slate-800" id="slideshow-couple-tag">Dimas & Sarah Wedding</span>
+            </div>
+            <button onclick="closeSlideshowModal()" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 hover:bg-slate-800 text-xs font-bold text-slate-300">
+                <i class="fa-solid fa-xmark mr-1"></i> Keluar Projection Mode
+            </button>
+        </div>
+
+        <div class="flex-grow flex items-center justify-center my-auto relative">
+            <div id="slide-card" class="max-w-2xl w-full glass-card-dark p-8 rounded-3xl border border-slate-800 shadow-2xl flex flex-col sm:flex-row items-center gap-8">
+                <img id="slide-photo" src="" class="w-48 h-64 object-cover rounded-2xl border-2 border-blue-500/40 shadow-xl flex-shrink-0">
+                <div class="space-y-4 text-left">
+                    <span class="text-xs font-bold text-blue-400 tracking-widest uppercase">Doa & Ucapan Tamu</span>
+                    <h3 id="slide-name" class="text-2xl font-extrabold text-white">Nama Tamu</h3>
+                    <p id="slide-message" class="text-sm text-slate-300 italic leading-relaxed">"Pesan ucapan..."</p>
+                    <div id="slide-audio-box" class="hidden">
+                        <audio id="slide-audio-player" controls class="w-full h-8 rounded-lg bg-slate-900"></audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center w-full text-xs text-slate-400">
+            <span>Live Guestbook Stream • Auto-Advancing</span>
+            <span id="slideshow-progress">Slide 1 dari 1</span>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-6xl mx-auto px-6 py-6 text-center text-xs text-slate-500 border-t border-slate-200/80 z-10">
+        crafted with ❤️ for <span id="footer-names" class="text-blue-950 font-semibold">Dimas & Sarah</span> — <span class="text-slate-600">ruangtemu. photobooth studio</span>
+    </footer>
+
+    <script>
+        let appConfig = {
+            brideGroom: "Dimas & Sarah",
+            tagline: "THE WEDDING OF",
+            date: "24.08.2026",
+            location: "Jakarta",
+            watermark: "#DimasSarahWedding",
+            coverUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=800",
+            maxVoiceDur: 15,
+            adminPass: "admin123"
+        };
+
+        let currentSlide = 1;
+        let currentTemplate = 'strip'; // 'strip', 'grid4', 'polaroid', 'single'
+        let currentFilter = 'normal'; // 'normal', 'grayscale', 'sepia', 'softglow'
+        let frameTabMode = 'presets'; // 'presets' or 'custom'
+
+        let customFrame = {
+            bgColor: '#0f172a',
+            borderColor: '#2563eb',
+            sticker: 'sparkle',
+            headerText: 'Dimas & Sarah',
+            subheaderText: '24.08.2026 • Happy Wedding',
+            watermarkText: '#DimasSarahWedding',
+            fontStyle: 'sans', // 'sans', 'serif', 'script', 'mono'
+            padding: 20,
+            radius: 12,
+            customOverlayImg: null
+        };
+
+        let videoStream = null;
+        let capturedImageData = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedAudioUrl = null;
+        let isRecording = false;
+        let recordTimer = null;
+        let qrcodeInstance = null;
+        let slideshowInterval = null;
+        let currentSlideIndex = 0;
+
+        const defaultEntries = [
+            {
+                id: '1',
+                name: "Rian & Partner",
+                message: "Congrats Dimas & Sarah! Ditunggu makan-makan party selanjutnya 🔥 Semoga sakinah mawaddah warahmah!",
+                photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=400",
+                date: "24 Aug 2026",
+                audioUrl: null
+            }
+        ];
+
+        let entries = [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadConfig();
+            loadEntries();
+            applyConfigToUI();
+            
+            document.getElementById('custom-frame-header').value = appConfig.brideGroom;
+            document.getElementById('custom-frame-subheader').value = `${appConfig.date} • Happy Wedding`;
+            document.getElementById('custom-frame-watermark').value = appConfig.watermark;
+
+            updateCustomFrame();
+            renderGallery();
+
+            const slide2Input = document.getElementById('slide2-guest-name');
+            if (slide2Input) {
+                slide2Input.addEventListener('input', (e) => {
+                    const guestNameForm = document.getElementById('guest-name');
+                    if (guestNameForm) guestNameForm.value = e.target.value;
+                    updateCustomFrame();
+                });
+            }
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-900 text-white border-rose-700' :
+                            type === 'success' ? 'bg-emerald-900 text-white border-emerald-700' :
+                            'bg-blue-950 text-white border-blue-800';
+            const icon = type === 'error' ? 'fa-circle-xmark text-rose-400' :
+                         type === 'success' ? 'fa-circle-check text-emerald-400' :
+                         'fa-circle-info text-blue-400';
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl text-xs font-semibold pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function showConfirm(title, message, onConfirm) {
+            document.getElementById('confirm-modal-title').innerText = title;
+            document.getElementById('confirm-modal-msg').innerText = message;
+            
+            const actionBtn = document.getElementById('confirm-btn-action');
+            actionBtn.onclick = () => {
+                closeModal('confirm-modal');
+                onConfirm();
+            };
+
+            openModal('confirm-modal');
+        }
+
+        function openModal(modalId) {
+            const m = document.getElementById(modalId);
+            if (m) m.classList.remove('hidden');
+
+            if (modalId === 'qr-modal') {
+                generateQRCode();
+            } else if (modalId === 'settings-modal') {
+                populateSettingsForm();
+            }
+        }
+
+        function closeModal(modalId) {
+            const m = document.getElementById(modalId);
+            if (m) m.classList.add('hidden');
+        }
+
+        function goToSlide(slideNum) {
+            for (let i = 1; i <= 6; i++) {
+                const s = document.getElementById(`slide-${i}`);
+                if (s) {
+                    s.classList.add('hidden');
+                    s.classList.remove('flex');
+                }
+            }
+
+            const target = document.getElementById(`slide-${slideNum}`);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('flex');
+            }
+
+            currentSlide = slideNum;
+
+            if (slideNum !== 4 && videoStream) {
+                stopCamera();
+            }
+
+            const progressWrapper = document.getElementById('step-progress-wrapper');
+            const fill = document.getElementById('progress-bar-fill');
+            const stepText = document.getElementById('step-indicator-text');
+            const titleText = document.getElementById('step-title-text');
+
+            if (slideNum >= 2 && slideNum <= 4) {
+                progressWrapper.classList.remove('hidden');
+                if (slideNum === 2) {
+                    fill.style.width = '33%';
+                    stepText.innerText = 'Langkah 1 dari 3';
+                    titleText.innerText = 'Nama Tamu';
+                } else if (slideNum === 3) {
+                    fill.style.width = '66%';
+                    stepText.innerText = 'Langkah 2 dari 3';
+                    titleText.innerText = 'Kustom Frame';
+                } else if (slideNum === 4) {
+                    fill.style.width = '100%';
+                    stepText.innerText = 'Langkah 3 dari 3';
+                    titleText.innerText = 'Ambil Foto';
+                }
+            } else {
+                progressWrapper.classList.add('hidden');
+            }
+
+            if (slideNum === 6) {
+                renderGallery();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function proceedFromSlide2() {
+            const guestName = document.getElementById('slide2-guest-name').value.trim();
+            if (!guestName) {
+                showToast("Silahkan masukkan nama Anda terlebih dahulu!", "error");
+                document.getElementById('slide2-guest-name').focus();
+                return;
+            }
+
+            const guestNameForm = document.getElementById('guest-name');
+            if (guestNameForm) guestNameForm.value = guestName;
+
+            updateCustomFrame();
+            goToSlide(3);
+        }
+
+        function loadConfig() {
+            const saved = localStorage.getItem('ruangtemu_config');
+            if (saved) {
+                try { appConfig = { ...appConfig, ...JSON.parse(saved) }; } catch(e){}
+            }
+        }
+
+        function saveConfigToStorage() {
+            localStorage.setItem('ruangtemu_config', JSON.stringify(appConfig));
+        }
+
+        function applyConfigToUI() {
+            document.getElementById('banner-tag').innerText = appConfig.tagline || 'THE WEDDING OF';
+            document.getElementById('banner-title').innerText = appConfig.brideGroom;
+            document.getElementById('banner-date').innerText = appConfig.date;
+            document.getElementById('banner-location').innerText = appConfig.location;
+            document.getElementById('cover-photo-img').src = appConfig.coverUrl;
+            document.getElementById('footer-names').innerText = appConfig.brideGroom;
+            document.getElementById('qr-modal-title').innerText = appConfig.brideGroom;
+            document.getElementById('qr-card-names').innerText = appConfig.brideGroom;
+            document.getElementById('slideshow-couple-tag').innerText = `${appConfig.brideGroom} Wedding`;
+            document.getElementById('max-voice-dur').innerText = appConfig.maxVoiceDur;
+        }
+
+        function populateSettingsForm() {
+            document.getElementById('cfg-bride-groom').value = appConfig.brideGroom;
+            document.getElementById('cfg-tagline').value = appConfig.tagline || '';
+            document.getElementById('cfg-date').value = appConfig.date;
+            document.getElementById('cfg-location').value = appConfig.location;
+            document.getElementById('cfg-watermark').value = appConfig.watermark;
+            document.getElementById('cfg-cover-url').value = appConfig.coverUrl;
+            document.getElementById('cfg-voice-dur').value = appConfig.maxVoiceDur;
+            document.getElementById('cfg-admin-pass').value = appConfig.adminPass;
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            appConfig.brideGroom = document.getElementById('cfg-bride-groom').value.trim();
+            appConfig.tagline = document.getElementById('cfg-tagline').value.trim();
+            appConfig.date = document.getElementById('cfg-date').value.trim();
+            appConfig.location = document.getElementById('cfg-location').value.trim();
+            appConfig.watermark = document.getElementById('cfg-watermark').value.trim();
+            appConfig.coverUrl = document.getElementById('cfg-cover-url').value.trim();
+            appConfig.maxVoiceDur = parseInt(document.getElementById('cfg-voice-dur').value) || 15;
+            appConfig.adminPass = document.getElementById('cfg-admin-pass').value.trim() || 'admin123';
+
+            saveConfigToStorage();
+            applyConfigToUI();
+            updateCustomFrame();
+            closeModal('settings-modal');
+            showToast("Pengaturan event berhasil disimpan!", "success");
+        }
+
+        function loadEntries() {
+            const saved = localStorage.getItem('ruangtemu_entries');
+            if (saved) {
+                try { entries = JSON.parse(saved); } catch(e){ entries = [...defaultEntries]; }
+            } else {
+                entries = [...defaultEntries];
+            }
+        }
+
+        function saveEntriesToStorage() {
+            localStorage.setItem('ruangtemu_entries', JSON.stringify(entries));
+        }
+
+        function switchFrameTab(mode) {
+            frameTabMode = mode;
+            const btnPresets = document.getElementById('tab-btn-presets');
+            const btnCustom = document.getElementById('tab-btn-custom');
+            const contentPresets = document.getElementById('tab-content-presets');
+            const contentCustom = document.getElementById('tab-content-custom');
+
+            if (mode === 'presets') {
+                btnPresets.classList.add('bg-white', 'text-blue-950', 'shadow-sm');
+                btnPresets.classList.remove('text-slate-600');
+                btnCustom.classList.remove('bg-white', 'text-blue-950', 'shadow-sm');
+                btnCustom.classList.add('text-slate-600');
+                
+                contentPresets.classList.remove('hidden');
+                contentCustom.classList.add('hidden');
+            } else {
+                btnCustom.classList.add('bg-white', 'text-blue-950', 'shadow-sm');
+                btnCustom.classList.remove('text-slate-600');
+                btnPresets.classList.remove('bg-white', 'text-blue-950', 'shadow-sm');
+                btnPresets.classList.add('text-slate-600');
+
+                contentCustom.classList.remove('hidden');
+                contentPresets.classList.add('hidden');
+            }
+            updateCustomFrame();
+        }
+
+        function selectTemplate(type) {
+            currentTemplate = type;
+            ['strip', 'grid4', 'polaroid', 'single'].forEach(t => {
+                const card = document.getElementById(`card-${t}`);
+                if (card) {
+                    if (t === type) {
+                        card.classList.add('border-blue-900');
+                        card.classList.remove('border-slate-200');
+                    } else {
+                        card.classList.remove('border-blue-900');
+                        card.classList.add('border-slate-200');
+                    }
+                }
+            });
+            updateCustomFrame();
+        }
+
+        function setPresetBg(color) {
+            document.getElementById('picker-bg-color').value = color;
+            updateCustomFrame();
+        }
+
+        function setPresetBorder(color) {
+            document.getElementById('picker-border-color').value = color;
+            updateCustomFrame();
+        }
+
+        function handleCustomFrameUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("Ukuran file terlalu besar! Maksimal 5MB.", "error");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    customFrame.customOverlayImg = img;
+                    document.getElementById('custom-overlay-info').classList.remove('hidden');
+                    showToast("Frame PNG custom berhasil dimuat!", "success");
+                    updateCustomFrame();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeCustomOverlay() {
+            customFrame.customOverlayImg = null;
+            document.getElementById('custom-frame-file').value = '';
+            document.getElementById('custom-overlay-info').classList.add('hidden');
+            showToast("Custom Overlay dihapus.", "info");
+            updateCustomFrame();
+        }
+
+        function updateCustomFrame() {
+            customFrame.bgColor = document.getElementById('picker-bg-color').value;
+            customFrame.borderColor = document.getElementById('picker-border-color').value;
+            customFrame.sticker = document.getElementById('select-sticker').value;
+            customFrame.headerText = document.getElementById('custom-frame-header').value.trim() || appConfig.brideGroom;
+            customFrame.subheaderText = document.getElementById('custom-frame-subheader').value.trim() || appConfig.date;
+            customFrame.watermarkText = document.getElementById('custom-frame-watermark').value.trim() || appConfig.watermark;
+            customFrame.fontStyle = document.getElementById('select-font-style').value;
+            customFrame.padding = parseInt(document.getElementById('slider-padding').value);
+            customFrame.radius = parseInt(document.getElementById('slider-radius').value);
+
+            document.getElementById('padding-val').innerText = `${customFrame.padding}px`;
+            document.getElementById('radius-val').innerText = `${customFrame.radius}px`;
+
+            const previewBox = document.getElementById('frame-preview-box');
+            if (previewBox) {
+                previewBox.style.backgroundColor = customFrame.bgColor;
+                previewBox.style.borderColor = customFrame.borderColor;
+            }
+
+            const fontMap = {
+                'sans': 'font-sans',
+                'serif': 'font-serif',
+                'script': 'font-script',
+                'mono': 'font-mono'
+            };
+
+            const headerEl = document.getElementById('preview-header-text');
+            if (headerEl) {
+                headerEl.className = `text-xs font-bold text-white truncate ${fontMap[customFrame.fontStyle]}`;
+                headerEl.innerText = customFrame.headerText;
+            }
+
+            const subheaderEl = document.getElementById('preview-subheader-text');
+            if (subheaderEl) {
+                subheaderEl.innerText = customFrame.subheaderText;
+            }
+
+            const watermarkEl = document.getElementById('preview-watermark-text');
+            if (watermarkEl) {
+                watermarkEl.innerText = customFrame.watermarkText;
+                watermarkEl.style.color = customFrame.borderColor;
+            }
+
+            const stickerMap = {
+                'none': '',
+                'heart': '💖 With Love',
+                'flower': '🌸 Floral Edition',
+                'sparkle': '✨ Golden Sparkles'
+            };
+            document.getElementById('preview-sticker-top').innerText = stickerMap[customFrame.sticker] || '';
+
+            const gridContainer = document.getElementById('preview-photo-grid');
+            if (gridContainer) {
+                if (currentTemplate === 'strip') {
+                    gridContainer.innerHTML = `
+                        <div class="w-full h-10 bg-slate-800 rounded flex items-center justify-center text-[9px] text-slate-400">Pose 1</div>
+                        <div class="w-full h-10 bg-slate-800 rounded flex items-center justify-center text-[9px] text-slate-400">Pose 2</div>
+                        <div class="w-full h-10 bg-slate-800 rounded flex items-center justify-center text-[9px] text-slate-400">Pose 3</div>
+                    `;
+                } else if (currentTemplate === 'grid4') {
+                    gridContainer.innerHTML = `
+                        <div class="w-full h-full grid grid-cols-2 gap-1 p-1">
+                            <div class="bg-slate-800 rounded flex items-center justify-center text-[8px] text-slate-400">P1</div>
+                            <div class="bg-slate-800 rounded flex items-center justify-center text-[8px] text-slate-400">P2</div>
+                            <div class="bg-slate-800 rounded flex items-center justify-center text-[8px] text-slate-400">P3</div>
+                            <div class="bg-slate-800 rounded flex items-center justify-center text-[8px] text-slate-400">P4</div>
+                        </div>
+                    `;
+                } else if (currentTemplate === 'polaroid') {
+                    gridContainer.innerHTML = `
+                        <div class="w-full h-32 bg-slate-800 rounded flex items-center justify-center text-[10px] text-slate-400">Polaroid Photo</div>
+                    `;
+                } else {
+                    gridContainer.innerHTML = `
+                        <div class="w-full h-36 bg-slate-800 rounded flex items-center justify-center text-[10px] text-slate-400">Deluxe Portrait</div>
+                    `;
+                }
+            }
+        }
+
+        function setFilter(filterName) {
+            currentFilter = filterName;
+            const video = document.getElementById('webcam');
+            if (video) applyCssFilterToVideo(video);
+        }
+
+        function applyCssFilterToVideo(element) {
+            if (currentFilter === 'grayscale') element.style.filter = 'grayscale(100%)';
+            else if (currentFilter === 'sepia') element.style.filter = 'sepia(80%)';
+            else if (currentFilter === 'softglow') element.style.filter = 'brightness(110%) contrast(90%) saturate(120%)';
+            else element.style.filter = 'none';
+        }
+
+        function proceedToCamera() {
+            goToSlide(4);
+            initCamera();
+        }
+
+        async function initCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 1280 }, height: { ideal: 960 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                const video = document.getElementById('webcam');
+                video.srcObject = videoStream;
+                applyCssFilterToVideo(video);
+                
+                const badge = document.getElementById('shot-counter-badge');
+                const totalShotsEl = document.getElementById('total-shots-index');
+
+                let totalShots = currentTemplate === 'strip' ? 3 : currentTemplate === 'grid4' ? 4 : 1;
+
+                if (totalShots > 1) {
+                    badge.classList.remove('hidden');
+                    totalShotsEl.innerText = totalShots;
+                    document.getElementById('current-shot-index').innerText = "1";
+                } else {
+                    badge.classList.add('hidden');
+                }
+            } catch (err) {
+                showToast("Gagal mengakses kamera: " + err.message, "error");
+            }
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        }
+
+        function startCaptureSequence() {
+            const snapBtn = document.getElementById('snap-btn');
+            snapBtn.disabled = true;
+            snapBtn.classList.add('opacity-50');
+
+            let totalShots = currentTemplate === 'strip' ? 3 : currentTemplate === 'grid4' ? 4 : 1;
+
+            if (totalShots > 1) {
+                captureMultiShots(totalShots);
+            } else {
+                captureSingleShot();
+            }
+        }
+
+        function captureSingleShot() {
+            runCountdown(3, () => {
+                const singleBlob = getWebcamFrameDataURL();
+                renderFramedCanvas([singleBlob]);
+            });
+        }
+
+        function captureMultiShots(totalShots) {
+            let shotsTaken = [];
+            let shotIndex = 1;
+
+            function takeNextShot() {
+                document.getElementById('current-shot-index').innerText = shotIndex;
+                runCountdown(3, () => {
+                    shotsTaken.push(getWebcamFrameDataURL());
+                    shotIndex++;
+                    if (shotIndex <= totalShots) {
+                        setTimeout(takeNextShot, 1000);
+                    } else {
+                        renderFramedCanvas(shotsTaken);
+                    }
+                });
+            }
+            takeNextShot();
+        }
+
+        function runCountdown(seconds, onComplete) {
+            const countdownEl = document.getElementById('countdown');
+            countdownEl.classList.remove('hidden');
+            let count = seconds;
+            countdownEl.innerText = count;
+
+            const timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownEl.innerText = count;
+                } else {
+                    clearInterval(timer);
+                    countdownEl.classList.add('hidden');
+                    onComplete();
+                }
+            }, 800);
+        }
+
+        function getWebcamFrameDataURL() {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('canvas-capture');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+
+            if (currentFilter === 'grayscale') ctx.filter = 'grayscale(100%)';
+            else if (currentFilter === 'sepia') ctx.filter = 'sepia(80%)';
+            else if (currentFilter === 'softglow') ctx.filter = 'brightness(110%) contrast(90%)';
+            else ctx.filter = 'none';
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/png');
+        }
+
+        function renderFramedCanvas(imageSrcArray) {
+            const compositeCanvas = document.getElementById('canvas-composite');
+            const ctx = compositeCanvas.getContext('2d');
+            const loadedImages = [];
+            let loadedCount = 0;
+
+            imageSrcArray.forEach((src, idx) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedImages[idx] = img;
+                    loadedCount++;
+                    if (loadedCount === imageSrcArray.length) {
+                        drawFinalCustomFrame(compositeCanvas, ctx, loadedImages);
+                    }
+                };
+                img.src = src;
+            });
+        }
+
+        function drawFinalCustomFrame(canvas, ctx, images) {
+            const bgCol = customFrame.bgColor;
+            const borderCol = customFrame.borderColor;
+            const pad = customFrame.padding;
+            const radius = customFrame.radius;
+
+            const fontFamilies = {
+                'sans': 'Plus Jakarta Sans, sans-serif',
+                'serif': 'Playfair Display, serif',
+                'script': 'Dancing Script, cursive',
+                'mono': 'Space Grotesk, sans-serif'
+            };
+            const activeFont = fontFamilies[customFrame.fontStyle] || 'Plus Jakarta Sans, sans-serif';
+
+            function drawRoundedImage(img, x, y, w, h, r) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+                ctx.clip();
+                ctx.drawImage(img, x, y, w, h);
+                ctx.restore();
+            }
+
+            if (currentTemplate === 'strip') {
+                canvas.width = 600;
+                canvas.height = 1380;
+                ctx.fillStyle = bgCol;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = borderCol;
+                ctx.lineWidth = 8;
+                ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+
+                const imgW = canvas.width - (pad * 2);
+                const imgH = 350;
+
+                images.forEach((img, i) => {
+                    const y = pad + 20 + i * (imgH + pad);
+                    drawRoundedImage(img, pad, y, imgW, imgH, radius);
+                });
+
+                if (customFrame.sticker !== 'none') {
+                    ctx.fillStyle = borderCol;
+                    ctx.font = `bold 16px ${activeFont}`;
+                    ctx.textAlign = 'center';
+                    const stickerText = customFrame.sticker === 'heart' ? '💖 With Love & Happiness' : customFrame.sticker === 'flower' ? '🌸 Floral Edition' : '✨ Golden Sparkles';
+                    ctx.fillText(stickerText, canvas.width / 2, canvas.height - 115);
+                }
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `extrabold 28px ${activeFont}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(customFrame.headerText, canvas.width / 2, canvas.height - 80);
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = `medium 15px ${activeFont}`;
+                ctx.fillText(customFrame.subheaderText, canvas.width / 2, canvas.height - 52);
+
+                ctx.fillStyle = borderCol;
+                ctx.font = `bold 15px ${activeFont}`;
+                ctx.fillText(customFrame.watermarkText, canvas.width / 2, canvas.height - 28);
+
+            } else if (currentTemplate === 'grid4') {
+                canvas.width = 800;
+                canvas.height = 1000;
+                ctx.fillStyle = bgCol;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = borderCol;
+                ctx.lineWidth = 10;
+                ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+
+                const gridW = (canvas.width - (pad * 3)) / 2;
+                const gridH = 340;
+
+                drawRoundedImage(images[0], pad, pad + 20, gridW, gridH, radius);
+                drawRoundedImage(images[1], pad * 2 + gridW, pad + 20, gridW, gridH, radius);
+                drawRoundedImage(images[2], pad, pad * 2 + 20 + gridH, gridW, gridH, radius);
+                drawRoundedImage(images[3], pad * 2 + gridW, pad * 2 + 20 + gridH, gridW, gridH, radius);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `extrabold 32px ${activeFont}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(customFrame.headerText, canvas.width / 2, canvas.height - 100);
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = `medium 16px ${activeFont}`;
+                ctx.fillText(customFrame.subheaderText, canvas.width / 2, canvas.height - 68);
+
+                ctx.fillStyle = borderCol;
+                ctx.font = `bold 16px ${activeFont}`;
+                ctx.fillText(customFrame.watermarkText, canvas.width / 2, canvas.height - 38);
+
+            } else if (currentTemplate === 'polaroid') {
+                canvas.width = 700;
+                canvas.height = 900;
+                ctx.fillStyle = bgCol === '#0f172a' ? '#ffffff' : bgCol;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                drawRoundedImage(images[0], pad + 20, pad + 20, canvas.width - ((pad + 20) * 2), 620, radius);
+
+                ctx.fillStyle = bgCol === '#0f172a' ? '#0f172a' : '#ffffff';
+                ctx.font = `extrabold 30px ${activeFont}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(customFrame.headerText, canvas.width / 2, 770);
+
+                ctx.fillStyle = bgCol === '#0f172a' ? '#475569' : '#e2e8f0';
+                ctx.font = `medium 16px ${activeFont}`;
+                ctx.fillText(customFrame.subheaderText, canvas.width / 2, 805);
+
+                ctx.fillStyle = borderCol;
+                ctx.font = `bold 16px ${activeFont}`;
+                ctx.fillText(customFrame.watermarkText, canvas.width / 2, 840);
+
+            } else {
+                canvas.width = 800;
+                canvas.height = 1000;
+                
+                ctx.fillStyle = bgCol;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = borderCol;
+                ctx.lineWidth = 14;
+                ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
+
+                drawRoundedImage(images[0], pad + 20, pad + 20, canvas.width - ((pad + 20) * 2), 730, radius);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `extrabold 34px ${activeFont}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(customFrame.headerText, canvas.width / 2, 885);
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = `medium 18px ${activeFont}`;
+                ctx.fillText(customFrame.subheaderText, canvas.width / 2, 920);
+
+                ctx.fillStyle = borderCol;
+                ctx.font = `bold 18px ${activeFont}`;
+                ctx.fillText(customFrame.watermarkText, canvas.width / 2, 955);
+            }
+
+            if (customFrame.customOverlayImg) {
+                ctx.drawImage(customFrame.customOverlayImg, 0, 0, canvas.width, canvas.height);
+            }
+
+            capturedImageData = canvas.toDataURL('image/png');
+            document.getElementById('captured-preview').src = capturedImageData;
+
+            const snapBtn = document.getElementById('snap-btn');
+            snapBtn.disabled = false;
+            snapBtn.classList.remove('opacity-50');
+
+            stopCamera();
+            goToSlide(5);
+        }
+
+        function retakePhoto() {
+            goToSlide(4);
+            initCamera();
+        }
+
+        async function toggleRecord() {
+            const btn = document.getElementById('record-btn');
+            const status = document.getElementById('record-status');
+            const icon = document.getElementById('mic-icon');
+            const previewBox = document.getElementById('voice-preview-container');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        recordedAudioUrl = URL.createObjectURL(blob);
+                        status.innerText = "Voice Note terekam! 🎧";
+                        status.classList.add("text-emerald-600");
+                        
+                        const player = document.getElementById('voice-audio-preview');
+                        player.src = recordedAudioUrl;
+                        previewBox.classList.remove('hidden');
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add('bg-blue-900', 'text-white', 'animate-pulse');
+                    icon.className = "fa-solid fa-stop";
+                    status.innerText = `Merekam suara...`;
+
+                    let secondsLeft = appConfig.maxVoiceDur;
+                    recordTimer = setInterval(() => {
+                        secondsLeft--;
+                        if (secondsLeft <= 0) {
+                            toggleRecord();
+                        } else {
+                            status.innerText = `Merekam... (${secondsLeft}s)`;
+                        }
+                    }, 1000);
+
+                } catch (err) {
+                    showToast("Akses mikrofon ditolak/tidak tersedia di perangkat ini.", "error");
+                }
+            } else {
+                if (recordTimer) clearInterval(recordTimer);
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                isRecording = false;
+                btn.classList.remove('bg-blue-900', 'animate-pulse');
+                icon.className = "fa-solid fa-check";
+            }
+        }
+
+        function saveEntry(e) {
+            e.preventDefault();
+            const name = document.getElementById('guest-name').value.trim();
+            const message = document.getElementById('guest-message').value.trim();
+
+            const newEntry = {
+                id: Date.now().toString(),
+                name: name,
+                message: message,
+                photo: capturedImageData,
+                date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                audioUrl: recordedAudioUrl
+            };
+
+            entries.unshift(newEntry);
+            saveEntriesToStorage();
+            
+            document.getElementById('wishes-form').reset();
+            const slide2Input = document.getElementById('slide2-guest-name');
+            if (slide2Input) slide2Input.value = '';
+
+            recordedAudioUrl = null;
+            document.getElementById('voice-preview-container').classList.add('hidden');
+            document.getElementById('record-status').innerText = `Klik icon untuk merekam (Max ${appConfig.maxVoiceDur}s)`;
+            document.getElementById('record-status').classList.remove("text-emerald-600");
+            
+            showToast("Ucapan & foto kamu berhasil dipublish! 🎉", "success");
+            goToSlide(6);
+        }
+
+        function filterGallery() {
+            renderGallery();
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('gallery-grid');
+            const searchVal = (document.getElementById('gallery-search')?.value || '').toLowerCase();
+            const filterType = document.getElementById('gallery-filter-type')?.value || 'all';
+
+            const filtered = entries.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchVal) || item.message.toLowerCase().includes(searchVal);
+                const matchesAudio = filterType === 'audio' ? !!item.audioUrl : true;
+                return matchesSearch && matchesAudio;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-500 space-y-2">
+                        <i class="fa-solid fa-box-open text-3xl"></i>
+                        <p class="text-xs">Belum ada ucapan yang sesuai.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => `
+                <div class="glass-card p-4 rounded-2xl flex gap-4 items-start border border-slate-200/90 hover:border-blue-900/30 transition group relative">
+                    <img src="${item.photo}" class="w-24 h-32 object-cover rounded-xl border border-slate-200 flex-shrink-0 group-hover:scale-105 transition duration-300 shadow-sm">
+                    <div class="space-y-1.5 overflow-hidden text-left flex-grow">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-blue-950 truncate">${escapeHtml(item.name)}</h4>
+                            <span class="text-[10px] text-slate-400 font-medium">${item.date}</span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">"${escapeHtml(item.message)}"</p>
+                        ${item.audioUrl ? `
+                            <div class="pt-1">
+                                <audio controls src="${item.audioUrl}" class="h-7 w-full rounded-lg bg-slate-100 border border-slate-200"></audio>
+                            </div>
+                        ` : ''}
+
+                        <div class="pt-2 flex items-center gap-1.5 border-t border-slate-100 mt-2">
+                            <span class="text-[10px] text-slate-400 font-semibold mr-0.5">Bagikan:</span>
+                            <button onclick="shareToWhatsApp('${item.id}')" title="Bagikan ke WhatsApp" class="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white border border-emerald-200 text-xs flex items-center justify-center transition">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </button>
+                            <button onclick="shareToInstagram('${item.id}')" title="Bagikan ke Instagram" class="w-7 h-7 rounded-lg bg-pink-50 hover:bg-pink-600 text-pink-600 hover:text-white border border-pink-200 text-xs flex items-center justify-center transition">
+                                <i class="fa-brands fa-instagram"></i>
+                            </button>
+                            <button onclick="shareToTikTok('${item.id}')" title="Bagikan ke TikTok" class="w-7 h-7 rounded-lg bg-sky-50 hover:bg-sky-600 text-sky-600 hover:text-white border border-sky-200 text-xs flex items-center justify-center transition">
+                                <i class="fa-brands fa-tiktok"></i>
+                            </button>
+                            <button onclick="shareToTwitter('${item.id}')" title="Bagikan ke X (Twitter)" class="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-200 text-xs flex items-center justify-center transition">
+                                <i class="fa-brands fa-x-twitter"></i>
+                            </button>
+                            <a href="${item.photo}" download="photobooth-${item.name}.png" title="Unduh Foto Frame" class="w-7 h-7 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-xs flex items-center justify-center transition ml-auto shadow-xs">
+                                <i class="fa-solid fa-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function shareToWhatsApp(id) {
+            const item = entries.find(e => e.id === id);
+            if (!item) return;
+            const text = encodeURIComponent(`Lihat foto & ucapan dari *${item.name}* di pernikahan ${appConfig.brideGroom}:\n\n"${item.message}"\n\nYuk abadikan momenmu juga di: ${window.location.href}`);
+            window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+        }
+
+        function shareToInstagram(id) {
+            const item = entries.find(e => e.id === id);
+            if (!item) return;
+            const caption = `Foto Photobooth ${item.name} di ${appConfig.brideGroom} Wedding ✨ "${item.message}"`;
+            copyToClipboard(caption);
+            showToast("Caption Instagram tersalin ke clipboard! Siap diposting.", "success");
+        }
+
+        function shareToTikTok(id) {
+            const item = entries.find(e => e.id === id);
+            if (!item) return;
+            const caption = `Photobooth ${appConfig.brideGroom} — Ucapan: "${item.message}" ${appConfig.watermark}`;
+            copyToClipboard(caption);
+            showToast("Teks ucapan TikTok tersalin ke clipboard!", "success");
+        }
+
+        function shareToTwitter(id) {
+            const item = entries.find(e => e.id === id);
+            if (!item) return;
+            const text = encodeURIComponent(`Foto & ucapan dari ${item.name} untuk ${appConfig.brideGroom}: "${item.message}" ${appConfig.watermark}`);
+            window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+        }
+
+        function copyEventURL() {
+            copyToClipboard(window.location.href);
+            showToast("Link Photobooth tersalin!", "success");
+        }
+
+        function copyToClipboard(text) {
+            const temp = document.createElement("textarea");
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+        }
+
+        function generateQRCode() {
+            const container = document.getElementById('qrcode-container');
+            container.innerHTML = '';
+            qrcodeInstance = new QRCode(container, {
+                text: window.location.href,
+                width: 160,
+                height: 160,
+                colorDark: "#0b1d33",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function printQRCodeCard() {
+            const content = document.getElementById('qr-card-printable').innerHTML;
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                <head>
+                    <title>Print Standee QR Code - ${appConfig.brideGroom}</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                </head>
+                <body class="flex items-center justify-center min-h-screen bg-slate-100 p-8 text-center" onload="window.print(); window.close();">
+                    <div class="bg-white p-8 rounded-3xl border border-slate-300 shadow-2xl max-w-sm w-full flex flex-col items-center">
+                        ${content}
+                    </div>
+                </body>
+                </html>
+            `);
+            win.document.close();
+        }
+
+        function openAdminPrompt() {
+            document.getElementById('admin-pass-input').value = '';
+            document.getElementById('admin-auth-error').classList.add('hidden');
+            openModal('admin-auth-modal');
+        }
+
+        function verifyAdminPass(e) {
+            e.preventDefault();
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === appConfig.adminPass) {
+                closeModal('admin-auth-modal');
+                openModal('admin-dashboard-modal');
+                loadAdminDashboard();
+            } else {
+                document.getElementById('admin-auth-error').classList.remove('hidden');
+            }
+        }
+
+        function loadAdminDashboard() {
+            document.getElementById('stat-total-entries').innerText = entries.length;
+            document.getElementById('stat-total-photos').innerText = entries.filter(e => e.photo).length;
+            document.getElementById('stat-total-audio').innerText = entries.filter(e => e.audioUrl).length;
+
+            const jsonStr = JSON.stringify(entries);
+            const kbSize = (jsonStr.length / 1024).toFixed(1);
+            document.getElementById('stat-storage-size').innerText = `${kbSize} KB`;
+
+            const tbody = document.getElementById('admin-table-body');
+            if (entries.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Belum ada data ucapan.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = entries.map(item => `
+                <tr class="hover:bg-slate-900/60 transition">
+                    <td class="p-3">
+                        <img src="${item.photo}" class="w-10 h-14 object-cover rounded-lg border border-slate-700">
+                    </td>
+                    <td class="p-3 font-semibold text-white">${escapeHtml(item.name)}</td>
+                    <td class="p-3 text-slate-400 max-w-xs truncate">${escapeHtml(item.message)}</td>
+                    <td class="p-3">
+                        ${item.audioUrl ? '<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-semibold text-[10px]">Voice Note</span>' : '<span class="text-slate-600">-</span>'}
+                    </td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteEntry('${item.id}')" class="px-2.5 py-1 rounded-lg bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white transition font-semibold text-[11px]">
+                            Hapus
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteEntry(id) {
+            showConfirm("Hapus Ucapan", "Apakah Anda yakin ingin menghapus ucapan ini secara permanen?", () => {
+                entries = entries.filter(e => e.id !== id);
+                saveEntriesToStorage();
+                loadAdminDashboard();
+                renderGallery();
+                showToast("Ucapan berhasil dihapus.", "info");
+            });
+        }
+
+        function promptResetAllEntries() {
+            showConfirm("Reset Seluruh Data", "PERINGATAN: Semua ucapan & foto tamu akan dihapus permanen! Lanjutkan?", () => {
+                entries = [];
+                saveEntriesToStorage();
+                loadAdminDashboard();
+                renderGallery();
+                showToast("Seluruh data telah di-reset.", "info");
+            });
+        }
+
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `ruangtemu-entries-${appConfig.brideGroom.replace(/\s+/g, '')}.json`);
+            dlAnchorElem.click();
+            showToast("Export file JSON berhasil didownload!", "success");
+        }
+
+        function openSlideshowModal() {
+            if (entries.length === 0) {
+                showToast("Belum ada foto/ucapan untuk ditampilkan!", "error");
+                return;
+            }
+            closeModal('admin-dashboard-modal');
+            const view = document.getElementById('slideshow-view');
+            view.classList.remove('hidden');
+
+            currentSlideIndex = 0;
+            renderSlideshowCard();
+
+            slideshowInterval = setInterval(() => {
+                currentSlideIndex = (currentSlideIndex + 1) % entries.length;
+                renderSlideshowCard();
+            }, 6000);
+        }
+
+        function closeSlideshowModal() {
+            const view = document.getElementById('slideshow-view');
+            view.classList.add('hidden');
+            if (slideshowInterval) clearInterval(slideshowInterval);
+
+            const player = document.getElementById('slide-audio-player');
+            if (player) player.pause();
+        }
+
+        function renderSlideshowCard() {
+            const item = entries[currentSlideIndex];
+            if (!item) return;
+
+            document.getElementById('slide-photo').src = item.photo;
+            document.getElementById('slide-name').innerText = item.name;
+            document.getElementById('slide-message').innerText = `"${item.message}"`;
+            document.getElementById('slideshow-progress').innerText = `Slide ${currentSlideIndex + 1} dari ${entries.length}`;
+
+            const audioBox = document.getElementById('slide-audio-box');
+            const audioPlayer = document.getElementById('slide-audio-player');
+
+            if (item.audioUrl) {
+                audioBox.classList.remove('hidden');
+                audioPlayer.src = item.audioUrl;
+            } else {
+                audioBox.classList.add('hidden');
+                audioPlayer.pause();
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
