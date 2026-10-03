@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { EventItem, Booking, Package, GalleryEntry, BookingStatus, FrameItem, FrameType } from "@/types";
+import { EventItem, Booking, Package, GalleryEntry, BookingStatus, FrameItem, FrameType, PhotoSlot } from "@/types";
 import { formatRupiah, formatDate } from "@/lib/utils";
+import { detectTransparentRegions } from "@/lib/frame-detect";
 
 interface AdminViewProps {
   initialEvents: EventItem[];
@@ -20,6 +21,11 @@ interface FrameUploadSlot {
   fileName?: string;
   fileSize?: string;
   error?: string;
+  photoSlots?: PhotoSlot[];
+  detectedCount?: number;
+  isAnalyzing?: boolean;
+  frameImageWidth?: number;
+  frameImageHeight?: number;
 }
 
 const INITIAL_FRAME_SLOTS: FrameUploadSlot[] = [
@@ -52,7 +58,7 @@ export function AdminView({
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"overview" | "events" | "bookings" | "gallery" | "packages">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "events" | "edit" | "bookings" | "gallery" | "packages">("overview");
 
   const [events, setEvents] = useState<EventItem[]>(initialEvents);
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
@@ -71,6 +77,298 @@ export function AdminView({
 
   const [frameSlots, setFrameSlots] = useState<FrameUploadSlot[]>(INITIAL_FRAME_SLOTS);
 
+  // Edit Event State
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    host_name: "",
+    slug: "",
+    date: "",
+    venue: "",
+    city: "Palopo",
+    description: "",
+  });
+  const [editFrames, setEditFrames] = useState<FrameUploadSlot[]>([]);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editSuccessMsg, setEditSuccessMsg] = useState("");
+  const [editErrorMsg, setEditErrorMsg] = useState("");
+
+  const handleStartEditEvent = (evt: EventItem) => {
+    setEditingEvent(evt);
+    setEditForm({
+      title: evt.title || "",
+      host_name: evt.host_name || "",
+      slug: evt.slug || "",
+      date: evt.date || "",
+      venue: evt.venue || "",
+      city: evt.city || "Palopo",
+      description: evt.description || "",
+    });
+
+    const slots: FrameUploadSlot[] = (evt.assigned_frames && evt.assigned_frames.length > 0)
+      ? evt.assigned_frames.map((fr, idx) => ({
+          id: fr.id || `slot-edit-${idx}`,
+          name: fr.name || `Frame ${idx + 1}`,
+          template_type: fr.template_type || "strip_3",
+          previewUrl: fr.preview_url || fr.config_json?.customOverlayUrl || "",
+          fileName: fr.name,
+          photoSlots: fr.config_json?.photoSlots,
+          detectedCount: fr.config_json?.photoCount || fr.config_json?.photoSlots?.length,
+          frameImageWidth: fr.config_json?.frameImageWidth,
+          frameImageHeight: fr.config_json?.frameImageHeight,
+        }))
+      : [
+          {
+            id: `slot-edit-0`,
+            name: "Classic Floral Strip",
+            template_type: "strip_3",
+            previewUrl: "/frames/frame-strip-floral.png",
+            fileName: "frame-strip-floral.png (Preset)",
+            fileSize: "14 KB",
+          },
+        ];
+
+    setEditFrames(slots);
+    setEditSuccessMsg("");
+    setEditErrorMsg("");
+    setActiveTab("edit");
+  };
+
+  const handleEditFrameFileUpload = (index: number, file: File | null) => {
+    if (!file) return;
+
+    const isPng = file.type === "image/png" || file.name.toLowerCase().endsWith(".png");
+    if (!isPng) {
+      setEditFrames((prev) =>
+        prev.map((slot, i) =>
+          i === index
+            ? { ...slot, error: "Format file wajib PNG (.png) dengan transparansi." }
+            : slot
+        )
+      );
+      return;
+    }
+
+    // Mark as analyzing
+    setEditFrames((prev) =>
+      prev.map((slot, i) =>
+        i === index ? { ...slot, isAnalyzing: true, error: undefined } : slot
+      )
+    );
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target?.result as string;
+
+      try {
+        const detection = await detectTransparentRegions(dataUrl);
+        const detectedType: FrameType = detection.photoCount > 0 ? "custom" : "strip_3";
+
+        let serverUrl = dataUrl;
+        try {
+          const uploadRes = await fetch("/api/frames/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl, fileName: file.name }),
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData.success && uploadData.url) {
+            serverUrl = uploadData.url;
+          }
+        } catch (uErr) {
+          console.warn("Server upload failed, using dataUrl fallback:", uErr);
+        }
+
+        setEditFrames((prev) =>
+          prev.map((slot, i) =>
+            i === index
+              ? {
+                  ...slot,
+                  previewUrl: serverUrl,
+                  fileName: file.name,
+                  fileSize: `${Math.round(file.size / 1024)} KB`,
+                  error: detection.photoCount === 0
+                    ? "Tidak ditemukan area transparan pada frame ini."
+                    : undefined,
+                  template_type: detectedType,
+                  photoSlots: detection.slots,
+                  detectedCount: detection.photoCount,
+                  isAnalyzing: false,
+                  frameImageWidth: detection.imageWidth,
+                  frameImageHeight: detection.imageHeight,
+                }
+              : slot
+          )
+        );
+      } catch {
+        setEditFrames((prev) =>
+          prev.map((slot, i) =>
+            i === index
+              ? {
+                  ...slot,
+                  previewUrl: dataUrl,
+                  fileName: file.name,
+                  fileSize: `${Math.round(file.size / 1024)} KB`,
+                  isAnalyzing: false,
+                  error: "Gagal menganalisis frame. Pastikan file PNG valid.",
+                }
+              : slot
+          )
+        );
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditFrameNameChange = (index: number, name: string) => {
+    setEditFrames((prev) =>
+      prev.map((slot, i) => (i === index ? { ...slot, name } : slot))
+    );
+  };
+
+  const handleEditFrameTypeChange = (index: number, template_type: FrameType) => {
+    setEditFrames((prev) =>
+      prev.map((slot, i) => (i === index ? { ...slot, template_type } : slot))
+    );
+  };
+
+  const handleAddEditFrameSlot = () => {
+    const nextNum = editFrames.length + 1;
+    const newSlot: FrameUploadSlot = {
+      id: `slot-${Date.now()}`,
+      name: `Frame ${nextNum}`,
+      template_type: "strip_3",
+      previewUrl: "/frames/frame-strip-minimal.png",
+      fileName: "frame-strip-minimal.png (Preset)",
+      fileSize: "13 KB",
+    };
+    setEditFrames([...editFrames, newSlot]);
+  };
+
+  const handleRemoveEditFrameSlot = (index: number) => {
+    if (editFrames.length <= 1) {
+      alert("Setidaknya harus ada 1 frame untuk acara.");
+      return;
+    }
+    setEditFrames(editFrames.filter((_, i) => i !== index));
+  };
+
+  const handleAddPresetToEditFrames = (presetIndex: number) => {
+    const presets = [
+      {
+        name: "Classic Floral Strip",
+        template_type: "strip_3" as const,
+        previewUrl: "/frames/frame-strip-floral.png",
+        fileName: "frame-strip-floral.png (Preset)",
+      },
+      {
+        name: "Midnight Navy Gold",
+        template_type: "strip_3" as const,
+        previewUrl: "/frames/frame-strip-navy-gold.png",
+        fileName: "frame-strip-navy-gold.png (Preset)",
+      },
+      {
+        name: "Modern Minimalist",
+        template_type: "strip_3" as const,
+        previewUrl: "/frames/frame-strip-minimal.png",
+        fileName: "frame-strip-minimal.png (Preset)",
+      },
+    ];
+    const p = presets[presetIndex % presets.length];
+    const newSlot: FrameUploadSlot = {
+      id: `slot-${Date.now()}-${presetIndex}`,
+      name: p.name,
+      template_type: p.template_type,
+      previewUrl: p.previewUrl,
+      fileName: p.fileName,
+      fileSize: "14 KB",
+    };
+    setEditFrames([...editFrames, newSlot]);
+  };
+
+  const handleSaveEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent) return;
+
+    if (editFrames.length === 0) {
+      setEditErrorMsg("Acara harus memiliki minimal 1 frame.");
+      return;
+    }
+
+    setIsSavingEdit(true);
+    setEditErrorMsg("");
+    setEditSuccessMsg("");
+
+    const assigned_frames: FrameItem[] = editFrames
+      .filter((s) => s.previewUrl)
+      .map((s, idx) => ({
+        id: s.id.startsWith("slot-") ? `frm-${Date.now()}-${idx}` : s.id,
+        name: s.name || `Frame ${idx + 1}`,
+        slug: (s.name || `frame-${idx + 1}`)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, ""),
+        template_type: s.template_type,
+        preview_url: s.previewUrl,
+        config_json: {
+          type: s.template_type,
+          backgroundColor: "#0f172a",
+          borderColor: "#e7e5e4",
+          textContent: editForm.host_name,
+          subTextContent: `${editForm.date} • ${editForm.venue}, ${editForm.city}`,
+          fontFamily: "serif",
+          textColor: "#ffffff",
+          padding: 16,
+          borderRadius: 8,
+          customOverlayUrl: s.previewUrl,
+          photoSlots: s.photoSlots,
+          photoCount: s.detectedCount,
+          frameImageWidth: s.frameImageWidth,
+          frameImageHeight: s.frameImageHeight,
+        },
+        is_active: true,
+      }));
+
+    const updatePayload = {
+      title: editForm.title,
+      host_name: editForm.host_name,
+      client_name: editForm.host_name,
+      event_name: editForm.title,
+      slug: editForm.slug || editForm.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      date: editForm.date,
+      venue: editForm.venue,
+      city: editForm.city,
+      description: editForm.description,
+      assigned_frames,
+      default_frame_config: assigned_frames.length > 0
+        ? assigned_frames[0].config_json
+        : undefined,
+    };
+
+    try {
+      const res = await fetch(`/api/events/${editingEvent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload),
+      });
+      const data = await res.json();
+      if (data.success && data.event) {
+        setEvents((prev) =>
+          prev.map((ev) => (ev.id === data.event.id ? data.event : ev))
+        );
+        setEditingEvent(data.event);
+        setEditSuccessMsg("Perubahan nama event dan frame berhasil disimpan!");
+      } else {
+        setEditErrorMsg(data.error || "Gagal memperbarui event.");
+      }
+    } catch (err) {
+      console.error("Error updating event:", err);
+      setEditErrorMsg("Koneksi ke server gagal. Coba lagi.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const handleFrameFileUpload = (index: number, file: File | null) => {
     if (!file) return;
 
@@ -86,22 +384,73 @@ export function AdminView({
       return;
     }
 
+    // Mark as analyzing
+    setFrameSlots((prev) =>
+      prev.map((slot, i) =>
+        i === index ? { ...slot, isAnalyzing: true, error: undefined } : slot
+      )
+    );
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
-      setFrameSlots((prev) =>
-        prev.map((slot, i) =>
-          i === index
-            ? {
-                ...slot,
-                previewUrl: dataUrl,
-                fileName: file.name,
-                fileSize: `${Math.round(file.size / 1024)} KB`,
-                error: undefined,
-              }
-            : slot
-        )
-      );
+
+      try {
+        const detection = await detectTransparentRegions(dataUrl);
+        const detectedType: FrameType = detection.photoCount > 0 ? "custom" : "strip_3";
+
+        let serverUrl = dataUrl;
+        try {
+          const uploadRes = await fetch("/api/frames/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl, fileName: file.name }),
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData.success && uploadData.url) {
+            serverUrl = uploadData.url;
+          }
+        } catch (uErr) {
+          console.warn("Server upload failed, using dataUrl fallback:", uErr);
+        }
+
+        setFrameSlots((prev) =>
+          prev.map((slot, i) =>
+            i === index
+              ? {
+                  ...slot,
+                  previewUrl: serverUrl,
+                  fileName: file.name,
+                  fileSize: `${Math.round(file.size / 1024)} KB`,
+                  error: detection.photoCount === 0
+                    ? "Tidak ditemukan area transparan pada frame ini."
+                    : undefined,
+                  template_type: detectedType,
+                  photoSlots: detection.slots,
+                  detectedCount: detection.photoCount,
+                  isAnalyzing: false,
+                  frameImageWidth: detection.imageWidth,
+                  frameImageHeight: detection.imageHeight,
+                }
+              : slot
+          )
+        );
+      } catch {
+        setFrameSlots((prev) =>
+          prev.map((slot, i) =>
+            i === index
+              ? {
+                  ...slot,
+                  previewUrl: dataUrl,
+                  fileName: file.name,
+                  fileSize: `${Math.round(file.size / 1024)} KB`,
+                  isAnalyzing: false,
+                  error: "Gagal menganalisis frame. Pastikan file PNG valid.",
+                }
+              : slot
+          )
+        );
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -213,6 +562,10 @@ export function AdminView({
           padding: 16,
           borderRadius: 8,
           customOverlayUrl: s.previewUrl,
+          photoSlots: s.photoSlots,
+          photoCount: s.detectedCount,
+          frameImageWidth: s.frameImageWidth,
+          frameImageHeight: s.frameImageHeight,
         },
         is_active: true,
       }));
@@ -259,25 +612,15 @@ export function AdminView({
       if (data.success && data.event) {
         setEvents([data.event, ...events]);
       } else {
-        const created: EventItem = {
-          ...eventPayload,
-          id: `evt-${Date.now()}`,
-          event_type: "wedding",
-          created_at: new Date().toISOString(),
-          default_frame_config: eventPayload.default_frame_config,
-        };
-        setEvents([created, ...events]);
+        alert(data.error || "Gagal menyimpan event. Coba lagi.");
+        setIsCreatingEvent(false);
+        return;
       }
     } catch (err) {
       console.error("Error creating event:", err);
-      const fallback: EventItem = {
-        ...eventPayload,
-        id: `evt-${Date.now()}`,
-        event_type: "wedding",
-        created_at: new Date().toISOString(),
-        default_frame_config: eventPayload.default_frame_config,
-      };
-      setEvents([fallback, ...events]);
+      alert("Koneksi ke server gagal. Pastikan server berjalan dan coba lagi.");
+      setIsCreatingEvent(false);
+      return;
     }
 
     setIsCreatingEvent(false);
@@ -407,6 +750,12 @@ export function AdminView({
           {[
             { id: "overview", label: "Ringkasan" },
             { id: "events", label: `Event (${events.length})` },
+            {
+              id: "edit",
+              label: editingEvent
+                ? `Edit: ${editingEvent.title.length > 18 ? editingEvent.title.slice(0, 18) + "…" : editingEvent.title}`
+                : "Edit Event",
+            },
             { id: "bookings", label: `Reservasi (${bookings.length})` },
             { id: "gallery", label: `Foto (${entries.length})` },
             { id: "packages", label: "Paket" },
@@ -656,18 +1005,25 @@ export function AdminView({
 
                         <div>
                           <label className="block text-[10px] font-mono uppercase text-stone-600 mb-1">
-                            Format / Jumlah Jepretan
+                            Jumlah Jepretan (Auto-Detect)
                           </label>
-                          <select
-                            value={slot.template_type}
-                            onChange={(e) => handleFrameTypeChange(index, e.target.value as FrameType)}
-                            className="w-full min-h-[36px] px-2.5 py-1 bg-white border border-stone-200 text-xs text-stone-900 outline-none focus:border-stone-900"
-                          >
-                            <option value="strip_3">3 Foto Strip (Vertikal 1:3)</option>
-                            <option value="grid_4">4 Foto Grid (Kolase 2x2)</option>
-                            <option value="polaroid">1 Foto Polaroid (Vintage)</option>
-                            <option value="deluxe">2 Foto Duo Portrait</option>
-                          </select>
+                          {slot.isAnalyzing ? (
+                            <div className="w-full min-h-[36px] px-2.5 py-1 bg-stone-100 border border-stone-200 text-xs text-stone-600 flex items-center gap-2">
+                              <span className="w-3 h-3 border-2 border-stone-400 border-t-stone-700 rounded-full animate-spin" />
+                              Menganalisis area transparan...
+                            </div>
+                          ) : slot.detectedCount != null && slot.detectedCount > 0 ? (
+                            <div className="w-full min-h-[36px] px-2.5 py-1.5 bg-emerald-50 border border-emerald-300 text-xs text-emerald-800 font-mono flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                {slot.detectedCount}
+                              </span>
+                              <span>{slot.detectedCount} area foto terdeteksi → {slot.detectedCount}× jepret</span>
+                            </div>
+                          ) : (
+                            <div className="w-full min-h-[36px] px-2.5 py-1 bg-stone-50 border border-stone-200 text-xs text-stone-400 flex items-center">
+                              Upload PNG transparan untuk mendeteksi area foto otomatis
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -783,7 +1139,15 @@ export function AdminView({
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-3 font-mono text-[11px]">
+                        <div className="flex items-center justify-end gap-2.5 font-mono text-[11px] flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditEvent(evt)}
+                            className="px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-white font-mono text-[10px] uppercase tracking-wider transition-colors inline-flex items-center gap-1"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                            Edit
+                          </button>
                           <Link
                             href={`/event/${evt.slug}`}
                             target="_blank"
@@ -819,6 +1183,435 @@ export function AdminView({
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* TAB EDIT EVENT */}
+        {activeTab === "edit" && (
+          <div className="space-y-6">
+            {!editingEvent ? (
+              <div className="p-8 bg-white border border-stone-200 text-center space-y-4">
+                <div className="w-12 h-12 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-stone-700">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </div>
+                <div>
+                  <h2 className="text-base font-medium text-stone-900">Pilih Event yang Ingin Diedit</h2>
+                  <p className="text-xs text-stone-500 mt-1 max-w-md mx-auto">
+                    Pilih salah satu event yang sudah terdaftar untuk mengubah tampilan nama atau mengelola (tambah / hapus) frame photobooth.
+                  </p>
+                </div>
+
+                <div className="max-w-md mx-auto space-y-2 pt-2">
+                  {events.length === 0 ? (
+                    <p className="text-xs text-stone-400 py-4 font-mono">Belum ada event yang terdaftar.</p>
+                  ) : (
+                    events.map((evt) => (
+                      <div
+                        key={evt.id}
+                        className="p-3 bg-stone-50 border border-stone-200 hover:border-stone-900 flex items-center justify-between transition-colors text-left"
+                      >
+                        <div>
+                          <div className="font-medium text-stone-900 text-xs">{evt.title}</div>
+                          <div className="text-[11px] text-stone-500">{evt.host_name} • {evt.date}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditEvent(evt)}
+                          className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-mono text-[10px] uppercase tracking-wider transition-colors"
+                        >
+                          Edit Acara
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Header bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-[#c47a5a]">
+                        [ Mode Edit Event ]
+                      </span>
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono">
+                        Aktif
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-light text-stone-950 mt-1">
+                      Edit Event: <span className="font-medium">{editingEvent.title}</span>
+                    </h2>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      Ubah tampilan nama, informasi venue/tanggal, serta kelola (tambah, hapus, ganti) frame photobooth.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/event/${editingEvent.slug}`}
+                      target="_blank"
+                      className="min-h-[38px] px-3.5 py-1.5 border border-stone-300 hover:border-stone-900 text-xs font-mono uppercase tracking-wider text-stone-800 transition-colors inline-flex items-center gap-1.5"
+                    >
+                      Lihat Booth ↗
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("events");
+                      }}
+                      className="min-h-[38px] px-3.5 py-1.5 border border-stone-300 hover:border-stone-900 text-xs font-mono uppercase tracking-wider text-stone-600 hover:text-stone-900 transition-colors"
+                    >
+                      ← Kembali ke Daftar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Success / Error Messages */}
+                {editSuccessMsg && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span>✓</span>
+                      <span>{editSuccessMsg}</span>
+                    </div>
+                    <Link
+                      href={`/event/${editingEvent.slug}`}
+                      target="_blank"
+                      className="font-mono underline text-emerald-900 font-medium ml-4"
+                    >
+                      Buka Halaman Tamu ↗
+                    </Link>
+                  </div>
+                )}
+
+                {editErrorMsg && (
+                  <div className="p-4 bg-red-50 border border-red-300 text-red-800 text-xs">
+                    {editErrorMsg}
+                  </div>
+                )}
+
+                <form onSubmit={handleSaveEditSubmit} className="space-y-6">
+                  {/* SECTION 1: TAMPILAN NAMA & INFORMASI ACARA */}
+                  <div className="p-6 bg-white border border-stone-300 space-y-4">
+                    <div className="font-mono text-xs uppercase tracking-wider text-stone-900 pb-2 border-b border-stone-150 flex items-center justify-between">
+                      <span>1. Tampilan Nama & Informasi Acara</span>
+                      <span className="text-[10px] text-stone-400 font-mono normal-case">
+                        ID: {editingEvent.id.slice(0, 8)}...
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-stone-600 mb-1">
+                          Judul Acara (Tampilan Utama) *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="The Wedding of Andi & Sarah"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                          className="w-full min-h-[40px] px-3 py-1.5 bg-stone-50 border border-stone-200 text-xs text-stone-900 outline-none focus:bg-white focus:border-stone-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-stone-600 mb-1">
+                          Nama Tuan Rumah / Pasangan *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Andi & Sarah"
+                          value={editForm.host_name}
+                          onChange={(e) => setEditForm({ ...editForm, host_name: e.target.value })}
+                          className="w-full min-h-[40px] px-3 py-1.5 bg-stone-50 border border-stone-200 text-xs text-stone-900 outline-none focus:bg-white focus:border-stone-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-stone-600 mb-1">
+                          Slug URL *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="wedding-andi-sarah"
+                          value={editForm.slug}
+                          onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                          className="w-full min-h-[40px] px-3 py-1.5 bg-stone-50 border border-stone-200 text-xs text-stone-900 outline-none focus:bg-white focus:border-stone-900"
+                        />
+                        <span className="text-[10px] text-stone-400 font-mono mt-0.5 block">
+                          /event/{editForm.slug || "..."}
+                        </span>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-stone-600 mb-1">
+                          Tanggal Acara *
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={editForm.date}
+                          onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                          className="w-full min-h-[40px] px-3 py-1.5 bg-stone-50 border border-stone-200 text-xs text-stone-900 outline-none focus:bg-white focus:border-stone-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-stone-600 mb-1">
+                          Lokasi / Gedung *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Gedung Saokotae"
+                          value={editForm.venue}
+                          onChange={(e) => setEditForm({ ...editForm, venue: e.target.value })}
+                          className="w-full min-h-[40px] px-3 py-1.5 bg-stone-50 border border-stone-200 text-xs text-stone-900 outline-none focus:bg-white focus:border-stone-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-stone-600 mb-1">
+                          Kota
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Palopo"
+                          value={editForm.city}
+                          onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                          className="w-full min-h-[40px] px-3 py-1.5 bg-stone-50 border border-stone-200 text-xs text-stone-900 outline-none focus:bg-white focus:border-stone-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-stone-600 mb-1">
+                          Deskripsi / Ucapan Selamat Datang
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Selamat datang di photobooth pernikahan kami"
+                          value={editForm.description}
+                          onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                          className="w-full min-h-[40px] px-3 py-1.5 bg-stone-50 border border-stone-200 text-xs text-stone-900 outline-none focus:bg-white focus:border-stone-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SECTION 2: KELOLA FRAME PHOTOBOOTH */}
+                  <div className="p-6 bg-white border border-stone-300 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-150">
+                      <div>
+                        <div className="font-mono text-xs uppercase tracking-wider text-stone-900 flex items-center gap-2">
+                          <span>2. Kelola Frame Acara</span>
+                          <span className="px-2 py-0.5 bg-stone-900 text-white text-[10px] rounded font-mono">
+                            {editFrames.length} Frame Aktif
+                          </span>
+                        </div>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          Anda dapat menambah frame baru, menghapus frame yang tidak digunakan, mengganti file PNG, atau mengubah nama tampilan frame.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={handleAddEditFrameSlot}
+                          className="min-h-[34px] px-3 py-1 bg-stone-900 hover:bg-stone-800 text-white text-[11px] font-mono uppercase tracking-wider transition-colors inline-flex items-center gap-1.5"
+                        >
+                          + Tambah Frame Baru
+                        </button>
+                        <div className="relative group">
+                          <button
+                            type="button"
+                            className="min-h-[34px] px-3 py-1 border border-stone-300 hover:border-stone-900 text-stone-800 text-[11px] font-mono uppercase tracking-wider transition-colors inline-flex items-center gap-1.5"
+                          >
+                            + Preset Frame ▾
+                          </button>
+                          <div className="hidden group-hover:block absolute right-0 top-full pt-1 z-20 w-48">
+                            <div className="bg-white border border-stone-300 shadow-lg py-1 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => handleAddPresetToEditFrames(0)}
+                                className="w-full text-left px-3 py-2 hover:bg-stone-100 font-mono text-[11px] text-stone-800"
+                              >
+                                Classic Floral Strip
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddPresetToEditFrames(1)}
+                                className="w-full text-left px-3 py-2 hover:bg-stone-100 font-mono text-[11px] text-stone-800"
+                              >
+                                Midnight Navy Gold
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddPresetToEditFrames(2)}
+                                className="w-full text-left px-3 py-2 hover:bg-stone-100 font-mono text-[11px] text-stone-800"
+                              >
+                                Modern Minimalist
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Frame Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {editFrames.map((slot, index) => (
+                        <div
+                          key={slot.id || index}
+                          className="p-4 bg-stone-50 border border-stone-200 relative flex flex-col justify-between space-y-3"
+                        >
+                          <div className="flex items-center justify-between pb-2 border-b border-stone-200">
+                            <div className="font-mono text-[11px] uppercase tracking-wider text-stone-700 font-semibold flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-stone-900 text-white flex items-center justify-center text-[10px]">
+                                {index + 1}
+                              </span>
+                              <span>Frame {index + 1}</span>
+                            </div>
+                            {editFrames.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveEditFrameSlot(index)}
+                                className="text-stone-400 hover:text-red-600 transition-colors p-1"
+                                title="Hapus Frame Ini"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                              </button>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase text-stone-600 mb-1">
+                              Nama Tampilan Frame *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Misal: Classic Floral"
+                              value={slot.name}
+                              onChange={(e) => handleEditFrameNameChange(index, e.target.value)}
+                              className="w-full min-h-[36px] px-3 py-1 bg-white border border-stone-200 text-xs text-stone-900 outline-none focus:border-stone-900"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase text-stone-600 mb-1">
+                              Jumlah Jepretan (Auto-Detect)
+                            </label>
+                            {slot.isAnalyzing ? (
+                              <div className="w-full min-h-[36px] px-3 py-1 bg-stone-100 border border-stone-200 text-xs text-stone-600 flex items-center gap-2">
+                                <span className="w-3 h-3 border-2 border-stone-400 border-t-stone-700 rounded-full animate-spin" />
+                                Menganalisis area transparan...
+                              </div>
+                            ) : slot.detectedCount != null && slot.detectedCount > 0 ? (
+                              <div className="w-full min-h-[36px] px-3 py-1.5 bg-emerald-50 border border-emerald-300 text-xs text-emerald-800 font-mono flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                  {slot.detectedCount}
+                                </span>
+                                <span>{slot.detectedCount} area foto terdeteksi → {slot.detectedCount}× jepret</span>
+                              </div>
+                            ) : slot.template_type !== "custom" ? (
+                              <div className="w-full min-h-[36px] px-3 py-1 bg-amber-50 border border-amber-300 text-xs text-amber-800 font-mono flex items-center">
+                                Preset frame — ganti file PNG untuk auto-detect
+                              </div>
+                            ) : (
+                              <div className="w-full min-h-[36px] px-3 py-1 bg-stone-50 border border-stone-200 text-xs text-stone-400 flex items-center">
+                                Upload PNG transparan untuk mendeteksi area foto
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase text-stone-600 mb-1">
+                              File Frame PNG Transparan
+                            </label>
+                            <div className="flex gap-3 items-center">
+                              <div
+                                className="w-14 h-24 shrink-0 bg-stone-950 border border-stone-300 rounded p-1 flex items-center justify-center relative overflow-hidden"
+                                style={{
+                                  backgroundImage: `radial-gradient(#444 1px, transparent 1px)`,
+                                  backgroundSize: "6px 6px",
+                                }}
+                              >
+                                {slot.previewUrl ? (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img
+                                    src={slot.previewUrl}
+                                    alt={slot.name}
+                                    className="max-h-full max-w-full object-contain"
+                                  />
+                                ) : (
+                                  <span className="text-[9px] font-mono text-stone-500 text-center">PNG</span>
+                                )}
+                              </div>
+
+                              <div className="flex-1 space-y-1.5 min-w-0">
+                                <label className="inline-block cursor-pointer">
+                                  <span className="min-h-[32px] px-2.5 py-1 bg-white border border-stone-300 hover:border-stone-900 text-stone-800 text-[10px] font-mono uppercase inline-flex items-center gap-1.5 transition-colors">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    Ganti PNG
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/png"
+                                    onChange={(e) => handleEditFrameFileUpload(index, e.target.files?.[0] || null)}
+                                    className="hidden"
+                                  />
+                                </label>
+
+                                {slot.fileName && (
+                                  <div className="text-[10px] text-stone-600 font-mono truncate" title={slot.fileName}>
+                                    {slot.fileName} {slot.fileSize ? `(${slot.fileSize})` : ""}
+                                  </div>
+                                )}
+
+                                {slot.error && (
+                                  <div className="text-[10px] text-red-600 font-mono leading-tight">
+                                    {slot.error}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* SUBMIT BUTTONS */}
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingEdit}
+                      className="min-h-[44px] px-6 py-2.5 bg-stone-900 hover:bg-stone-800 disabled:bg-stone-500 text-white font-medium text-xs uppercase tracking-wider transition-colors inline-flex items-center gap-2"
+                    >
+                      {isSavingEdit ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Menyimpan Perubahan...
+                        </>
+                      ) : (
+                        "Simpan Perubahan Event & Frame"
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("events")}
+                      className="min-h-[44px] px-5 py-2.5 border border-stone-300 hover:border-stone-900 text-stone-700 hover:text-stone-950 font-mono text-xs uppercase tracking-wider transition-colors"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         )}
 

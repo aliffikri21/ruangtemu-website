@@ -11,7 +11,7 @@ interface VirtualBoothProps {
   event: EventItem;
 }
 
-type Step = "welcome" | "frame_select" | "camera" | "preview" | "guestbook" | "finished";
+type Step = "welcome" | "name_input" | "frame_select" | "camera" | "preview" | "guestbook" | "finished";
 
 type CameraState = "idle" | "requesting" | "ready" | "countdown" | "capturing" | "processing" | "complete" | "error";
 
@@ -32,7 +32,36 @@ const FILTERS: { id: CameraFilter; name: string }[] = [
 ];
 
 export function VirtualBooth({ event }: VirtualBoothProps) {
+  const isNurulIqraWedding =
+    event.slug === "iqranurul-wedding" ||
+    event.slug.toLowerCase().includes("nurul") ||
+    event.title.toLowerCase().includes("nurul");
+
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
+  const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleProceedToNameInput = useCallback(() => {
+    if (splashTimerRef.current) {
+      clearTimeout(splashTimerRef.current);
+      splashTimerRef.current = null;
+    }
+    setCurrentStep("name_input");
+  }, []);
+
+  // Auto transition from welcome poster to name input after 4.5 seconds for Nurul & Iqra
+  useEffect(() => {
+    if (currentStep === "welcome" && isNurulIqraWedding) {
+      splashTimerRef.current = setTimeout(() => {
+        setCurrentStep("name_input");
+      }, 4500);
+      return () => {
+        if (splashTimerRef.current) {
+          clearTimeout(splashTimerRef.current);
+          splashTimerRef.current = null;
+        }
+      };
+    }
+  }, [currentStep, isNurulIqraWedding]);
 
   const [guestName, setGuestName] = useState("");
   const [guestMessage, setGuestMessage] = useState("");
@@ -101,7 +130,24 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     }
   };
 
-  const requiredShots = getShotsForType(frameConfig.type);
+  const requiredShots = frameConfig.photoCount || frameConfig.photoSlots?.length || getShotsForType(frameConfig.type);
+
+  const getTargetSlotAspect = useCallback((shotIndex: number): number => {
+    if (frameConfig.photoSlots && frameConfig.photoSlots.length > 0) {
+      const idx = Math.min(Math.max(0, shotIndex), frameConfig.photoSlots.length - 1);
+      const slot = frameConfig.photoSlots[idx];
+      if (slot && slot.width > 0 && slot.height > 0) {
+        return slot.width / slot.height;
+      }
+    }
+    switch (frameConfig.type) {
+      case "polaroid": return 1;
+      case "deluxe": return 0.75;
+      case "grid_4": return 1.25;
+      case "strip_3":
+      default: return 1.45;
+    }
+  }, [frameConfig]);
 
   // ─── Camera Lifecycle ─────────────────────────────────────────
 
@@ -155,27 +201,69 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
   // ─── Photo Capture ────────────────────────────────────────────
 
-  const takeSinglePhoto = (): string | null => {
+  const takeSinglePhoto = (targetAspect?: number): string | null => {
     if (!videoRef.current) return null;
 
     const video = videoRef.current;
-    const tempCanvas = document.createElement("canvas");
+    const vWidth = video.videoWidth || 1280;
+    const vHeight = video.videoHeight || 960;
+    const videoAspect = vWidth / vHeight;
+
+    let sourceX = 0;
+    let sourceY = 0;
+    let sourceWidth = vWidth;
+    let sourceHeight = vHeight;
+
+    if (targetAspect && targetAspect > 0) {
+      if (videoAspect > targetAspect) {
+        // Video is wider than target crop
+        sourceHeight = vHeight;
+        sourceWidth = Math.round(vHeight * targetAspect);
+        sourceX = Math.round((vWidth - sourceWidth) / 2);
+        sourceY = 0;
+      } else {
+        // Video is taller than target crop
+        sourceWidth = vWidth;
+        sourceHeight = Math.round(vWidth / targetAspect);
+        sourceX = 0;
+        sourceY = Math.round((vHeight - sourceHeight) / 2);
+      }
+    }
 
     const maxDim = 1280;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const captureWidth = Math.min(video.videoWidth, maxDim * dpr);
-    const captureHeight = Math.min(video.videoHeight, maxDim * dpr);
+    let outWidth = sourceWidth;
+    let outHeight = sourceHeight;
+    if (outWidth > maxDim || outHeight > maxDim) {
+      if (outWidth > outHeight) {
+        outWidth = maxDim;
+        outHeight = Math.round(maxDim / (targetAspect || videoAspect));
+      } else {
+        outHeight = maxDim;
+        outWidth = Math.round(maxDim * (targetAspect || videoAspect));
+      }
+    }
 
-    tempCanvas.width = captureWidth;
-    tempCanvas.height = captureHeight;
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = outWidth;
+    tempCanvas.height = outHeight;
     const ctx = tempCanvas.getContext("2d");
     if (!ctx) return null;
 
-    ctx.translate(captureWidth, 0);
+    ctx.translate(outWidth, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, captureWidth, captureHeight);
+    ctx.drawImage(
+      video,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      outWidth,
+      outHeight
+    );
 
-    return tempCanvas.toDataURL("image/jpeg", 0.85);
+    return tempCanvas.toDataURL("image/jpeg", 0.88);
   };
 
   const triggerFlash = () => {
@@ -217,7 +305,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
           triggerFlash();
 
-          const photo = takeSinglePhoto();
+          const slotAspect = getTargetSlotAspect(shotsTaken);
+          const photo = takeSinglePhoto(slotAspect);
           if (photo) {
             photos.push(photo);
             setCapturedPhotos([...photos]);
@@ -332,9 +421,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       });
 
       setCurrentStep("finished");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Save error:", err);
-      setSaveError("Foto belum berhasil disimpan. Periksa koneksi dan coba lagi.");
+      setSaveError(err?.message || "Foto belum berhasil disimpan. Periksa koneksi dan coba lagi.");
     } finally {
       setIsSaving(false);
     }
@@ -393,30 +482,240 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   // ─── Render ───────────────────────────────────────────────────
 
   return (
-    <div className="min-h-[100dvh] bg-[#111113] text-stone-100 flex flex-col selection:bg-stone-700 selection:text-white">
-      {/* Minimal Top Bar */}
-      <header
-        className="border-b border-stone-800/60 bg-[#111113]/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between sticky top-0 z-40"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Link
-            href={`/event/${event.slug}/gallery`}
-            className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-stone-400 active:text-white"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-          </Link>
-          <div className="min-w-0">
-            <h1 className="text-sm font-medium text-stone-100 truncate">{event.title}</h1>
-            <p className="text-[11px] text-stone-500 truncate">{event.venue}, {event.city}</p>
+    <div className={`min-h-[100dvh] flex flex-col ${
+      isNurulIqraWedding && currentStep !== "camera"
+        ? "bg-white text-stone-900 selection:bg-red-100 selection:text-red-900"
+        : "bg-[#111113] text-stone-100 selection:bg-stone-700 selection:text-white"
+    }`}>
+      {/* Minimal Top Bar (hidden on welcome and name_input screen for Nurul & Iqra to showcase clean bridal layout) */}
+      {(!isNurulIqraWedding || (currentStep !== "welcome" && currentStep !== "name_input")) && (
+        <header
+          className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${
+            isNurulIqraWedding
+              ? "border-rose-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
+              : "border-stone-800/60 bg-[#111113]/95 backdrop-blur-sm text-stone-100"
+          }`}
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Link
+              href={`/event/${event.slug}/gallery`}
+              className={`shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                isNurulIqraWedding ? "text-[#c51d24]" : "text-stone-400 active:text-white"
+              }`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </Link>
+            <div className="min-w-0">
+              <h1 className={`text-sm font-medium truncate ${isNurulIqraWedding ? "text-stone-900 font-serif" : "text-stone-100"}`}>{event.title}</h1>
+              <p className="text-[11px] text-stone-500 truncate">{event.venue}, {event.city}</p>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* ─── STEP 1: WELCOME ─── */}
-      {currentStep === "welcome" && (
+      {/* ─── STEP 1: WELCOME POSTER / SPLASH (CUSTOM FULL-PAGE BRIDAL UI FOR NURUL & IQRA) ─── */}
+      {currentStep === "welcome" && isNurulIqraWedding && (
+        <main
+          role="button"
+          tabIndex={0}
+          onClick={handleProceedToNameInput}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handleProceedToNameInput();
+          }}
+          className="flex-1 w-full min-h-[100dvh] bg-white text-stone-900 relative flex flex-col justify-between items-center px-4 py-6 overflow-hidden cursor-pointer select-none touch-manipulation"
+          style={{
+            paddingTop: "max(1.75rem, env(safe-area-inset-top))",
+            paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))",
+          }}
+        >
+          {/* Decorative Side Halftone Dot Pattern (matching the poster background) */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none opacity-30 z-0"
+            style={{
+              backgroundImage: "radial-gradient(#9ca3af 1.2px, transparent 1.2px)",
+              backgroundSize: "13px 13px",
+              maskImage: "radial-gradient(ellipse at center, transparent 35%, black 100%)",
+              WebkitMaskImage: "radial-gradient(ellipse at center, transparent 35%, black 100%)",
+            }}
+          />
+
+          {/* TOP TYPOGRAPHY: The Wedding of Nurul & Iqra */}
+          <div className="w-full text-center relative z-10 pt-1 flex flex-col items-center">
+            <h2 className="font-[family-name:var(--font-great-vibes)] text-4xl sm:text-5xl text-[#c51d24] leading-tight select-none">
+              The Wedding of
+            </h2>
+            <div className="mt-0.5">
+              <h1 className="font-[family-name:var(--font-cinzel)] font-bold text-3xl sm:text-4xl text-[#c51d24] tracking-tight border-b-2 border-[#c51d24] pb-1 px-5 inline-block select-none">
+                Nurul & Iqra
+              </h1>
+            </div>
+          </div>
+
+          {/* CENTER COUPLE ARCH PHOTO WITH FLOWER */}
+          <div className="relative z-10 my-auto py-2 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/events/nurul-iqra-arch-2x.png"
+              alt="The Wedding of Nurul & Iqra"
+              className="w-[66vw] max-w-[270px] max-h-[46dvh] h-auto object-contain block mx-auto drop-shadow-sm select-none pointer-events-none"
+            />
+          </div>
+
+          {/* BOTTOM SECTION: Date + Branding + Touch Action */}
+          <div className="w-full text-center relative z-10 pb-1 flex flex-col items-center space-y-2.5">
+            {/* Date in Script Font */}
+            <div className="font-[family-name:var(--font-great-vibes)] text-3xl sm:text-4xl text-[#c51d24] tracking-wider select-none">
+              05/10/2026
+            </div>
+
+            {/* Brand Text */}
+            <div className="font-[family-name:var(--font-cinzel)] font-bold text-[11px] sm:text-[12px] text-[#c51d24] tracking-widest uppercase select-none">
+              Virtual Photobooth by RUANGTEMU PHOTOBOOTH
+            </div>
+
+            {/* Sleek Auto-progress Bar */}
+            <div className="w-full max-w-[180px] h-1 bg-red-100 rounded-full overflow-hidden mt-1">
+              <style>{`
+                @keyframes splashProgressFullscreen {
+                  0% { width: 0%; }
+                  100% { width: 100%; }
+                }
+              `}</style>
+              <div
+                className="h-full bg-[#c51d24] rounded-full"
+                style={{
+                  animation: "splashProgressFullscreen 4.5s linear forwards",
+                }}
+              />
+            </div>
+
+            {/* Touch helper hint */}
+            <div className="text-[10px] text-stone-400 uppercase tracking-widest font-sans font-medium flex items-center gap-1.5 pt-0.5">
+              <span>Sentuh layar untuk lanjut</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* ─── STEP 1.5: NAME INPUT SCREEN (SEPARATE STEP AFTER SPLASH DELAY) ─── */}
+      {currentStep === "name_input" && (
+        <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto ${isNurulIqraWedding ? "bg-[#fafaf9] text-stone-900" : "bg-[#111113] text-stone-100"}`}>
+          <div className="w-full max-w-sm mx-auto space-y-6 flex-1 flex flex-col justify-center">
+            {/* Top Navigation */}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setCurrentStep("welcome")}
+                className={`min-h-[44px] px-3 -ml-3 flex items-center gap-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  isNurulIqraWedding ? "text-stone-600 hover:text-stone-950 bg-stone-100/80 hover:bg-stone-200" : "text-stone-400 active:text-white"
+                }`}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Lihat Poster</span>
+              </button>
+
+              <Link
+                href={`/event/${event.slug}/gallery`}
+                className="text-xs font-medium text-[#c51d24] hover:text-[#a8161c] flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 hover:bg-red-100 border border-red-100 transition-colors"
+              >
+                <span>Galeri</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </Link>
+            </div>
+
+            {/* Wedding Title Header */}
+            {isNurulIqraWedding ? (
+              <div className="text-center space-y-1">
+                <span className="text-sm font-serif italic text-[#c51d24] block tracking-wide">
+                  The Wedding of
+                </span>
+                <h2 className="text-3xl font-serif font-bold text-stone-950 tracking-tight">
+                  Nurul & Iqra
+                </h2>
+                <div className="inline-block px-3 py-0.5 rounded-full bg-red-50 text-[11px] font-serif text-[#c51d24] font-medium border border-red-100 mt-1">
+                  05 Oktober 2026
+                </div>
+              </div>
+            ) : (
+              <div className="text-center space-y-1">
+                <div className="inline-block px-3 py-1 bg-[#c47a5a]/15 text-[#c47a5a] text-xs font-medium rounded-full">
+                  Virtual Photobooth
+                </div>
+                <h2 className="text-2xl font-semibold text-white tracking-tight">
+                  {event.host_name}
+                </h2>
+              </div>
+            )}
+
+            {/* Name Input Card */}
+            <div className={`p-5 rounded-2xl border space-y-4 shadow-md ${
+              isNurulIqraWedding ? "bg-white border-stone-200" : "bg-stone-900 border-stone-800"
+            }`}>
+              <div className="text-center space-y-1">
+                <label className={`block text-xs uppercase font-mono tracking-wider font-bold ${
+                  isNurulIqraWedding ? "text-[#c51d24]" : "text-stone-300"
+                }`}>
+                  Masukkan Nama Anda
+                </label>
+                <p className={`text-xs ${isNurulIqraWedding ? "text-stone-500" : "text-stone-400"}`}>
+                  Nama Anda akan tertera pada hasil foto dan pesan ucapan tamu
+                </p>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  autoFocus
+                  autoComplete="name"
+                  inputMode="text"
+                  placeholder="contoh: Rian & Nadia"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && guestName.trim()) {
+                      setCurrentStep("frame_select");
+                    }
+                  }}
+                  className={`w-full min-h-[50px] px-4 text-center font-medium text-base outline-none transition-all rounded-xl ${
+                    isNurulIqraWedding
+                      ? "bg-stone-50 border-2 border-stone-200 focus:border-[#c51d24] focus:bg-white text-stone-900 placeholder:text-stone-400"
+                      : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
+                  }`}
+                />
+              </div>
+
+              <button
+                disabled={!guestName.trim()}
+                onClick={() => setCurrentStep("frame_select")}
+                className={`w-full min-h-[52px] py-3 font-semibold text-sm uppercase tracking-wider transition-all rounded-xl shadow-md flex items-center justify-center gap-2 ${
+                  isNurulIqraWedding
+                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white"
+                    : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
+                }`}
+              >
+                <span>Lanjut Pilih Frame</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </div>
+
+            {/* Bottom Credits */}
+            <div className="py-2 text-center">
+              <p className={`text-[11px] ${isNurulIqraWedding ? "text-stone-500 font-serif" : "text-stone-500"}`}>
+                Virtual Photobooth by <strong>RUANGTEMU PHOTOBOOTH</strong>
+              </p>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* ─── STEP 1: WELCOME (DEFAULT DARK THEME FOR OTHER EVENTS) ─── */}
+      {currentStep === "welcome" && !isNurulIqraWedding && (
         <main className="flex-1 flex items-center justify-center px-5 py-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="space-y-2 text-center">
@@ -430,6 +729,46 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 {event.description || "Ambil foto dan tinggalkan ucapan hangat Anda."}
               </p>
             </div>
+
+            {/* Custom Frame Preview on Name Input Screen */}
+            {assignedFrames && assignedFrames.length > 0 && (
+              <div className="bg-stone-900/80 border border-stone-800 rounded-xl p-3 flex items-center gap-3.5 shadow-sm">
+                <div
+                  className="w-14 h-20 shrink-0 bg-stone-950 border border-stone-800 rounded-lg p-1 flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    backgroundImage: `radial-gradient(#444 1px, transparent 1px)`,
+                    backgroundSize: "6px 6px",
+                  }}
+                >
+                  {(assignedFrames[0].preview_url || assignedFrames[0].config_json?.customOverlayUrl) ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={assignedFrames[0].preview_url || assignedFrames[0].config_json?.customOverlayUrl}
+                      alt={assignedFrames[0].name}
+                      className="max-h-full max-w-full object-contain drop-shadow"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-mono text-stone-500">FRAME</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">
+                      Frame Khusus
+                    </span>
+                    <span className="text-[11px] text-[#c47a5a] font-medium">
+                      {assignedFrames[0].config_json?.photoCount || 3} Pose Foto
+                    </span>
+                  </div>
+                  <div className="text-sm font-semibold text-white mt-1 truncate">
+                    {assignedFrames[0].name}
+                  </div>
+                  <div className="text-xs text-stone-400 mt-0.5">
+                    Frame siap digunakan untuk foto Anda
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="block text-xs font-medium text-stone-300">
@@ -464,23 +803,27 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 2: FRAME SELECTION ─── */}
       {currentStep === "frame_select" && (
-        <main className="flex-1 flex flex-col px-5 py-6 overflow-y-auto">
+        <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto ${isNurulIqraWedding ? "bg-[#fafaf9] text-stone-900" : ""}`}>
           <div className="w-full max-w-sm mx-auto space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-[#c47a5a] font-medium">Langkah 1 / 3</div>
-                <h3 className="text-lg font-semibold text-white">
+                <div className={`text-xs font-semibold uppercase tracking-wider ${isNurulIqraWedding ? "text-[#c51d24]" : "text-[#c47a5a]"}`}>
+                  Langkah 1 / 3
+                </div>
+                <h3 className={`text-xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-serif" : "text-white"}`}>
                   {assignedFrames ? "Pilih Frame Acara" : "Pilih Frame"}
                 </h3>
-                <p className="text-xs text-stone-400 mt-0.5">
+                <p className={`text-xs mt-0.5 ${isNurulIqraWedding ? "text-stone-600" : "text-stone-400"}`}>
                   {assignedFrames
                     ? `Pilih 1 dari ${assignedFrames.length} frame yang telah disiapkan untuk acara ini`
                     : "Pilih format tampilan foto Anda"}
                 </p>
               </div>
               <button
-                onClick={() => setCurrentStep("welcome")}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-stone-400 active:text-white"
+                onClick={() => setCurrentStep(isNurulIqraWedding ? "name_input" : "welcome")}
+                className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${
+                  isNurulIqraWedding ? "text-stone-600 hover:text-stone-950 bg-stone-100 hover:bg-stone-200" : "text-stone-400 active:text-white"
+                }`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               </button>
@@ -491,7 +834,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               {assignedFrames ? (
                 assignedFrames.map((frame, index) => {
                   const isSelected = selectedFrameId === frame.id;
-                  const shots = getShotsForType(frame.template_type);
+                  const shots = frame.config_json?.photoCount || frame.config_json?.photoSlots?.length || getShotsForType(frame.template_type);
                   const overlayUrl = frame.preview_url || frame.config_json?.customOverlayUrl;
 
                   return (
@@ -506,17 +849,23 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           customOverlayUrl: overlayUrl,
                         });
                       }}
-                      className={`w-full min-h-[92px] p-3.5 flex items-center gap-3.5 border rounded-xl transition-all text-left active:scale-[0.98] ${
+                      className={`w-full min-h-[92px] p-3.5 flex items-center gap-3.5 border rounded-2xl transition-all text-left active:scale-[0.98] ${
                         isSelected
-                          ? "bg-stone-900 border-white ring-1 ring-white/60 shadow-lg"
+                          ? isNurulIqraWedding
+                            ? "bg-white border-[#c51d24] ring-2 ring-[#c51d24]/20 shadow-md"
+                            : "bg-stone-900 border-white ring-1 ring-white/60 shadow-lg"
+                          : isNurulIqraWedding
+                          ? "bg-white/90 border-stone-200 hover:border-stone-300 text-stone-900 shadow-sm"
                           : "bg-stone-900/60 border-stone-800 hover:border-stone-700 active:bg-stone-800"
                       }`}
                     >
                       {/* Frame PNG Visual Preview Thumbnail */}
                       <div
-                        className="w-16 h-20 shrink-0 bg-stone-950 border border-stone-800 rounded-lg p-1 flex items-center justify-center relative overflow-hidden"
+                        className={`w-16 h-20 shrink-0 border rounded-xl p-1 flex items-center justify-center relative overflow-hidden ${
+                          isNurulIqraWedding ? "bg-stone-100 border-stone-200" : "bg-stone-950 border-stone-800"
+                        }`}
                         style={{
-                          backgroundImage: `radial-gradient(#444 1px, transparent 1px)`,
+                          backgroundImage: `radial-gradient(#888 1px, transparent 1px)`,
                           backgroundSize: "6px 6px",
                         }}
                       >
@@ -535,17 +884,19 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                       {/* Frame Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">
+                          <span className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            isNurulIqraWedding ? "bg-red-50 text-[#c51d24] font-semibold border border-red-100" : "bg-stone-800 text-stone-300"
+                          }`}>
                             Frame {index + 1}
                           </span>
-                          <span className="text-[11px] text-[#c47a5a] font-medium">
-                            {shots} Foto
+                          <span className={`text-[11px] font-semibold ${isNurulIqraWedding ? "text-[#c51d24]" : "text-[#c47a5a]"}`}>
+                            {shots} Pose
                           </span>
                         </div>
-                        <div className="text-sm font-semibold text-white mt-1 truncate">
+                        <div className={`text-sm font-semibold mt-1 truncate ${isNurulIqraWedding ? "text-stone-950 font-serif" : "text-white"}`}>
                           {frame.name}
                         </div>
-                        <div className="text-xs text-stone-400 mt-0.5">
+                        <div className={`text-xs mt-0.5 ${isNurulIqraWedding ? "text-stone-500" : "text-stone-400"}`}>
                           {isSelected ? "Sedang dipilih untuk sesi foto" : "Ketuk untuk memilih frame ini"}
                         </div>
                       </div>
@@ -553,11 +904,13 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                       {/* Selected Checkmark Indicator */}
                       <div className="shrink-0">
                         {isSelected ? (
-                          <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-stone-950 shadow">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow ${
+                            isNurulIqraWedding ? "bg-[#c51d24] text-white" : "bg-white text-stone-950"
+                          }`}>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                           </div>
                         ) : (
-                          <div className="w-7 h-7 rounded-full border-2 border-stone-700" />
+                          <div className={`w-7 h-7 rounded-full border-2 ${isNurulIqraWedding ? "border-stone-300" : "border-stone-700"}`} />
                         )}
                       </div>
                     </button>
@@ -624,7 +977,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 setCurrentStep("camera");
                 startCamera();
               }}
-              className="w-full min-h-[52px] py-3 bg-white hover:bg-stone-100 active:bg-stone-200 text-stone-950 font-semibold text-sm uppercase tracking-wide transition-colors rounded-lg"
+              className={`w-full min-h-[52px] py-3 font-semibold text-sm uppercase tracking-wider transition-all rounded-xl shadow-md ${
+                isNurulIqraWedding
+                  ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] text-white"
+                  : "bg-white hover:bg-stone-100 active:bg-stone-200 text-stone-950 rounded-lg"
+              }`}
             >
               Buka Kamera ({requiredShots} Foto)
             </button>
@@ -643,7 +1000,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           />
 
           {/* Progress bar */}
-          <div className="px-4 py-3 flex items-center justify-between bg-[#111113]/90 backdrop-blur-sm z-10">
+          <div className={`px-4 py-3 flex items-center justify-between backdrop-blur-sm z-10 ${
+            isNurulIqraWedding ? "bg-black/75 text-white" : "bg-[#111113]/90 text-stone-200"
+          }`}>
             <button
               disabled={cameraState === "countdown" || cameraState === "capturing"}
               onClick={() => {
@@ -656,15 +1015,16 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
 
-            <div className="text-sm font-medium text-stone-200">
-              Foto {currentShotIndex} / {requiredShots}
+            <div className={`text-sm font-semibold flex items-center gap-1.5 ${isNurulIqraWedding ? "text-white" : "text-stone-200"}`}>
+              {isNurulIqraWedding && <span className="w-2 h-2 rounded-full bg-[#c51d24] animate-pulse" />}
+              <span>Foto {currentShotIndex} / {requiredShots}</span>
             </div>
 
             <div className="w-11" />
           </div>
 
           {/* Camera Viewfinder */}
-          <div className="flex-1 relative bg-black flex items-center justify-center">
+          <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
             {cameraState === "error" ? (
               <div className="px-6 py-8 text-center space-y-4 max-w-xs">
                 <div className="w-16 h-16 mx-auto rounded-full bg-stone-800 flex items-center justify-center">
@@ -679,31 +1039,80 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 </button>
               </div>
             ) : (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover -scale-x-100 ${
-                  selectedFilter === "grayscale"
-                    ? "grayscale"
-                    : selectedFilter === "sepia"
-                    ? "sepia"
-                    : selectedFilter === "soft-glow"
-                    ? "brightness-105 contrast-95 saturate-110"
-                    : selectedFilter === "warm-vintage"
-                    ? "sepia-[0.35] saturate-125"
-                    : selectedFilter === "cool-cinema"
-                    ? "hue-rotate-180 saturate-90"
-                    : ""
-                }`}
-              />
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover -scale-x-100 ${
+                    selectedFilter === "grayscale"
+                      ? "grayscale"
+                      : selectedFilter === "sepia"
+                      ? "sepia"
+                      : selectedFilter === "soft-glow"
+                      ? "brightness-105 contrast-95 saturate-110"
+                      : selectedFilter === "warm-vintage"
+                      ? "sepia-[0.35] saturate-125"
+                      : selectedFilter === "cool-cinema"
+                      ? "hue-rotate-180 saturate-90"
+                      : ""
+                  }`}
+                />
+
+                {/* Dark Mask Overlay with Framing Cutout Window */}
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10 overflow-hidden p-4">
+                  <div
+                    className="relative rounded-2xl transition-all duration-300 ease-out"
+                    style={{
+                      aspectRatio: `${getTargetSlotAspect(currentShotIndex)}`,
+                      width: getTargetSlotAspect(currentShotIndex) >= 1 ? "min(88vw, 440px)" : "auto",
+                      height: getTargetSlotAspect(currentShotIndex) < 1 ? "min(62vh, 480px)" : "auto",
+                      maxWidth: "92%",
+                      maxHeight: "82%",
+                      boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.72)",
+                    }}
+                  >
+                    {/* Corner framing brackets */}
+                    <div className="absolute -top-[1px] -left-[1px] w-6 h-6 border-t-2 border-l-2 border-white rounded-tl-lg shadow-sm" />
+                    <div className="absolute -top-[1px] -right-[1px] w-6 h-6 border-t-2 border-r-2 border-white rounded-tr-lg shadow-sm" />
+                    <div className="absolute -bottom-[1px] -left-[1px] w-6 h-6 border-b-2 border-l-2 border-white rounded-bl-lg shadow-sm" />
+                    <div className="absolute -bottom-[1px] -right-[1px] w-6 h-6 border-b-2 border-r-2 border-white rounded-br-lg shadow-sm" />
+
+                    {/* Rule of thirds grid lines */}
+                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-20">
+                      <div className="border-r border-b border-white" />
+                      <div className="border-r border-b border-white" />
+                      <div className="border-b border-white" />
+                      <div className="border-r border-b border-white" />
+                      <div className="border-r border-b border-white" />
+                      <div className="border-b border-white" />
+                      <div className="border-r border-white" />
+                      <div className="border-r border-white" />
+                      <div />
+                    </div>
+
+                    {/* Slot Info Badge on top of frame */}
+                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-sm border border-white/20 text-[10px] font-mono tracking-wider text-white flex items-center gap-1.5 shadow-md whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      <span>
+                        Batas Foto {currentShotIndex + 1}/{requiredShots} {getTargetSlotAspect(currentShotIndex) >= 1 ? "(Landscape)" : "(Portrait)"}
+                      </span>
+                    </div>
+
+                    {/* Guidance helper at bottom of frame */}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[10px] font-sans text-white/80 border border-white/10 whitespace-nowrap">
+                      Posisikan di dalam batas area
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Countdown Overlay */}
             {countdown !== null && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
-                <span className="text-8xl font-bold text-white drop-shadow-2xl" style={{ fontVariantNumeric: "tabular-nums" }}>
+                <span className={`text-8xl font-bold drop-shadow-2xl ${isNurulIqraWedding ? "text-white" : "text-white"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
                   {countdown}
                 </span>
               </div>
@@ -712,7 +1121,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
           {/* Bottom Controls */}
           <div
-            className="bg-[#111113] border-t border-stone-800/60 px-4 py-4 space-y-3"
+            className={`border-t px-4 py-4 space-y-3 ${
+              isNurulIqraWedding ? "bg-[#111113] border-stone-800" : "bg-[#111113] border-stone-800/60"
+            }`}
             style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
           >
             {/* Filter Bar */}
@@ -724,7 +1135,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   onClick={() => setSelectedFilter(f.id)}
                   className={`min-h-[40px] px-4 text-xs font-medium whitespace-nowrap border rounded-full transition-colors ${
                     selectedFilter === f.id
-                      ? "bg-white text-stone-950 border-white"
+                      ? isNurulIqraWedding
+                        ? "bg-[#c51d24] text-white border-[#c51d24]"
+                        : "bg-white text-stone-950 border-white"
                       : "bg-stone-900/60 text-stone-400 border-stone-700 active:bg-stone-800"
                   }`}
                 >
@@ -737,7 +1150,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             <button
               disabled={cameraState !== "ready"}
               onClick={startPhotoSequence}
-              className="w-full min-h-[56px] bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 font-bold text-base uppercase tracking-wide transition-colors rounded-xl"
+              className={`w-full min-h-[56px] font-bold text-base uppercase tracking-wider transition-all rounded-xl shadow-lg ${
+                isNurulIqraWedding
+                  ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-800 disabled:text-stone-500 text-white"
+                  : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
+              }`}
             >
               {cameraState === "countdown" || cameraState === "capturing"
                 ? "Mengambil Foto..."
@@ -751,22 +1168,31 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 4: PREVIEW ─── */}
       {currentStep === "preview" && (
-        <main className="flex-1 flex flex-col px-5 py-6 overflow-y-auto">
+        <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto ${isNurulIqraWedding ? "bg-[#fafaf9] text-stone-900" : ""}`}>
           <div className="w-full max-w-md mx-auto space-y-5 flex-1 flex flex-col">
             <div>
-              <div className="text-xs text-[#c47a5a] font-medium">Langkah 2 / 3</div>
-              <h3 className="text-lg font-semibold text-white">Hasil Foto</h3>
+              <div className={`text-xs font-semibold uppercase tracking-wider ${isNurulIqraWedding ? "text-[#c51d24]" : "text-[#c47a5a]"}`}>
+                Langkah 2 / 3
+              </div>
+              <h3 className={`text-xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-serif" : "text-white"}`}>
+                Hasil Foto Photobooth
+              </h3>
             </div>
 
-            <div className="flex-1 flex items-center justify-center bg-black/30 rounded-lg border border-stone-800 p-3 min-h-0">
+            <div className={`flex-1 flex items-center justify-center rounded-2xl border p-3 min-h-0 ${
+              isNurulIqraWedding ? "bg-white border-stone-200 shadow-md" : "bg-black/30 border-stone-800"
+            }`}>
               {isCompositing ? (
-                <div className="py-12 text-sm text-stone-400">Merender frame foto...</div>
+                <div className={`py-12 text-sm flex items-center gap-2 ${isNurulIqraWedding ? "text-[#c51d24] font-medium" : "text-stone-400"}`}>
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#c51d24] animate-ping" />
+                  <span>Merender frame foto...</span>
+                </div>
               ) : compositeDataUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={compositeDataUrl}
                   alt="Hasil foto photobooth"
-                  className="max-h-[55dvh] w-auto object-contain rounded"
+                  className="max-h-[55dvh] w-auto object-contain rounded-xl drop-shadow-md"
                 />
               ) : null}
             </div>
@@ -780,16 +1206,25 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   setCameraState("idle");
                   startCamera();
                 }}
-                className="min-h-[48px] px-4 bg-stone-800 active:bg-stone-700 border border-stone-700 text-stone-200 font-medium text-sm rounded-lg transition-colors"
+                className={`min-h-[50px] px-4 font-semibold text-sm rounded-xl transition-all active:scale-[0.98] ${
+                  isNurulIqraWedding
+                    ? "bg-white hover:bg-stone-50 border-2 border-stone-200 text-stone-700 shadow-sm"
+                    : "bg-stone-800 active:bg-stone-700 border border-stone-700 text-stone-200"
+                }`}
               >
                 Foto Ulang
               </button>
 
               <button
                 onClick={() => setCurrentStep("guestbook")}
-                className="min-h-[48px] px-4 bg-white active:bg-stone-200 text-stone-950 font-semibold text-sm rounded-lg transition-colors"
+                className={`min-h-[50px] px-4 font-semibold text-sm rounded-xl transition-all active:scale-[0.98] shadow-md flex items-center justify-center gap-2 ${
+                  isNurulIqraWedding
+                    ? "bg-[#c51d24] hover:bg-[#a8161c] text-white"
+                    : "bg-white active:bg-stone-200 text-stone-950"
+                }`}
               >
-                Lanjut
+                <span>Lanjut</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </button>
             </div>
           </div>
@@ -798,33 +1233,47 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 5: GUESTBOOK ─── */}
       {currentStep === "guestbook" && (
-        <main className="flex-1 flex flex-col px-5 py-6 overflow-y-auto">
+        <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto ${isNurulIqraWedding ? "bg-[#fafaf9] text-stone-900" : ""}`}>
           <div className="w-full max-w-sm mx-auto space-y-5">
             <div>
-              <div className="text-xs text-[#c47a5a] font-medium">Langkah 3 / 3</div>
-              <h3 className="text-lg font-semibold text-white">Ucapan & Doa</h3>
-              <p className="text-sm text-stone-400 mt-1">
+              <div className={`text-xs font-semibold uppercase tracking-wider ${isNurulIqraWedding ? "text-[#c51d24]" : "text-[#c47a5a]"}`}>
+                Langkah 3 / 3
+              </div>
+              <h3 className={`text-xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-serif" : "text-white"}`}>
+                Ucapan & Doa
+              </h3>
+              <p className={`text-xs mt-1 ${isNurulIqraWedding ? "text-stone-600" : "text-stone-400"}`}>
                 Tulis pesan untuk {event.host_name}
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-medium text-stone-300">Pesan Tertulis</label>
+              <label className={`block text-xs font-semibold uppercase font-mono tracking-wider ${
+                isNurulIqraWedding ? "text-[#c51d24]" : "text-stone-300"
+              }`}>
+                Pesan Tertulis
+              </label>
               <textarea
                 rows={3}
                 placeholder="Tuliskan ucapan dan doa terbaik Anda..."
                 value={guestMessage}
                 onChange={(e) => setGuestMessage(e.target.value)}
-                className="w-full px-4 py-3 bg-stone-900/80 border border-stone-700 focus:border-stone-400 text-white text-base outline-none resize-none rounded-lg"
+                className={`w-full px-4 py-3 text-base outline-none resize-none rounded-xl transition-all ${
+                  isNurulIqraWedding
+                    ? "bg-white border-2 border-stone-200 focus:border-[#c51d24] text-stone-900 placeholder:text-stone-400 shadow-sm"
+                    : "bg-stone-900/80 border border-stone-700 focus:border-stone-400 text-white"
+                }`}
               />
             </div>
 
             {event.allow_voice_note && (
-              <div className="p-4 bg-stone-900/60 border border-stone-800 rounded-lg space-y-3">
+              <div className={`p-4 rounded-xl space-y-3 border ${
+                isNurulIqraWedding ? "bg-white border-stone-200 shadow-sm" : "bg-stone-900/60 border-stone-800"
+              }`}>
                 <div className="flex items-center justify-between text-xs font-medium">
-                  <span className="text-stone-300">Voice Note</span>
+                  <span className={isNurulIqraWedding ? "text-stone-700 font-semibold" : "text-stone-300"}>Voice Note</span>
                   {isRecordingAudio && (
-                    <span className="text-red-400 tabular-nums">
+                    <span className="text-[#c51d24] font-semibold tabular-nums">
                       ● 00:{audioSeconds.toString().padStart(2, "0")}
                     </span>
                   )}
@@ -834,9 +1283,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   <button
                     type="button"
                     onClick={handleToggleVoiceRecording}
-                    className={`min-h-[44px] px-4 font-medium text-sm rounded-lg transition-colors ${
+                    className={`min-h-[44px] px-4 font-semibold text-sm rounded-xl transition-colors ${
                       isRecordingAudio
-                        ? "bg-red-900/60 text-red-200 border border-red-700"
+                        ? "bg-red-900/80 text-white border border-red-700"
+                        : isNurulIqraWedding
+                        ? "bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200"
                         : "bg-stone-800 active:bg-stone-700 text-stone-200 border border-stone-700"
                     }`}
                   >
@@ -851,7 +1302,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             )}
 
             {saveError && (
-              <div className="p-3 bg-red-950/50 border border-red-800/60 rounded-lg text-sm text-red-300">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
                 {saveError}
               </div>
             )}
@@ -860,14 +1311,20 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               <button
                 disabled={isSaving}
                 onClick={handleSaveToGallery}
-                className="w-full min-h-[52px] bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 font-semibold text-sm uppercase tracking-wide transition-colors rounded-lg"
+                className={`w-full min-h-[52px] font-semibold text-sm uppercase tracking-wider transition-all rounded-xl shadow-md ${
+                  isNurulIqraWedding
+                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white"
+                    : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
+                }`}
               >
-                {isSaving ? "Menyimpan..." : "Kirim ke Galeri"}
+                {isSaving ? "Menyimpan ke Galeri..." : "Kirim ke Galeri"}
               </button>
 
               <button
                 onClick={() => setCurrentStep("preview")}
-                className="w-full min-h-[44px] text-sm text-stone-500 active:text-stone-300"
+                className={`w-full min-h-[44px] text-sm transition-colors ${
+                  isNurulIqraWedding ? "text-stone-500 hover:text-stone-900" : "text-stone-500 active:text-stone-300"
+                }`}
               >
                 ← Kembali ke Pratinjau
               </button>
@@ -878,25 +1335,27 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 6: FINISHED ─── */}
       {currentStep === "finished" && (
-        <main className="flex-1 flex flex-col items-center justify-center px-5 py-8">
+        <main className={`flex-1 flex flex-col items-center justify-center px-5 py-8 ${isNurulIqraWedding ? "bg-[#fafaf9] text-stone-900" : ""}`}>
           <div className="w-full max-w-sm text-center space-y-6">
             <div className="space-y-2">
-              <div className="text-3xl">🎉</div>
-              <h3 className="text-xl font-semibold text-white">
+              <div className="text-4xl">🎉</div>
+              <h3 className={`text-2xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-serif" : "text-white"}`}>
                 Foto Berhasil Dikirim
               </h3>
-              <p className="text-sm text-stone-400">
-                Terima kasih, <strong className="text-stone-200">{guestName}</strong>. Foto Anda tersimpan di galeri event.
+              <p className={`text-sm ${isNurulIqraWedding ? "text-stone-600" : "text-stone-400"}`}>
+                Terima kasih, <strong className={isNurulIqraWedding ? "text-stone-950" : "text-stone-200"}>{guestName}</strong>. Foto Anda telah tersimpan di galeri pernikahan.
               </p>
             </div>
 
             {compositeDataUrl && (
-              <div className="flex justify-center bg-black/30 rounded-lg border border-stone-800 p-3">
+              <div className={`flex justify-center rounded-2xl border p-3 ${
+                isNurulIqraWedding ? "bg-white border-stone-200 shadow-md" : "bg-black/30 border-stone-800"
+              }`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={compositeDataUrl}
                   alt="Foto tersimpan"
-                  className="max-h-48 object-contain rounded"
+                  className="max-h-56 object-contain rounded-xl drop-shadow"
                 />
               </div>
             )}
@@ -904,21 +1363,31 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             <div className="space-y-3">
               <button
                 onClick={typeof navigator !== "undefined" && "share" in navigator ? handleShare : handleDownload}
-                className="w-full min-h-[52px] bg-white active:bg-stone-200 text-stone-950 font-semibold text-sm uppercase tracking-wide rounded-lg transition-colors"
+                className={`w-full min-h-[52px] font-semibold text-sm uppercase tracking-wider rounded-xl transition-all shadow-md ${
+                  isNurulIqraWedding
+                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] text-white"
+                    : "bg-white active:bg-stone-200 text-stone-950"
+                }`}
               >
                 {typeof navigator !== "undefined" && "share" in navigator ? "Bagikan Foto" : "Download Foto"}
               </button>
 
               <Link
                 href={`/event/${event.slug}/gallery`}
-                className="w-full min-h-[48px] px-4 bg-stone-800 active:bg-stone-700 border border-stone-700 text-stone-200 font-medium text-sm rounded-lg transition-colors flex items-center justify-center"
+                className={`w-full min-h-[48px] px-4 font-semibold text-sm rounded-xl transition-colors flex items-center justify-center ${
+                  isNurulIqraWedding
+                    ? "bg-white hover:bg-stone-50 border-2 border-red-100 text-[#c51d24]"
+                    : "bg-stone-800 active:bg-stone-700 border border-stone-700 text-stone-200"
+                }`}
               >
-                Lihat Galeri
+                Lihat Galeri Pernikahan
               </Link>
 
               <button
                 onClick={handleNewSession}
-                className="w-full min-h-[44px] text-sm text-stone-500 active:text-stone-300"
+                className={`w-full min-h-[44px] text-sm transition-colors ${
+                  isNurulIqraWedding ? "text-stone-500 hover:text-stone-900" : "text-stone-500 active:text-stone-300"
+                }`}
               >
                 Ambil Foto Baru
               </button>
@@ -927,13 +1396,15 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </main>
       )}
 
-      {/* Footer */}
-      <footer
-        className="border-t border-stone-800/40 bg-[#111113] px-4 py-3 text-center text-[11px] text-stone-600"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-      >
-        RUANGTEMU Photobooth • Palopo
-      </footer>
+      {/* Footer (hidden for Nurul & Iqra wedding per user request) */}
+      {!isNurulIqraWedding && (
+        <footer
+          className="border-t border-stone-800/40 bg-[#111113] px-4 py-3 text-center text-[11px] text-stone-600"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          RUANGTEMU Photobooth • Palopo
+        </footer>
+      )}
     </div>
   );
 }

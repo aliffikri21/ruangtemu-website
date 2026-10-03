@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Great_Vibes, Cinzel, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -9,6 +9,24 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const greatVibes = Great_Vibes({
+  weight: "400",
+  variable: "--font-great-vibes",
+  subsets: ["latin"],
+});
+
+const cinzel = Cinzel({
+  weight: ["600", "700", "800"],
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+});
+
+const playfair = Playfair_Display({
+  weight: ["600", "700", "800"],
+  variable: "--font-playfair",
   subsets: ["latin"],
 });
 
@@ -41,7 +59,7 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-[#fafaf9] text-zinc-900 font-sans antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${greatVibes.variable} ${cinzel.variable} ${playfair.variable} min-h-screen bg-[#fafaf9] text-zinc-900 font-sans antialiased`}
       >
         {children}
       </body>

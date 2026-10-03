@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEvents, createEvent } from "@/lib/db";
 import { EventItem } from "@/types";
+import { saveFrameImage } from "@/lib/save-frame";
 
 export async function GET() {
   try {
@@ -32,25 +33,32 @@ export async function POST(req: NextRequest) {
     );
 
     const assigned_frames = Array.isArray(body.assigned_frames) && body.assigned_frames.length > 0
-      ? body.assigned_frames.map((fr: any, idx: number) => ({
-          id: fr.id || `frm-${Date.now()}-${idx}`,
-          name: fr.name || `Frame ${idx + 1}`,
-          slug: fr.slug || `frame-${idx + 1}-${Date.now()}`,
-          template_type: fr.template_type || "strip_3",
-          preview_url: fr.preview_url || fr.config_json?.customOverlayUrl || "",
-          config_json: {
-            type: fr.template_type || "strip_3",
-            backgroundColor: fr.config_json?.backgroundColor || "#0f172a",
-            borderColor: fr.config_json?.borderColor || "#ffffff",
-            fontFamily: fr.config_json?.fontFamily || "serif",
-            textColor: fr.config_json?.textColor || "#ffffff",
-            padding: 16,
-            borderRadius: 12,
-            customOverlayUrl: fr.preview_url || fr.config_json?.customOverlayUrl || "",
-            ...fr.config_json,
-          },
-          is_active: true,
-        }))
+      ? body.assigned_frames.map((fr: any, idx: number) => {
+          const rawUrl = fr.preview_url || fr.config_json?.customOverlayUrl || "";
+          const savedUrl = rawUrl.startsWith("data:image/")
+            ? saveFrameImage(rawUrl, fr.name || `frame-${idx + 1}`)
+            : rawUrl;
+
+          return {
+            id: fr.id || `frm-${Date.now()}-${idx}`,
+            name: fr.name || `Frame ${idx + 1}`,
+            slug: fr.slug || `frame-${idx + 1}-${Date.now()}`,
+            template_type: fr.template_type || "custom",
+            preview_url: savedUrl,
+            config_json: {
+              type: fr.template_type || "custom",
+              backgroundColor: fr.config_json?.backgroundColor || "#0f172a",
+              borderColor: fr.config_json?.borderColor || "#ffffff",
+              fontFamily: fr.config_json?.fontFamily || "serif",
+              textColor: fr.config_json?.textColor || "#ffffff",
+              padding: 16,
+              borderRadius: 12,
+              ...fr.config_json,
+              customOverlayUrl: savedUrl,
+            },
+            is_active: true,
+          };
+        })
       : [];
 
     const eventPayload: Omit<EventItem, "id" | "created_at"> = {

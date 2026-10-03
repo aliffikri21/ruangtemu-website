@@ -66,11 +66,17 @@ export async function renderPhotoboothFrame(
     }
   }
 
-  // Determine Canvas Dimensions based on Frame Type
+  // Determine Canvas Dimensions based on Frame Type or Custom Photo Slots
   let width = 600;
   let height = 1800; // Strip 3 default
 
-  if (config.type === "strip_3") {
+  if (config.photoSlots && config.photoSlots.length > 0) {
+    const baseW = config.frameImageWidth || (customOverlay ? customOverlay.naturalWidth : 600);
+    const baseH = config.frameImageHeight || (customOverlay ? customOverlay.naturalHeight : 1800);
+    const mult = highRes && baseW < 1200 ? Math.max(1, Math.round(1200 / baseW)) : 1;
+    width = baseW * mult;
+    height = baseH * mult;
+  } else if (config.type === "strip_3") {
     width = highRes ? 1200 : 600;
     height = highRes ? 3600 : 1800;
   } else if (config.type === "grid_4") {
@@ -86,6 +92,51 @@ export async function renderPhotoboothFrame(
 
   canvas.width = width;
   canvas.height = height;
+
+  // Render Custom Transparent Photo Slots if detected from PNG
+  if (config.photoSlots && config.photoSlots.length > 0) {
+    const origW = config.frameImageWidth || (customOverlay ? customOverlay.naturalWidth : width);
+    const origH = config.frameImageHeight || (customOverlay ? customOverlay.naturalHeight : height);
+    const scaleX = width / origW;
+    const scaleY = height / origH;
+
+    if (config.backgroundColor && config.backgroundColor !== "transparent") {
+      ctx.fillStyle = config.backgroundColor;
+      ctx.fillRect(0, 0, width, height);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+    }
+
+    for (let i = 0; i < config.photoSlots.length; i++) {
+      const slot = config.photoSlots[i];
+      const sx = Math.max(0, slot.x * scaleX - 1);
+      const sy = Math.max(0, slot.y * scaleY - 1);
+      const sw = slot.width * scaleX + 2;
+      const sh = slot.height * scaleY + 2;
+
+      const img = loadedPhotos[i % loadedPhotos.length];
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(sx, sy, sw, sh);
+      ctx.clip();
+
+      applyFilterToContext(ctx, filter);
+      if (img) {
+        drawImageAspectFill(ctx, img, sx, sy, sw, sh);
+      } else {
+        ctx.fillStyle = "#334155";
+        ctx.fillRect(sx, sy, sw, sh);
+      }
+      ctx.restore();
+    }
+
+    if (customOverlay) {
+      ctx.drawImage(customOverlay, 0, 0, width, height);
+    }
+
+    return canvas.toDataURL("image/png", 0.95);
+  }
 
   const scale = width / 600;
   const padding = (config.padding || 16) * scale;

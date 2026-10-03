@@ -6,9 +6,16 @@ export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
 export type ModerationStatus = "PENDING" | "APPROVED" | "REJECTED" | "HIDDEN";
 
-export type FrameType = "strip_3" | "grid_4" | "polaroid" | "deluxe";
+export type FrameType = "strip_3" | "grid_4" | "polaroid" | "deluxe" | "custom";
 
 export type CameraFilter = "normal" | "grayscale" | "sepia" | "soft-glow" | "warm-vintage" | "cool-cinema";
+
+export interface PhotoSlot {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export interface Package {
   id: string;
@@ -57,6 +64,10 @@ export interface FrameConfig {
   sticker?: string;
   customOverlayUrl?: string;
   filter?: CameraFilter;
+  photoSlots?: PhotoSlot[];
+  photoCount?: number;
+  frameImageWidth?: number;
+  frameImageHeight?: number;
 }
 
 export interface FrameItem {

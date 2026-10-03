@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import { EventItem, Package, Booking, GalleryEntry, BookingStatus, FrameItem } from "@/types";
 import { query, queryOne, execute } from "./mysql";
 
-// Helper to safely parse JSON from DB
 function parseJsonField<T>(val: any, fallback: T): T {
   if (!val) return fallback;
   if (typeof val === "object") return val as T;
@@ -11,6 +10,22 @@ function parseJsonField<T>(val: any, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function isConnectionError(err: any): boolean {
+  const code = err?.code || "";
+  const msg = (err?.message || "").toLowerCase();
+  return (
+    code === "ECONNREFUSED" ||
+    code === "ENOTFOUND" ||
+    code === "ETIMEDOUT" ||
+    code === "PROTOCOL_CONNECTION_LOST" ||
+    code === "ER_ACCESS_DENIED_ERROR" ||
+    code === "ER_BAD_DB_ERROR" ||
+    msg.includes("connect") ||
+    msg.includes("econnrefused") ||
+    msg.includes("pool is closed")
+  );
 }
 
 // In-memory store for fallback/dev mode
@@ -413,8 +428,9 @@ export async function getPackages(): Promise<Package[]> {
     if (rows && rows.length > 0) {
       return rows.map(mapPackageRow);
     }
+    return [];
   } catch (err: any) {
-    // MySQL unavailable or table not created yet; fallback to mock
+    if (!isConnectionError(err)) throw err;
   }
   return mockPackages;
 }
@@ -423,8 +439,9 @@ export async function getPackageBySlug(slug: string): Promise<Package | null> {
   try {
     const row = await queryOne<any>("SELECT * FROM packages WHERE slug = ? LIMIT 1", [slug]);
     if (row) return mapPackageRow(row);
+    return null;
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
   }
   const pkgs = await getPackages();
   return pkgs.find((p) => p.slug === slug) || null;
@@ -443,41 +460,42 @@ export async function getEvents(): Promise<EventItem[]> {
       FROM events e
       ORDER BY e.date DESC
     `);
-    if (rows && rows.length > 0) {
-      const frameMap: Record<string, FrameItem[]> = {};
-      try {
-        const allFrameRows = await query<any>(`
-          SELECT ef.event_id, f.*
-          FROM event_frames ef
-          JOIN frames f ON f.id = ef.frame_id
-          ORDER BY ef.sort_order ASC
-        `);
-        if (allFrameRows && allFrameRows.length > 0) {
-          for (const fr of allFrameRows) {
-            const evId = String(fr.event_id);
-            if (!frameMap[evId]) frameMap[evId] = [];
-            frameMap[evId].push({
-              id: String(fr.id),
-              name: String(fr.name),
-              slug: String(fr.slug),
-              template_type: fr.template_type,
-              preview_url: fr.preview_url || undefined,
-              config_json: parseJsonField(fr.config_json, {} as any),
-              is_active: Boolean(fr.is_active),
-            });
-          }
-        }
-      } catch {
-        // ignore
-      }
 
-      return rows.map((r) => {
-        const frames = frameMap[String(r.id)] || defaultDemoFrames;
-        return mapEventRow(r, frames);
-      });
+    if (!rows || rows.length === 0) return [];
+
+    const frameMap: Record<string, FrameItem[]> = {};
+    try {
+      const allFrameRows = await query<any>(`
+        SELECT ef.event_id, f.*
+        FROM event_frames ef
+        JOIN frames f ON f.id = ef.frame_id
+        ORDER BY ef.sort_order ASC
+      `);
+      if (allFrameRows && allFrameRows.length > 0) {
+        for (const fr of allFrameRows) {
+          const evId = String(fr.event_id);
+          if (!frameMap[evId]) frameMap[evId] = [];
+          frameMap[evId].push({
+            id: String(fr.id),
+            name: String(fr.name),
+            slug: String(fr.slug),
+            template_type: fr.template_type,
+            preview_url: fr.preview_url || undefined,
+            config_json: parseJsonField(fr.config_json, {} as any),
+            is_active: Boolean(fr.is_active),
+          });
+        }
+      }
+    } catch {
+      // frame query can fail independently; events still valid
     }
+
+    return rows.map((r) => {
+      const frames = frameMap[String(r.id)] || defaultDemoFrames;
+      return mapEventRow(r, frames);
+    });
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
   }
   return mockEvents;
 }
@@ -495,7 +513,6 @@ export async function getEventBySlug(slug: string): Promise<EventItem | null> {
     `, [slug]);
 
     if (row) {
-      // Fetch assigned frames if any
       let assignedFrames: FrameItem[] = [];
       try {
         const frameRows = await query<any>(`
@@ -518,7 +535,7 @@ export async function getEventBySlug(slug: string): Promise<EventItem | null> {
           }));
         }
       } catch {
-        // ignore frame join error
+        // frame query can fail independently
       }
 
       if (assignedFrames.length === 0) {
@@ -527,8 +544,9 @@ export async function getEventBySlug(slug: string): Promise<EventItem | null> {
 
       return mapEventRow(row, assignedFrames.length > 0 ? assignedFrames : undefined);
     }
+    return null;
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
   }
   return mockEvents.find((e) => e.slug === slug) || null;
 }
@@ -587,38 +605,102 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
             [randomUUID(), newEvent.id, fr.id, i + 1]
           );
         } catch (fErr) {
-          // ignore individual frame insert error
+          console.warn("[MySQL] frame insert skipped:", (fErr as any)?.message);
         }
       }
     }
+
+    return newEvent;
   } catch (err: any) {
-    console.warn("[MySQL] createEvent error, keeping in mock memory:", err?.message);
+    if (!isConnectionError(err)) {
+      throw err;
+    }
+    console.warn("[MySQL] unreachable, event saved to memory only:", err?.message);
   }
 
   mockEvents.unshift(newEvent);
   return newEvent;
 }
 
-export async function updateEvent(id: string, updates: Partial<EventItem>): Promise<EventItem | null> {
+export async function updateEvent(id: string, updates: Partial<EventItem> & { assigned_frames?: FrameItem[] }): Promise<EventItem | null> {
   try {
     const fields: string[] = [];
     const values: any[] = [];
 
     if (updates.title !== undefined) { fields.push("title = ?"); values.push(updates.title); }
+    if (updates.slug !== undefined) { fields.push("slug = ?"); values.push(updates.slug); }
     if (updates.host_name !== undefined) { fields.push("host_name = ?"); values.push(updates.host_name); }
+    if (updates.client_name !== undefined) { fields.push("client_name = ?"); values.push(updates.client_name); }
+    if (updates.event_name !== undefined) { fields.push("event_name = ?"); values.push(updates.event_name); }
+    if (updates.event_type !== undefined) { fields.push("event_type = ?"); values.push(updates.event_type); }
+    if (updates.date !== undefined) { fields.push("date = ?"); values.push(updates.date); }
     if (updates.venue !== undefined) { fields.push("venue = ?"); values.push(updates.venue); }
     if (updates.city !== undefined) { fields.push("city = ?"); values.push(updates.city); }
     if (updates.description !== undefined) { fields.push("description = ?"); values.push(updates.description); }
+    if (updates.cover_image !== undefined) { fields.push("cover_image = ?"); values.push(updates.cover_image); fields.push("cover_image_url = ?"); values.push(updates.cover_image); }
+    if (updates.status !== undefined) { fields.push("status = ?"); values.push(updates.status); }
     if (updates.is_active !== undefined) { fields.push("is_active = ?"); values.push(updates.is_active ? 1 : 0); }
     if (updates.allow_guestbook !== undefined) { fields.push("allow_guestbook = ?"); values.push(updates.allow_guestbook ? 1 : 0); }
     if (updates.allow_voice_note !== undefined) { fields.push("allow_voice_note = ?"); values.push(updates.allow_voice_note ? 1 : 0); }
+    if (updates.allow_custom_frame !== undefined) { fields.push("allow_custom_frame = ?"); values.push(updates.allow_custom_frame ? 1 : 0); }
     if (updates.default_frame_config !== undefined) { fields.push("default_frame_config = ?"); values.push(JSON.stringify(updates.default_frame_config)); }
 
     if (fields.length > 0) {
       values.push(id);
       await query(`UPDATE events SET ${fields.join(", ")} WHERE id = ?`, values);
     }
+
+    if (updates.assigned_frames !== undefined) {
+      await query(`DELETE FROM event_frames WHERE event_id = ?`, [id]);
+
+      for (let i = 0; i < updates.assigned_frames.length; i++) {
+        const fr = updates.assigned_frames[i];
+        await query(
+          `INSERT INTO frames (id, name, slug, template_type, preview_url, config_json, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, 1)
+           ON DUPLICATE KEY UPDATE name = VALUES(name), slug = VALUES(slug), template_type = VALUES(template_type), preview_url = VALUES(preview_url), config_json = VALUES(config_json)`,
+          [fr.id, fr.name, fr.slug, fr.template_type, fr.preview_url || null, JSON.stringify(fr.config_json || {})]
+        );
+        await query(
+          `INSERT INTO event_frames (id, event_id, frame_id, sort_order) VALUES (?, ?, ?, ?)`,
+          [randomUUID(), id, fr.id, i + 1]
+        );
+      }
+    }
+
+    let assignedFrames: FrameItem[] = [];
+    try {
+      const frameRows = await query<any>(`
+        SELECT f.* FROM frames f
+        JOIN event_frames ef ON ef.frame_id = f.id
+        WHERE ef.event_id = ?
+        ORDER BY ef.sort_order ASC
+      `, [id]);
+      if (frameRows && frameRows.length > 0) {
+        assignedFrames = frameRows.map((fr) => ({
+          id: String(fr.id),
+          name: String(fr.name),
+          slug: String(fr.slug),
+          template_type: fr.template_type,
+          preview_url: fr.preview_url || undefined,
+          config_json: parseJsonField(fr.config_json, {} as any),
+          is_active: Boolean(fr.is_active),
+        }));
+      }
+    } catch {
+      // frame query can fail independently
+    }
+
+    const row = await queryOne<any>(`
+      SELECT e.*,
+        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.photo_url IS NOT NULL) AS total_photos,
+        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.message IS NOT NULL AND en.message != '') AS total_wishes,
+        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.voice_note_url IS NOT NULL) AS total_voice_notes
+      FROM events e WHERE e.id = ?
+    `, [id]);
+    return row ? mapEventRow(row, assignedFrames.length > 0 ? assignedFrames : undefined) : null;
   } catch (err: any) {
+    if (!isConnectionError(err)) throw err;
     console.warn("[MySQL] updateEvent fallback to memory:", err?.message);
   }
 
@@ -633,7 +715,9 @@ export async function updateEvent(id: string, updates: Partial<EventItem>): Prom
 export async function deleteEvent(id: string): Promise<boolean> {
   try {
     await query("DELETE FROM events WHERE id = ?", [id]);
+    return true;
   } catch (err: any) {
+    if (!isConnectionError(err)) throw err;
     console.warn("[MySQL] deleteEvent fallback:", err?.message);
   }
   mockEvents = mockEvents.filter((e) => e.id !== id);
@@ -649,8 +733,9 @@ export async function getBookings(): Promise<Booking[]> {
     if (rows && rows.length > 0) {
       return rows.map(mapBookingRow);
     }
+    return [];
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
   }
   return mockBookings;
 }
@@ -688,7 +773,9 @@ export async function createBooking(booking: Omit<Booking, "id" | "created_at" |
         newBooking.total_price,
       ]
     );
+    return newBooking;
   } catch (err: any) {
+    if (!isConnectionError(err)) throw err;
     console.warn("[MySQL] createBooking fallback:", err?.message);
   }
 
@@ -699,8 +786,9 @@ export async function createBooking(booking: Omit<Booking, "id" | "created_at" |
 export async function updateBookingStatus(id: string, status: BookingStatus): Promise<boolean> {
   try {
     await query("UPDATE bookings SET status = ? WHERE id = ?", [status, id]);
+    return true;
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
   }
   const b = mockBookings.find((item) => item.id === id);
   if (b) {
@@ -724,8 +812,9 @@ export async function getEventEntries(eventId: string): Promise<GalleryEntry[]> 
     if (rows && rows.length > 0) {
       return rows.map(mapEntryRow);
     }
+    return [];
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
   }
   return mockEntries.filter((e) => e.event_id === eventId || e.event_slug === eventId);
 }
@@ -756,7 +845,9 @@ export async function createEntry(entry: Omit<GalleryEntry, "id" | "created_at" 
         newEntry.filter_used || "normal",
       ]
     );
+    return newEntry;
   } catch (err: any) {
+    if (!isConnectionError(err)) throw err;
     console.warn("[MySQL] createEntry fallback to memory:", err?.message);
   }
 
@@ -767,8 +858,9 @@ export async function createEntry(entry: Omit<GalleryEntry, "id" | "created_at" 
 export async function toggleEntryApproval(id: string, is_approved: boolean): Promise<boolean> {
   try {
     await query("UPDATE entries SET is_approved = ? WHERE id = ?", [is_approved ? 1 : 0, id]);
+    return true;
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
   }
   const item = mockEntries.find((e) => e.id === id);
   if (item) {
@@ -781,8 +873,10 @@ export async function toggleEntryApproval(id: string, is_approved: boolean): Pro
 export async function deleteEntry(id: string): Promise<boolean> {
   try {
     await query("DELETE FROM entries WHERE id = ?", [id]);
+    return true;
   } catch (err: any) {
-    // fallback
+    if (!isConnectionError(err)) throw err;
+    console.warn("[MySQL] deleteEntry fallback:", err?.message);
   }
   mockEntries = mockEntries.filter((e) => e.id !== id);
   return true;
