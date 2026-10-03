@@ -187,14 +187,16 @@ export default function EventGalleryPage({ params }: Props) {
                       )}
 
                       {entry.voice_note_url && (
-                        <div className="pt-1">
-                          <span className="font-mono text-[10px] uppercase text-stone-400 block mb-1">
-                            Voice Note
+                        <div className="pt-1.5">
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-stone-400 flex items-center gap-1.5 mb-1">
+                            <span>🎤</span>
+                            <span>Pesan Suara (Voice Note)</span>
                           </span>
                           <audio
                             src={entry.voice_note_url}
                             controls
-                            className="w-full h-8"
+                            preload="metadata"
+                            className="w-full h-9 rounded-lg"
                           />
                         </div>
                       )}

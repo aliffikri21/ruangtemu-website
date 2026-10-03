@@ -80,7 +80,9 @@ export function saveEntryPhoto(dataUrlOrBuffer: string | Buffer, filenameHint?: 
       const filename = `${cleanHint || "entry"}-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
       const filePath = path.join(uploadDir, filename);
 
-      const base64Data = dataUrlOrBuffer.replace(/^data:image\/\w+;base64,/, "");
+      const base64Data = dataUrlOrBuffer.includes(";base64,")
+        ? dataUrlOrBuffer.split(";base64,")[1]
+        : dataUrlOrBuffer;
       const buffer = Buffer.from(base64Data, "base64");
       fs.writeFileSync(filePath, buffer);
       return `/uploads/entries/${filename}`;
@@ -101,7 +103,7 @@ export function saveEntryPhoto(dataUrlOrBuffer: string | Buffer, filenameHint?: 
 
 /**
  * Saves a guest voice note audio (base64 data-URL) to public/uploads/audio.
- * Returns public static URL, e.g. "/uploads/audio/voice-123.webm".
+ * Returns public static URL, e.g. "/uploads/audio/voice-123.webm" or ".mp4".
  */
 export function saveVoiceNote(dataUrlOrBase64: string | null | undefined, filenameHint?: string): string | null {
   if (!dataUrlOrBase64) return null;
@@ -114,15 +116,37 @@ export function saveVoiceNote(dataUrlOrBase64: string | null | undefined, filena
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 
+  // Detect proper audio extension from data URL mime-type
+  let ext = "webm";
+  if (dataUrlOrBase64.startsWith("data:audio/")) {
+    const match = dataUrlOrBase64.match(/^data:audio\/([a-zA-Z0-9]+)/);
+    if (match) {
+      const mimeSub = match[1].toLowerCase();
+      if (mimeSub === "mp4" || mimeSub === "m4a" || mimeSub === "aac") {
+        ext = "mp4";
+      } else if (mimeSub === "ogg") {
+        ext = "ogg";
+      } else if (mimeSub === "wav") {
+        ext = "wav";
+      } else if (mimeSub === "webm") {
+        ext = "webm";
+      }
+    }
+  }
+
   const cleanHint = (filenameHint || "voice")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
     .slice(0, 30);
-  const filename = `${cleanHint || "voice"}-${Date.now()}-${randomUUID().slice(0, 8)}.webm`;
+  const filename = `${cleanHint || "voice"}-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
   const filePath = path.join(uploadDir, filename);
 
-  const base64Data = dataUrlOrBase64.replace(/^data:audio\/\w+;base64,/, "");
+  // Robustly extract base64 payload regardless of codecs or parameters in mime type
+  const base64Data = dataUrlOrBase64.includes(";base64,")
+    ? dataUrlOrBase64.split(";base64,")[1]
+    : dataUrlOrBase64;
+
   const buffer = Buffer.from(base64Data, "base64");
   fs.writeFileSync(filePath, buffer);
   return `/uploads/audio/${filename}`;

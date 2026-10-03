@@ -96,6 +96,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const flashRef = useRef<HTMLDivElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const cutoutRef = useRef<HTMLDivElement | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -170,11 +171,12 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     try {
       stopCamera();
 
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
           facingMode: "user",
+          width: isMobile ? { ideal: 1080 } : { ideal: 1920 },
+          height: isMobile ? { ideal: 1920 } : { ideal: 1080 },
         },
         audio: false,
       });
@@ -214,7 +216,48 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     let sourceWidth = vWidth;
     let sourceHeight = vHeight;
 
-    if (targetAspect && targetAspect > 0) {
+    let mappedFromCutout = false;
+
+    // Map exact screen framing cutout window to raw camera stream coordinates
+    if (cutoutRef.current) {
+      const cutoutRect = cutoutRef.current.getBoundingClientRect();
+      const videoRect = video.getBoundingClientRect();
+
+      if (cutoutRect.width > 0 && cutoutRect.height > 0 && videoRect.width > 0 && videoRect.height > 0) {
+        // CSS object-cover scales video uniformly to cover videoRect
+        const scale = Math.max(videoRect.width / vWidth, videoRect.height / vHeight);
+        const renderedW = vWidth * scale;
+        const renderedH = vHeight * scale;
+
+        // Top-left origin of rendered video content on screen
+        const originX = videoRect.left + (videoRect.width - renderedW) / 2;
+        const originY = videoRect.top + (videoRect.height - renderedH) / 2;
+
+        // Position of cutout window relative to rendered video content
+        const cropXInRendered = cutoutRect.left - originX;
+        const cropYInRendered = cutoutRect.top - originY;
+        const cropWInRendered = cutoutRect.width;
+        const cropHInRendered = cutoutRect.height;
+
+        // Convert CSS pixels to raw camera video pixels
+        const cropX = cropXInRendered / scale;
+        const cropY = cropYInRendered / scale;
+        const cropW = cropWInRendered / scale;
+        const cropH = cropHInRendered / scale;
+
+        // Video element is mirrored with -scale-x-100 in CSS:
+        // On screen, X=0 corresponds to raw video's right edge
+        const mirroredCropX = vWidth - (cropX + cropW);
+
+        sourceX = Math.max(0, Math.min(vWidth - 1, Math.round(mirroredCropX)));
+        sourceY = Math.max(0, Math.min(vHeight - 1, Math.round(cropY)));
+        sourceWidth = Math.max(1, Math.min(vWidth - sourceX, Math.round(cropW)));
+        sourceHeight = Math.max(1, Math.min(vHeight - sourceY, Math.round(cropH)));
+        mappedFromCutout = true;
+      }
+    }
+
+    if (!mappedFromCutout && targetAspect && targetAspect > 0) {
       if (videoAspect > targetAspect) {
         // Video is wider than target crop
         sourceHeight = vHeight;
@@ -230,16 +273,17 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       }
     }
 
-    const maxDim = 1280;
+    const maxDim = 1200;
+    const aspect = sourceWidth / sourceHeight;
     let outWidth = sourceWidth;
     let outHeight = sourceHeight;
     if (outWidth > maxDim || outHeight > maxDim) {
       if (outWidth > outHeight) {
         outWidth = maxDim;
-        outHeight = Math.round(maxDim / (targetAspect || videoAspect));
+        outHeight = Math.round(maxDim / aspect);
       } else {
         outHeight = maxDim;
-        outWidth = Math.round(maxDim * (targetAspect || videoAspect));
+        outWidth = Math.round(maxDim * aspect);
       }
     }
 
@@ -263,7 +307,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       outHeight
     );
 
-    return tempCanvas.toDataURL("image/jpeg", 0.88);
+    return tempCanvas.toDataURL("image/jpeg", 0.90);
   };
 
   const triggerFlash = () => {
@@ -486,18 +530,20 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       ? "bg-white text-stone-900 selection:bg-red-100 selection:text-red-900"
       : "bg-[#111113] text-stone-100 selection:bg-stone-700 selection:text-white"
       }`}>
-      {/* Decorative Halftone Dot Pattern matching the poster for Nurul & Iqra Theme */}
-      {isNurulIqraWedding && currentStep !== "camera" && (
+      {/* Bridal Couple Photo Background Overlay (~10% opacity) for screens after poster */}
+      {isNurulIqraWedding && currentStep !== "welcome" && currentStep !== "camera" && (
         <div
           aria-hidden="true"
-          className="fixed inset-0 pointer-events-none opacity-25 z-0"
-          style={{
-            backgroundImage: "radial-gradient(#9ca3af 1.2px, transparent 1.2px)",
-            backgroundSize: "13px 13px",
-            maskImage: "radial-gradient(ellipse at center, transparent 35%, black 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse at center, transparent 35%, black 100%)",
-          }}
-        />
+          className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/events/nurul-iqra-real.jpg"
+            alt=""
+            className="w-full h-full object-cover object-[center_20%] opacity-10 select-none"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/40" />
+        </div>
       )}
 
       {/* Minimal Top Bar (hidden on welcome and name_input screen for Nurul & Iqra to showcase clean bridal layout) */}
@@ -894,12 +940,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                       >
                         {/* Frame PNG Visual Preview Thumbnail */}
                         <div
-                          className={`w-16 h-20 shrink-0 border rounded-xl p-1 flex items-center justify-center relative overflow-hidden ${isNurulIqraWedding ? "bg-stone-50 border-2 border-stone-200/80" : "bg-stone-950 border-stone-800"
-                            }`}
-                          style={{
-                            backgroundImage: `radial-gradient(#888 1px, transparent 1px)`,
-                            backgroundSize: "6px 6px",
-                          }}
+                          className="w-16 h-20 shrink-0 border border-stone-800 rounded-xl p-1 flex items-center justify-center relative overflow-hidden bg-black shadow-inner"
                         >
                           {overlayUrl ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
@@ -1090,6 +1131,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   {/* Dark Mask Overlay with Framing Cutout Window */}
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10 overflow-hidden p-4">
                     <div
+                      ref={cutoutRef}
                       className="relative rounded-2xl transition-all duration-300 ease-out"
                       style={{
                         aspectRatio: `${getTargetSlotAspect(currentShotIndex)}`,
