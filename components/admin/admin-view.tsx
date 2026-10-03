@@ -60,7 +60,11 @@ export function AdminView({
 
   const [activeTab, setActiveTab] = useState<"overview" | "events" | "edit" | "bookings" | "gallery" | "packages">("overview");
 
-  const [events, setEvents] = useState<EventItem[]>(initialEvents);
+  const [events, setEvents] = useState<EventItem[]>(() =>
+    [...(initialEvents || [])].sort(
+      (a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime()
+    )
+  );
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [entries, setEntries] = useState<GalleryEntry[]>(initialEntries);
 
@@ -610,7 +614,7 @@ export function AdminView({
       });
       const data = await res.json();
       if (data.success && data.event) {
-        setEvents([data.event, ...events]);
+        setEvents((prev) => [data.event, ...prev]);
       } else {
         alert(data.error || "Gagal menyimpan event. Coba lagi.");
         setIsCreatingEvent(false);

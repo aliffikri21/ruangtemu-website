@@ -211,6 +211,43 @@ let mockEvents: EventItem[] = [
     },
   },
   {
+    id: "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    slug: "palopo-creative-fest-2026",
+    title: "Palopo Youth Creative Festival 2026",
+    host_name: "Komunitas Kreatif Palopo",
+    client_name: "Pemuda Palopo",
+    event_name: "Palopo Creative Fest",
+    event_type: "gathering",
+    date: "2026-11-20",
+    venue: "Gedung Kesenian Palopo",
+    city: "Palopo",
+    description: "Rayakan karya dan kreativitas anak muda Tana Luwu bersama RUANGTEMU Digital!",
+    cover_image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
+    status: "ACTIVE",
+    is_active: true,
+    allow_guestbook: true,
+    allow_voice_note: true,
+    allow_custom_frame: true,
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    default_frame_config: {
+      type: "grid_4",
+      backgroundColor: "#18181b",
+      borderColor: "#a855f7",
+      textContent: "Palopo Creative Fest",
+      subTextContent: "#MudaKreatifPalopo",
+      fontFamily: "sans-serif",
+      textColor: "#ffffff",
+      padding: 16,
+      borderRadius: 12,
+      sticker: "✨",
+    },
+    stats: {
+      total_photos: 35,
+      total_wishes: 29,
+      total_voice_notes: 12,
+    },
+  },
+  {
     id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
     slug: "wedding-andi-sarah",
     title: "The Wedding of Andi & Sarah",
@@ -247,43 +284,6 @@ let mockEvents: EventItem[] = [
       total_photos: 18,
       total_wishes: 14,
       total_voice_notes: 8,
-    },
-  },
-  {
-    id: "c3d4e5f6-a7b8-9012-cdef-123456789012",
-    slug: "palopo-creative-fest-2026",
-    title: "Palopo Youth Creative Festival 2026",
-    host_name: "Komunitas Kreatif Palopo",
-    client_name: "Pemuda Palopo",
-    event_name: "Palopo Creative Fest",
-    event_type: "gathering",
-    date: "2026-11-20",
-    venue: "Gedung Kesenian Palopo",
-    city: "Palopo",
-    description: "Rayakan karya dan kreativitas anak muda Tana Luwu bersama RUANGTEMU Digital!",
-    cover_image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
-    status: "ACTIVE",
-    is_active: true,
-    allow_guestbook: true,
-    allow_voice_note: true,
-    allow_custom_frame: true,
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    default_frame_config: {
-      type: "grid_4",
-      backgroundColor: "#18181b",
-      borderColor: "#a855f7",
-      textContent: "Palopo Creative Fest",
-      subTextContent: "#MudaKreatifPalopo",
-      fontFamily: "sans-serif",
-      textColor: "#ffffff",
-      padding: 16,
-      borderRadius: 12,
-      sticker: "✨",
-    },
-    stats: {
-      total_photos: 35,
-      total_wishes: 29,
-      total_voice_notes: 12,
     },
   },
 ];
@@ -458,7 +458,7 @@ export async function getEvents(): Promise<EventItem[]> {
         (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.message IS NOT NULL AND en.message != '') AS total_wishes,
         (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.voice_note_url IS NOT NULL) AS total_voice_notes
       FROM events e
-      ORDER BY e.date DESC
+      ORDER BY e.created_at DESC, e.date DESC
     `);
 
     if (!rows || rows.length === 0) return [];
@@ -497,7 +497,9 @@ export async function getEvents(): Promise<EventItem[]> {
   } catch (err: any) {
     if (!isConnectionError(err)) throw err;
   }
-  return mockEvents;
+  return [...mockEvents].sort(
+    (a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime()
+  );
 }
 
 export async function getEventBySlug(slug: string): Promise<EventItem | null> {
