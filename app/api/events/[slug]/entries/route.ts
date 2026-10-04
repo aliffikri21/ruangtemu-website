@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEventBySlug, getEventEntries, createEntry } from "@/lib/db";
 import { saveEntryPhoto, saveVoiceNote } from "@/lib/save-frame";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface RouteContext {
   params: Promise<{ slug: string }>;
 }
@@ -16,7 +19,14 @@ export async function GET(req: NextRequest, context: RouteContext) {
     }
 
     const entries = await getEventEntries(event.id);
-    return NextResponse.json({ success: true, entries });
+    return NextResponse.json(
+      { success: true, entries },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || "Server error" }, { status: 500 });
   }

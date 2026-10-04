@@ -22,7 +22,9 @@ export default function EventGalleryPage({ params }: Props) {
   const fetchGalleryData = async () => {
     try {
       setIsRefreshing(true);
-      const res = await fetch(`/api/events/${slug}/entries`);
+      const res = await fetch(`/api/events/${slug}/entries`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (data.entries) {
         setEntries(data.entries);

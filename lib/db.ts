@@ -800,7 +800,7 @@ export async function getEventEntries(eventId: string): Promise<GalleryEntry[]> 
 
       if (error) {
         console.warn("[Supabase] getEventEntries error:", error.message);
-      } else if (data && data.length > 0) {
+      } else if (data) {
         return data.map(mapEntryRow);
       }
     } catch (err: any) {
