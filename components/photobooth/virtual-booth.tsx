@@ -100,6 +100,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
   // Multi-shot
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
@@ -164,9 +165,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     setCountdown(null);
   }, []);
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (preferredFacing?: "user" | "environment") => {
     setCameraError(null);
     setCameraState("requesting");
+
+    const targetFacing = preferredFacing || facingMode;
 
     try {
       stopCamera();
@@ -174,7 +177,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "user",
+          facingMode: { ideal: targetFacing },
           width: isMobile ? { ideal: 1080 } : { ideal: 1920 },
           height: isMobile ? { ideal: 1920 } : { ideal: 1080 },
         },
@@ -193,7 +196,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       setCameraState("error");
       setCameraError("Tidak dapat mengakses kamera. Pastikan izin kamera telah diaktifkan pada browser Anda.");
     }
-  }, [stopCamera]);
+  }, [facingMode, stopCamera]);
+
+  const toggleCameraFacing = async () => {
+    if (cameraState === "countdown" || cameraState === "capturing") return;
+    const nextFacing = facingMode === "user" ? "environment" : "user";
+    setFacingMode(nextFacing);
+    await startCamera(nextFacing);
+  };
 
   useEffect(() => {
     return () => {
@@ -293,8 +303,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     const ctx = tempCanvas.getContext("2d");
     if (!ctx) return null;
 
-    ctx.translate(outWidth, 0);
-    ctx.scale(-1, 1);
+    if (facingMode === "user") {
+      ctx.translate(outWidth, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(
       video,
       sourceX,
@@ -1155,7 +1167,22 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 <span>Foto {currentShotIndex} / {requiredShots}</span>
               </div>
 
-              <div className="w-11" />
+              {/* Top flip camera button */}
+              <button
+                type="button"
+                disabled={cameraState === "countdown" || cameraState === "capturing"}
+                onClick={toggleCameraFacing}
+                aria-label="Balik Kamera"
+                title="Ganti ke kamera belakang / depan"
+                className="min-h-[44px] min-w-[44px] px-2 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all border border-white/20 shadow-sm"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 2.21 1 4.21 2.6 5.6" />
+                  <path d="M4 14c0 4.418 3.582 8 8 8s8-3.582 8-8c0-2.21-1-4.21-2.6-5.6" />
+                  <path d="m19 14 3-3-3-3" />
+                  <path d="m5 10-3 3 3 3" />
+                </svg>
+              </button>
             </div>
 
             {/* Camera Viewfinder */}
@@ -1167,7 +1194,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   </div>
                   <p className="text-sm text-stone-300 leading-relaxed">{cameraError}</p>
                   <button
-                    onClick={startCamera}
+                    onClick={() => startCamera()}
                     className="min-h-[48px] px-6 bg-white text-stone-950 font-semibold text-sm rounded-lg"
                   >
                     Coba Lagi
@@ -1180,7 +1207,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     autoPlay
                     playsInline
                     muted
-                    className={`w-full h-full object-cover -scale-x-100 ${selectedFilter === "grayscale"
+                    className={`w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : "scale-x-100"} ${selectedFilter === "grayscale"
                       ? "grayscale"
                       : selectedFilter === "sepia"
                         ? "sepia"
@@ -1279,21 +1306,42 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 ))}
               </div>
 
-              {/* Capture Button */}
-              <button
-                disabled={cameraState !== "ready"}
-                onClick={startPhotoSequence}
-                className={`w-full min-h-[56px] font-bold text-base uppercase tracking-wider transition-all rounded-xl shadow-lg ${isNurulIqraWedding
-                  ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-800 disabled:text-stone-500 text-white"
-                  : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
-                  }`}
-              >
-                {cameraState === "countdown" || cameraState === "capturing"
-                  ? "Mengambil Foto..."
-                  : cameraState === "requesting"
-                    ? "Menyiapkan Kamera..."
-                    : "Ambil Foto"}
-              </button>
+              {/* Capture & Flip Controls */}
+              <div className="flex items-center gap-2.5">
+                <button
+                  disabled={cameraState !== "ready"}
+                  onClick={startPhotoSequence}
+                  className={`flex-1 min-h-[56px] font-bold text-base uppercase tracking-wider transition-all rounded-xl shadow-lg ${isNurulIqraWedding
+                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-800 disabled:text-stone-500 text-white"
+                    : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
+                    }`}
+                >
+                  {cameraState === "countdown" || cameraState === "capturing"
+                    ? "Mengambil Foto..."
+                    : cameraState === "requesting"
+                      ? "Menyiapkan Kamera..."
+                      : "Ambil Foto"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={cameraState !== "ready"}
+                  onClick={toggleCameraFacing}
+                  aria-label="Balik Kamera"
+                  title="Ganti ke kamera belakang / depan"
+                  className="min-h-[56px] min-w-[56px] px-2 rounded-xl flex flex-col items-center justify-center gap-1 bg-stone-900 border border-stone-700/80 text-stone-200 hover:border-stone-500 active:bg-stone-800 transition-all active:scale-95 shadow-md shrink-0"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5" />
+                    <path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5" />
+                    <path d="m20 10-3-3 3-3" />
+                    <path d="m4 14 3 3-3 3" />
+                  </svg>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase leading-none">
+                    {facingMode === "user" ? "Belakang" : "Depan"}
+                  </span>
+                </button>
+              </div>
             </div>
           </main>
         )
