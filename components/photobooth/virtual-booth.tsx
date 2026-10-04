@@ -102,6 +102,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
+  // Frame Carousel
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+
   // Multi-shot
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -601,6 +604,74 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     }
   };
 
+  const scrollToFrame = useCallback((index: number) => {
+    if (!carouselRef.current) return;
+    const container = carouselRef.current;
+    const slides = container.querySelectorAll<HTMLElement>("[data-frame-slide]");
+    if (slides[index]) {
+      const slide = slides[index];
+      const targetLeft = slide.offsetLeft - (container.offsetWidth - slide.offsetWidth) / 2;
+      container.scrollTo({ left: targetLeft, behavior: "smooth" });
+    }
+  }, []);
+
+  const handleCarouselScroll = useCallback(() => {
+    if (!carouselRef.current) return;
+    const container = carouselRef.current;
+    const center = container.scrollLeft + container.offsetWidth / 2;
+    const slides = container.querySelectorAll<HTMLElement>("[data-frame-slide]");
+    let closestIdx = 0;
+    let minDistance = Infinity;
+
+    slides.forEach((slide, idx) => {
+      const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+      const dist = Math.abs(center - slideCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIdx = idx;
+      }
+    });
+
+    if (assignedFrames && assignedFrames[closestIdx]) {
+      const targetFrame = assignedFrames[closestIdx];
+      if (targetFrame.id !== selectedFrameId) {
+        setSelectedFrameId(targetFrame.id);
+        setFrameConfig({
+          ...targetFrame.config_json,
+          type: targetFrame.template_type,
+          customOverlayUrl: targetFrame.preview_url || targetFrame.config_json?.customOverlayUrl,
+        });
+      }
+    } else if (!assignedFrames && FRAME_TEMPLATES[closestIdx]) {
+      const tmpl = FRAME_TEMPLATES[closestIdx];
+      if (frameConfig.type !== tmpl.type) {
+        setFrameConfig({ ...frameConfig, type: tmpl.type });
+      }
+    }
+  }, [assignedFrames, selectedFrameId, frameConfig]);
+
+  const handleSelectFrame = (frame: any, index: number) => {
+    setSelectedFrameId(frame.id);
+    setFrameConfig({
+      ...frame.config_json,
+      type: frame.template_type,
+      customOverlayUrl: frame.preview_url || frame.config_json?.customOverlayUrl,
+    });
+    scrollToFrame(index);
+  };
+
+  useEffect(() => {
+    if (currentStep === "frame_select" && assignedFrames && carouselRef.current) {
+      const idx = assignedFrames.findIndex((f) => f.id === selectedFrameId);
+      if (idx >= 0) {
+        const timer = setTimeout(() => {
+          scrollToFrame(idx);
+        }, 60);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentStep, scrollToFrame, assignedFrames, selectedFrameId]);
+
   // ─── Render ───────────────────────────────────────────────────
 
   return (
@@ -962,8 +1033,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       {/* ─── STEP 2: FRAME SELECTION ─── */}
       {
         currentStep === "frame_select" && (
-          <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto relative z-10 ${isNurulIqraWedding ? "bg-transparent text-stone-900" : ""}`}>
-            <div className="w-full max-w-sm mx-auto space-y-5">
+          <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto overflow-x-hidden relative z-10 ${isNurulIqraWedding ? "bg-transparent text-stone-900" : ""}`}>
+            <div className="w-full max-w-sm mx-auto space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className={`text-xs uppercase tracking-wider ${isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)] font-bold bg-red-50 px-2.5 py-0.5 rounded-full inline-block border border-red-100 mb-1" : "text-[#c47a5a] font-semibold"}`}>
@@ -987,113 +1058,124 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 </button>
               </div>
 
-              {/* Frame Cards */}
-              <div className="space-y-3">
-                {assignedFrames ? (
-                  assignedFrames.map((frame, index) => {
-                    const isSelected = selectedFrameId === frame.id;
-                    const shots = frame.config_json?.photoCount || frame.config_json?.photoSlots?.length || getShotsForType(frame.template_type);
-                    const overlayUrl = frame.preview_url || frame.config_json?.customOverlayUrl;
+              {/* Frame Carousel (Sliding Horizontal Track - Pure Floating Frames) */}
+              <div className="relative -mx-5 px-1 py-1">
+                <div
+                  ref={carouselRef}
+                  onScroll={handleCarouselScroll}
+                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory py-2 px-[calc(50%-125px)] scroll-smooth touch-pan-x"
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
+                  {assignedFrames ? (
+                    assignedFrames.map((frame, index) => {
+                      const isSelected = selectedFrameId === frame.id;
+                      const overlayUrl = frame.preview_url || frame.config_json?.customOverlayUrl;
 
-                    return (
-                      <button
-                        key={frame.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedFrameId(frame.id);
-                          setFrameConfig({
-                            ...frame.config_json,
-                            type: frame.template_type,
-                            customOverlayUrl: overlayUrl,
-                          });
-                        }}
-                        className={`w-full min-h-[92px] p-3.5 flex items-center gap-3.5 border rounded-2xl transition-all text-left active:scale-[0.98] ${isSelected
-                          ? isNurulIqraWedding
-                            ? "bg-white border-2 border-[#c51d24] ring-4 ring-[#c51d24]/10 shadow-lg shadow-red-950/10"
-                            : "bg-stone-900 border-white ring-1 ring-white/60 shadow-lg"
-                          : isNurulIqraWedding
-                            ? "bg-white/95 border border-stone-200 hover:border-[#c51d24]/40 text-stone-900 shadow-sm"
-                            : "bg-stone-900/60 border-stone-800 hover:border-stone-700 active:bg-stone-800"
-                          }`}
-                      >
-                        {/* Frame PNG Visual Preview Thumbnail */}
+                      return (
                         <div
-                          className="w-16 h-20 shrink-0 border border-stone-800 rounded-xl p-1 flex items-center justify-center relative overflow-hidden bg-black shadow-inner"
+                          key={frame.id}
+                          data-frame-slide
+                          onClick={() => handleSelectFrame(frame, index)}
+                          className="snap-center shrink-0 w-[250px] flex items-center justify-center cursor-pointer select-none py-3"
                         >
                           {overlayUrl ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               src={overlayUrl}
                               alt={frame.name}
-                              className="max-h-full max-w-full object-contain drop-shadow"
+                              className={`max-h-[370px] sm:max-h-[410px] w-auto object-contain transition-all duration-300 select-none pointer-events-none ${
+                                isSelected
+                                  ? "scale-100 opacity-100 drop-shadow-[0_16px_36px_rgba(0,0,0,0.26)]"
+                                  : "scale-[0.88] opacity-50 hover:opacity-75 drop-shadow-[0_8px_18px_rgba(0,0,0,0.14)]"
+                              }`}
                             />
                           ) : (
-                            <span className="text-[10px] font-mono text-stone-500">PNG</span>
-                          )}
-                        </div>
-
-                        {/* Frame Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${isNurulIqraWedding ? "bg-red-50 text-[#c51d24] font-bold border border-red-100 font-[family-name:var(--font-cinzel)]" : "bg-stone-800 text-stone-300 font-mono"
-                              }`}>
-                              Frame {index + 1}
-                            </span>
-                            <span className={`text-[11px] font-semibold ${isNurulIqraWedding ? "text-[#c51d24]" : "text-[#c47a5a]"}`}>
-                              {shots} Pose
-                            </span>
-                          </div>
-                          <div className={`text-sm font-bold mt-1 truncate ${isNurulIqraWedding ? "text-stone-950 font-[family-name:var(--font-cinzel)]" : "text-white"}`}>
-                            {frame.name}
-                          </div>
-                          <div className={`text-xs mt-0.5 ${isNurulIqraWedding ? "text-stone-500" : "text-stone-400"}`}>
-                            {isSelected ? "Sedang dipilih untuk sesi foto" : "Ketuk untuk memilih frame ini"}
-                          </div>
-                        </div>
-
-                        {/* Selected Checkmark Indicator */}
-                        <div className="shrink-0">
-                          {isSelected ? (
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md ${isNurulIqraWedding ? "bg-[#c51d24] text-white shadow-red-900/20" : "bg-white text-stone-950"
-                              }`}>
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                            <div className="w-[180px] h-[270px] bg-white rounded-lg shadow-xl flex items-center justify-center font-mono text-xs text-stone-500">
+                              FRAME
                             </div>
-                          ) : (
-                            <div className={`w-7 h-7 rounded-full border-2 ${isNurulIqraWedding ? "border-stone-300" : "border-stone-700"}`} />
                           )}
                         </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  FRAME_TEMPLATES.map((tmpl) => {
-                    const isSelected = frameConfig.type === tmpl.type;
-                    return (
-                      <button
-                        key={tmpl.type}
-                        onClick={() => setFrameConfig({ ...frameConfig, type: tmpl.type })}
-                        className={`w-full min-h-[64px] p-4 flex items-center justify-between border rounded-lg transition-colors active:scale-[0.98] ${isSelected
-                          ? "bg-white/10 border-white/40"
-                          : "bg-stone-900/60 border-stone-800 active:bg-stone-800"
+                      );
+                    })
+                  ) : (
+                    FRAME_TEMPLATES.map((tmpl, index) => {
+                      const isSelected = frameConfig.type === tmpl.type;
+                      return (
+                        <div
+                          key={tmpl.type}
+                          data-frame-slide
+                          onClick={() => {
+                            setFrameConfig({ ...frameConfig, type: tmpl.type });
+                            scrollToFrame(index);
+                          }}
+                          className="snap-center shrink-0 w-[250px] flex items-center justify-center cursor-pointer select-none py-3"
+                        >
+                          <div
+                            className={`w-[180px] h-[280px] bg-white text-stone-900 rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 ${
+                              isSelected
+                                ? "scale-100 opacity-100 shadow-2xl ring-2 ring-[#c51d24]"
+                                : "scale-[0.88] opacity-50 shadow-md"
+                            }`}
+                          >
+                            <div className="text-center font-bold text-sm">{tmpl.name}</div>
+                            <div className="text-xs text-[#c51d24] font-semibold">{tmpl.shots} Pose Foto</div>
+                            <div className="text-[11px] text-stone-500 text-center">{tmpl.description}</div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Pagination Dots Indicator */}
+                <div className="flex justify-center items-center gap-1.5 pt-2 pb-1">
+                  {assignedFrames ? (
+                    assignedFrames.map((frame, idx) => {
+                      const isCurrent = selectedFrameId === frame.id;
+                      return (
+                        <button
+                          key={frame.id}
+                          type="button"
+                          onClick={() => handleSelectFrame(frame, idx)}
+                          aria-label={`Pilih Frame ${idx + 1}`}
+                          className={`transition-all duration-300 rounded-full ${
+                            isCurrent
+                              ? isNurulIqraWedding
+                                ? "w-6 h-2 bg-[#c51d24] shadow-sm"
+                                : "w-6 h-2 bg-white"
+                              : isNurulIqraWedding
+                                ? "w-2 h-2 bg-stone-300 hover:bg-stone-400"
+                                : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
                           }`}
-                      >
-                        <div className="text-left">
-                          <div className="text-sm font-medium text-white">{tmpl.name}</div>
-                          <div className="text-xs text-stone-400">{tmpl.description}</div>
-                        </div>
-                        <div className="shrink-0 ml-3">
-                          {isSelected ? (
-                            <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                            </div>
-                          ) : (
-                            <div className="w-6 h-6 rounded-full border-2 border-stone-600" />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
+                        />
+                      );
+                    })
+                  ) : (
+                    FRAME_TEMPLATES.map((tmpl, idx) => {
+                      const isCurrent = frameConfig.type === tmpl.type;
+                      return (
+                        <button
+                          key={tmpl.type}
+                          type="button"
+                          onClick={() => {
+                            setFrameConfig({ ...frameConfig, type: tmpl.type });
+                            scrollToFrame(idx);
+                          }}
+                          aria-label={`Pilih Frame ${idx + 1}`}
+                          className={`transition-all duration-300 rounded-full ${
+                            isCurrent
+                              ? "w-6 h-2 bg-white shadow-sm"
+                              : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
+                          }`}
+                        />
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               {/* Sticker Picker only if not using full custom overlay */}
