@@ -97,6 +97,9 @@ export function AdminView({
   const [editSuccessMsg, setEditSuccessMsg] = useState("");
   const [editErrorMsg, setEditErrorMsg] = useState("");
 
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [togglingEventId, setTogglingEventId] = useState<string | null>(null);
+
   const handleStartEditEvent = (evt: EventItem) => {
     setEditingEvent(evt);
     setEditForm({
@@ -541,6 +544,68 @@ export function AdminView({
   const handleDeleteEntry = (entryId: string) => {
     if (confirm("Hapus foto ini dari galeri acara?")) {
       setEntries((prev) => prev.filter((e) => e.id !== entryId));
+    }
+  };
+
+  const handleDeleteEvent = async (evt: EventItem) => {
+    const confirmed = confirm(
+      `Hapus event "${evt.title}"?\n\nSemua data terkait event ini (foto, guestbook) juga akan dihapus. Aksi ini tidak dapat dibatalkan.`
+    );
+    if (!confirmed) return;
+
+    setDeletingEventId(evt.id);
+    try {
+      const res = await fetch(`/api/events/${evt.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setEvents((prev) => prev.filter((e) => e.id !== evt.id));
+        if (editingEvent?.id === evt.id) {
+          setEditingEvent(null);
+          setActiveTab("events");
+        }
+      } else {
+        alert(data.error || "Gagal menghapus event.");
+      }
+    } catch {
+      alert("Koneksi ke server gagal. Coba lagi.");
+    } finally {
+      setDeletingEventId(null);
+    }
+  };
+
+  const handleToggleEventStatus = async (evt: EventItem) => {
+    const isCurrentlyActive = evt.is_active !== false && evt.status !== "COMPLETED" && evt.status !== "ARCHIVED";
+    const newStatus = isCurrentlyActive ? "COMPLETED" : "ACTIVE";
+    const newIsActive = !isCurrentlyActive;
+
+    const label = isCurrentlyActive ? "Selesai" : "Aktif";
+    const confirmed = confirm(
+      `Ubah status event "${evt.title}" menjadi ${label}?`
+    );
+    if (!confirmed) return;
+
+    setTogglingEventId(evt.id);
+    try {
+      const res = await fetch(`/api/events/${evt.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, is_active: newIsActive }),
+      });
+      const data = await res.json();
+      if (data.success && data.event) {
+        setEvents((prev) =>
+          prev.map((e) => (e.id === data.event.id ? data.event : e))
+        );
+        if (editingEvent?.id === data.event.id) {
+          setEditingEvent(data.event);
+        }
+      } else {
+        alert(data.error || "Gagal mengubah status event.");
+      }
+    } catch {
+      alert("Koneksi ke server gagal. Coba lagi.");
+    } finally {
+      setTogglingEventId(null);
     }
   };
 
@@ -1107,7 +1172,8 @@ export function AdminView({
                     <th className="p-4">Acara & Tuan Rumah</th>
                     <th className="p-4">Tanggal & Lokasi</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Tautan Langsung</th>
+                    <th className="p-4">Tautan Langsung</th>
+                    <th className="p-4 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-150">
@@ -1138,12 +1204,31 @@ export function AdminView({
                         <div className="text-stone-500">{evt.venue}, {evt.city}</div>
                       </td>
                       <td className="p-4">
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-200">
-                          Aktif
-                        </span>
+                        {(() => {
+                          const active = evt.is_active !== false && evt.status !== "COMPLETED" && evt.status !== "ARCHIVED";
+                          if (active) {
+                            return (
+                              <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-200">
+                                Aktif
+                              </span>
+                            );
+                          }
+                          if (evt.status === "ARCHIVED") {
+                            return (
+                              <span className="font-mono text-[10px] uppercase tracking-wider text-stone-500 bg-stone-100 px-2 py-0.5 border border-stone-200">
+                                Diarsipkan
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="font-mono text-[10px] uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 border border-amber-200">
+                              Selesai
+                            </span>
+                          );
+                        })()}
                       </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2.5 font-mono text-[11px] flex-wrap">
+                      <td className="p-4">
+                        <div className="flex items-center gap-2.5 font-mono text-[11px] flex-wrap">
                           <button
                             type="button"
                             onClick={() => handleStartEditEvent(evt)}
@@ -1180,6 +1265,49 @@ export function AdminView({
                           >
                             QR
                           </Link>
+                        </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2 font-mono text-[10px]">
+                          <button
+                            type="button"
+                            disabled={togglingEventId === evt.id}
+                            onClick={() => handleToggleEventStatus(evt)}
+                            className={`px-2.5 py-1 uppercase tracking-wider transition-colors inline-flex items-center gap-1 border ${
+                              evt.is_active !== false && evt.status !== "COMPLETED" && evt.status !== "ARCHIVED"
+                                ? "border-amber-300 text-amber-700 hover:bg-amber-50"
+                                : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                            } ${togglingEventId === evt.id ? "opacity-50 cursor-wait" : ""}`}
+                          >
+                            {togglingEventId === evt.id ? (
+                              <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : evt.is_active !== false && evt.status !== "COMPLETED" && evt.status !== "ARCHIVED" ? (
+                              <>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+                                Selesaikan
+                              </>
+                            ) : (
+                              <>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                Aktifkan
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletingEventId === evt.id}
+                            onClick={() => handleDeleteEvent(evt)}
+                            className={`px-2.5 py-1 border border-red-200 text-red-600 hover:bg-red-50 uppercase tracking-wider transition-colors inline-flex items-center gap-1 ${
+                              deletingEventId === evt.id ? "opacity-50 cursor-wait" : ""
+                            }`}
+                          >
+                            {deletingEventId === evt.id ? (
+                              <span className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            )}
+                            Hapus
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1239,9 +1367,15 @@ export function AdminView({
                       <span className="font-mono text-[10px] uppercase tracking-widest text-[#c47a5a]">
                         [ Mode Edit Event ]
                       </span>
-                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono">
-                        Aktif
-                      </span>
+                      {editingEvent.is_active !== false && editingEvent.status !== "COMPLETED" && editingEvent.status !== "ARCHIVED" ? (
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono">
+                          Aktif
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-mono">
+                          Selesai
+                        </span>
+                      )}
                     </div>
                     <h2 className="text-xl font-light text-stone-950 mt-1">
                       Edit Event: <span className="font-medium">{editingEvent.title}</span>

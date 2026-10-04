@@ -83,12 +83,6 @@ export default function EventGalleryPage({ params }: Props) {
               Mode Layar ↗
             </Link>
             <Link
-              href={`/event/${slug}/qr`}
-              className="text-stone-600 hover:text-stone-950 underline transition-colors"
-            >
-              QR Standee ↗
-            </Link>
-            <Link
               href={`/event/${slug}`}
               className="min-h-[36px] px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-medium uppercase tracking-wider transition-colors flex items-center"
             >
