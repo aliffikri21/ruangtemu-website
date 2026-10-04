@@ -431,18 +431,55 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
   // ─── Save Entry ───────────────────────────────────────────────
 
+  const compressDataUrl = async (dataUrl: string, quality = 0.85, maxDim = 1200): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const ctx = c.getContext("2d");
+        if (!ctx) return resolve(dataUrl);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
   const handleSaveToGallery = async () => {
     if (!compositeDataUrl || isSaving) return;
     setIsSaving(true);
     setSaveError(null);
 
     try {
+      // Ensure photo size is safe for Vercel payload limits (< 4.5MB)
+      let photoToSend = compositeDataUrl;
+      if (photoToSend.length > 2.5 * 1024 * 1024) {
+        photoToSend = await compressDataUrl(photoToSend, 0.82, 1200);
+      }
+
       const res = await fetch(`/api/events/${event.slug}/entries`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           guest_name: guestName || "Tamu",
-          photo_url: compositeDataUrl,
+          photo_url: photoToSend,
           voice_note_url: audioBase64 || null,
           message: guestMessage || "",
           filter_used: selectedFilter,
@@ -450,7 +487,36 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       });
 
       if (!res.ok) {
-        throw new Error(`Server error: ${res.status}`);
+        if (res.status === 413) {
+          // Automatic recovery: compress photo down and retry once
+          const compressed = await compressDataUrl(photoToSend, 0.75, 960);
+          const retryRes = await fetch(`/api/events/${event.slug}/entries`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              guest_name: guestName || "Tamu",
+              photo_url: compressed,
+              voice_note_url: audioBase64 || null,
+              message: guestMessage || "",
+              filter_used: selectedFilter,
+            }),
+          });
+
+          if (retryRes.ok) {
+            const retryData = await retryRes.json();
+            if (retryData.success) {
+              confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 },
+              });
+              setCurrentStep("finished");
+              return;
+            }
+          }
+          throw new Error("Ukuran foto terlalu besar. Silakan coba lagi.");
+        }
+        throw new Error(`Gagal menyimpan foto (Error ${res.status}). Silakan coba lagi.`);
       }
 
       const data = await res.json();

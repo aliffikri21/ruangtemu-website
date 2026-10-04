@@ -67,27 +67,36 @@ export async function renderPhotoboothFrame(
   }
 
   // Determine Canvas Dimensions based on Frame Type or Custom Photo Slots
+  // Capped for optimal mobile performance and Vercel payload limits (< 4.5MB)
   let width = 600;
   let height = 1800; // Strip 3 default
 
   if (config.photoSlots && config.photoSlots.length > 0) {
     const baseW = config.frameImageWidth || (customOverlay ? customOverlay.naturalWidth : 600);
     const baseH = config.frameImageHeight || (customOverlay ? customOverlay.naturalHeight : 1800);
-    const mult = highRes && baseW < 1200 ? Math.max(1, Math.round(1200 / baseW)) : 1;
-    width = baseW * mult;
-    height = baseH * mult;
+    // Limit max dimension to 1200x1800 to avoid multi-megabyte payloads while preserving crisp HD quality
+    const MAX_W = 1200;
+    const MAX_H = 1800;
+    let scale = 1;
+    if (baseW > MAX_W || baseH > MAX_H) {
+      scale = Math.min(MAX_W / baseW, MAX_H / baseH);
+    } else if (highRes && baseW < 800) {
+      scale = Math.min(800 / baseW, 1200 / baseH);
+    }
+    width = Math.round(baseW * scale);
+    height = Math.round(baseH * scale);
   } else if (config.type === "strip_3") {
-    width = highRes ? 1200 : 600;
-    height = highRes ? 3600 : 1800;
+    width = 600;
+    height = 1800;
   } else if (config.type === "grid_4") {
-    width = highRes ? 1600 : 800;
-    height = highRes ? 2000 : 1000;
+    width = 800;
+    height = 1000;
   } else if (config.type === "polaroid") {
-    width = highRes ? 1400 : 700;
-    height = highRes ? 1700 : 850;
+    width = 700;
+    height = 850;
   } else if (config.type === "deluxe") {
-    width = highRes ? 1600 : 800;
-    height = highRes ? 2200 : 1100;
+    width = 800;
+    height = 1100;
   }
 
   canvas.width = width;
@@ -100,12 +109,12 @@ export async function renderPhotoboothFrame(
     const scaleX = width / origW;
     const scaleY = height / origH;
 
-    if (config.backgroundColor && config.backgroundColor !== "transparent") {
-      ctx.fillStyle = config.backgroundColor;
-      ctx.fillRect(0, 0, width, height);
-    } else {
-      ctx.clearRect(0, 0, width, height);
-    }
+    const bgColor =
+      config.backgroundColor && config.backgroundColor !== "transparent"
+        ? config.backgroundColor
+        : "#ffffff";
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
 
     for (let i = 0; i < config.photoSlots.length; i++) {
       const slot = config.photoSlots[i];
@@ -358,7 +367,8 @@ export async function renderPhotoboothFrame(
     ctx.drawImage(customOverlay, 0, 0, width, height);
   }
 
-  return canvas.toDataURL("image/png", 0.95);
+  // Export as high-quality JPEG (0.88) to keep payload ~400KB and bypass Vercel 4.5MB limit
+  return canvas.toDataURL("image/jpeg", 0.88);
 }
 
 // Utility: draw rounded rectangle
