@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { EventItem, Package, Booking, GalleryEntry, BookingStatus, FrameItem } from "@/types";
-import { query, queryOne, execute } from "./mysql";
+import { getDbClient, isSupabaseConfigured } from "./supabase";
 
 function parseJsonField<T>(val: any, fallback: T): T {
   if (!val) return fallback;
@@ -12,23 +12,9 @@ function parseJsonField<T>(val: any, fallback: T): T {
   }
 }
 
-function isConnectionError(err: any): boolean {
-  const code = err?.code || "";
-  const msg = (err?.message || "").toLowerCase();
-  return (
-    code === "ECONNREFUSED" ||
-    code === "ENOTFOUND" ||
-    code === "ETIMEDOUT" ||
-    code === "PROTOCOL_CONNECTION_LOST" ||
-    code === "ER_ACCESS_DENIED_ERROR" ||
-    code === "ER_BAD_DB_ERROR" ||
-    msg.includes("connect") ||
-    msg.includes("econnrefused") ||
-    msg.includes("pool is closed")
-  );
-}
-
-// In-memory store for fallback/dev mode
+// ============================================================================
+// IN-MEMORY MOCK STORE (Fallback for offline/local development without Supabase)
+// ============================================================================
 let mockPackages: Package[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
@@ -123,12 +109,12 @@ const defaultDemoFrames: FrameItem[] = [
     config_json: {
       type: "strip_3",
       backgroundColor: "#0f172a",
-      borderColor: "#d4af37",
-      customOverlayUrl: "/frames/frame-strip-floral.png",
+      borderColor: "#e7e5e4",
       fontFamily: "serif",
       textColor: "#ffffff",
       padding: 16,
-      borderRadius: 12,
+      borderRadius: 8,
+      customOverlayUrl: "/frames/frame-strip-floral.png",
     },
     is_active: true,
   },
@@ -140,31 +126,13 @@ const defaultDemoFrames: FrameItem[] = [
     preview_url: "/frames/frame-strip-navy-gold.png",
     config_json: {
       type: "strip_3",
-      backgroundColor: "#0a0f1e",
-      borderColor: "#e2b93b",
-      customOverlayUrl: "/frames/frame-strip-navy-gold.png",
+      backgroundColor: "#0f172a",
+      borderColor: "#e7e5e4",
       fontFamily: "serif",
       textColor: "#ffffff",
       padding: 16,
-      borderRadius: 12,
-    },
-    is_active: true,
-  },
-  {
-    id: "frame-strip-3",
-    name: "Modern Minimalist",
-    slug: "modern-minimalist",
-    template_type: "strip_3",
-    preview_url: "/frames/frame-strip-minimal.png",
-    config_json: {
-      type: "strip_3",
-      backgroundColor: "#121214",
-      borderColor: "#ffffff",
-      customOverlayUrl: "/frames/frame-strip-minimal.png",
-      fontFamily: "sans-serif",
-      textColor: "#ffffff",
-      padding: 16,
-      borderRadius: 12,
+      borderRadius: 8,
+      customOverlayUrl: "/frames/frame-strip-navy-gold.png",
     },
     is_active: true,
   },
@@ -172,101 +140,76 @@ const defaultDemoFrames: FrameItem[] = [
 
 let mockEvents: EventItem[] = [
   {
-    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    slug: "bombom-wedding",
-    title: "The Wedding of Bom Bom & Partner",
-    host_name: "Bom Bom & Partner",
-    client_name: "Bom Bom",
-    event_name: "The Wedding of Bom Bom",
+    id: "30b2edf8-aa12-43a1-b47c-11fbb607ed0a",
+    slug: "iqranurul-wedding",
+    title: "The Wedding of Nurul & Iqra",
+    event_name: "The Wedding of Nurul & Iqra",
+    host_name: "Nurul & Iqra",
+    client_name: "Nurul & Iqra",
     event_type: "wedding",
-    date: "2026-10-24",
-    venue: "Gedung Saodenrae Convention Center",
+    date: "2026-09-28",
+    venue: "Palopo",
     city: "Palopo",
-    description: "Selamat datang di perayaan pernikahan kami! Abadikan momen spesial Anda dan tinggalkan ucapan berkesan di RUANGTEMU photobooth kami.",
-    cover_image: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
+    description: "",
+    cover_image: "/images/events/nurul-iqra-real.jpg",
+    cover_image_url: "/images/events/nurul-iqra-real.jpg",
     status: "ACTIVE",
     is_active: true,
     allow_guestbook: true,
     allow_voice_note: true,
     allow_custom_frame: true,
-    created_at: new Date().toISOString(),
-    assigned_frames: defaultDemoFrames,
+    gallery_visibility: "PUBLIC",
     default_frame_config: {
-      type: "strip_3",
+      type: "custom",
       backgroundColor: "#0f172a",
-      borderColor: "#38bdf8",
-      textContent: "Bom Bom Wedding",
-      subTextContent: "24 Oktober 2026 • Palopo",
+      borderColor: "#e7e5e4",
+      textContent: "Nurul & Iqra",
+      subTextContent: "2026-09-28 • Palopo, Palopo",
       fontFamily: "serif",
       textColor: "#ffffff",
       padding: 16,
-      borderRadius: 12,
-      sticker: "💍",
-      customOverlayUrl: "/frames/frame-strip-floral.png",
+      borderRadius: 8,
+      customOverlayUrl: "/uploads/frames/nurul-iqra-frame.png",
+      photoSlots: [
+        { x: 23, y: 214, width: 296, height: 192 },
+        { x: 365, y: 214, width: 296, height: 192 },
+        { x: 23, y: 451, width: 296, height: 192 },
+        { x: 365, y: 451, width: 296, height: 192 },
+        { x: 23, y: 690, width: 296, height: 193 },
+        { x: 365, y: 690, width: 296, height: 193 },
+      ],
+      photoCount: 6,
+      frameImageWidth: 682,
+      frameImageHeight: 1024,
     },
+    created_at: "2026-10-03T04:48:36.000Z",
+    assigned_frames: defaultDemoFrames,
     stats: {
-      total_photos: 0,
-      total_wishes: 0,
-      total_voice_notes: 0,
+      total_photos: 10,
+      total_wishes: 7,
+      total_voice_notes: 3,
     },
   },
   {
-    id: "c3d4e5f6-a7b8-9012-cdef-123456789012",
-    slug: "palopo-creative-fest-2026",
-    title: "Palopo Youth Creative Festival 2026",
-    host_name: "Komunitas Kreatif Palopo",
-    client_name: "Pemuda Palopo",
-    event_name: "Palopo Creative Fest",
-    event_type: "gathering",
-    date: "2026-11-20",
-    venue: "Gedung Kesenian Palopo",
-    city: "Palopo",
-    description: "Rayakan karya dan kreativitas anak muda Tana Luwu bersama RUANGTEMU Digital!",
-    cover_image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
-    status: "ACTIVE",
-    is_active: true,
-    allow_guestbook: true,
-    allow_voice_note: true,
-    allow_custom_frame: true,
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    default_frame_config: {
-      type: "grid_4",
-      backgroundColor: "#18181b",
-      borderColor: "#a855f7",
-      textContent: "Palopo Creative Fest",
-      subTextContent: "#MudaKreatifPalopo",
-      fontFamily: "sans-serif",
-      textColor: "#ffffff",
-      padding: 16,
-      borderRadius: 12,
-      sticker: "✨",
-    },
-    stats: {
-      total_photos: 35,
-      total_wishes: 29,
-      total_voice_notes: 12,
-    },
-  },
-  {
-    id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     slug: "wedding-andi-sarah",
     title: "The Wedding of Andi & Sarah",
-    host_name: "Andi Pratama & Sarah Wijaya",
-    client_name: "Andi & Sarah",
     event_name: "The Wedding of Andi & Sarah",
+    host_name: "Andi Pratama & Sarah Wijaya",
+    client_name: "Andi Pratama & Sarah Wijaya",
     event_type: "wedding",
     date: "2026-10-15",
     venue: "Banua Subur Convention Hall",
     city: "Palopo",
-    description: "Selamat datang di perayaan hari bahagia kami! Abadikan momen terbaik Anda dan tinggalkan ucapan berkesan di RUANGTEMU photobooth kami.",
+    description: "Selamat datang di perayaan hari bahagia kami. Abadikan momen terbaik Anda!",
     cover_image: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
-    status: "ACTIVE",
-    is_active: true,
+    cover_image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
+    status: "COMPLETED",
+    is_active: false,
     allow_guestbook: true,
     allow_voice_note: true,
     allow_custom_frame: true,
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-    assigned_frames: defaultDemoFrames,
+    gallery_visibility: "PUBLIC",
     default_frame_config: {
       type: "strip_3",
       backgroundColor: "#0f172a",
@@ -278,19 +221,20 @@ let mockEvents: EventItem[] = [
       padding: 16,
       borderRadius: 12,
       sticker: "💍",
-      customOverlayUrl: "/frames/frame-strip-floral.png",
     },
+    created_at: "2026-10-02T14:46:55.000Z",
+    assigned_frames: defaultDemoFrames,
     stats: {
-      total_photos: 18,
-      total_wishes: 14,
-      total_voice_notes: 8,
+      total_photos: 0,
+      total_wishes: 0,
+      total_voice_notes: 0,
     },
   },
 ];
 
 let mockBookings: Booking[] = [
   {
-    id: "bkg-1",
+    id: "bkg-00000000-0001",
     customer_name: "Andi Pratama",
     customer_email: "andi.pratama@example.com",
     customer_phone: "081234567890",
@@ -305,25 +249,15 @@ let mockBookings: Booking[] = [
     status: "confirmed",
     notes: "Mohon backdrop nuansa Navy & Gold",
     total_price: 3800000,
-    created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+    created_at: "2026-10-02T14:46:55.000Z",
   },
 ];
 
-let mockEntries: GalleryEntry[] = [
-  {
-    id: "ent-1",
-    event_id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-    event_slug: "wedding-andi-sarah",
-    guest_name: "Fajar & Dina",
-    photo_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop",
-    message: "Selamat menempuh hidup baru Andi & Sarah! Semoga sakinah, mawaddah, warrahmah. Momen pernikahan terindah di Palopo!",
-    filter_used: "soft-glow",
-    likes_count: 12,
-    is_approved: true,
-    created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-];
+let mockEntries: GalleryEntry[] = [];
 
+// ============================================================================
+// ROW MAPPERS
+// ============================================================================
 function mapPackageRow(row: any): Package {
   return {
     id: String(row.id),
@@ -331,7 +265,7 @@ function mapPackageRow(row: any): Package {
     name: String(row.name),
     tagline: String(row.tagline || ""),
     price: Number(row.price || 0),
-    duration_hours: Number(row.duration_hours || 2),
+    duration_hours: Number(row.duration_hours || 3),
     features: parseJsonField<string[]>(row.features, []),
     popular: Boolean(row.popular),
     category: row.category,
@@ -340,7 +274,7 @@ function mapPackageRow(row: any): Package {
   };
 }
 
-function mapEventRow(row: any, assignedFrames?: FrameItem[]): EventItem {
+function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { total_photos: number; total_wishes: number; total_voice_notes: number }): EventItem {
   return {
     id: String(row.id),
     slug: String(row.slug),
@@ -370,9 +304,9 @@ function mapEventRow(row: any, assignedFrames?: FrameItem[]): EventItem {
       padding: 16,
       borderRadius: 12,
     }),
-    assigned_frames: assignedFrames,
+    assigned_frames: assignedFrames && assignedFrames.length > 0 ? assignedFrames : defaultDemoFrames,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
-    stats: {
+    stats: computedStats || {
       total_photos: Number(row.total_photos || 0),
       total_wishes: Number(row.total_wishes || 0),
       total_voice_notes: Number(row.total_voice_notes || 0),
@@ -423,25 +357,44 @@ function mapEntryRow(row: any): GalleryEntry {
 // PACKAGES API
 // ============================================================================
 export async function getPackages(): Promise<Package[]> {
-  try {
-    const rows = await query<any>("SELECT * FROM packages ORDER BY price ASC");
-    if (rows && rows.length > 0) {
-      return rows.map(mapPackageRow);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from("packages")
+        .select("*")
+        .order("price", { ascending: true });
+
+      if (error) {
+        console.warn("[Supabase] getPackages error:", error.message);
+      } else if (data && data.length > 0) {
+        return data.map(mapPackageRow);
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] getPackages exception:", err?.message);
     }
-    return [];
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
   }
   return mockPackages;
 }
 
 export async function getPackageBySlug(slug: string): Promise<Package | null> {
-  try {
-    const row = await queryOne<any>("SELECT * FROM packages WHERE slug = ? LIMIT 1", [slug]);
-    if (row) return mapPackageRow(row);
-    return null;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from("packages")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("[Supabase] getPackageBySlug error:", error.message);
+      } else if (data) {
+        return mapPackageRow(data);
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] getPackageBySlug exception:", err?.message);
+    }
   }
   const pkgs = await getPackages();
   return pkgs.find((p) => p.slug === slug) || null;
@@ -451,106 +404,126 @@ export async function getPackageBySlug(slug: string): Promise<Package | null> {
 // EVENTS API
 // ============================================================================
 export async function getEvents(): Promise<EventItem[]> {
-  try {
-    const rows = await query<any>(`
-      SELECT e.*,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.photo_url IS NOT NULL) AS total_photos,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.message IS NOT NULL AND en.message != '') AS total_wishes,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.voice_note_url IS NOT NULL) AS total_voice_notes
-      FROM events e
-      ORDER BY e.created_at DESC, e.date DESC
-    `);
-
-    if (!rows || rows.length === 0) return [];
-
-    const frameMap: Record<string, FrameItem[]> = {};
+  const client = getDbClient();
+  if (client) {
     try {
-      const allFrameRows = await query<any>(`
-        SELECT ef.event_id, f.*
-        FROM event_frames ef
-        JOIN frames f ON f.id = ef.frame_id
-        ORDER BY ef.sort_order ASC
-      `);
-      if (allFrameRows && allFrameRows.length > 0) {
-        for (const fr of allFrameRows) {
-          const evId = String(fr.event_id);
-          if (!frameMap[evId]) frameMap[evId] = [];
-          frameMap[evId].push({
-            id: String(fr.id),
-            name: String(fr.name),
-            slug: String(fr.slug),
-            template_type: fr.template_type,
-            preview_url: fr.preview_url || undefined,
-            config_json: parseJsonField(fr.config_json, {} as any),
-            is_active: Boolean(fr.is_active),
-          });
-        }
-      }
-    } catch {
-      // frame query can fail independently; events still valid
-    }
+      const { data: rows, error } = await client
+        .from("events")
+        .select(`
+          *,
+          event_frames (
+            sort_order,
+            frames (*)
+          ),
+          entries (
+            id,
+            photo_url,
+            voice_note_url,
+            message
+          )
+        `)
+        .order("created_at", { ascending: false });
 
-    return rows.map((r) => {
-      const frames = frameMap[String(r.id)] || defaultDemoFrames;
-      return mapEventRow(r, frames);
-    });
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
+      if (error) {
+        console.warn("[Supabase] getEvents error:", error.message);
+      } else if (rows && rows.length > 0) {
+        return rows.map((r: any) => {
+          // Process assigned frames
+          let assignedFrames: FrameItem[] = [];
+          if (Array.isArray(r.event_frames) && r.event_frames.length > 0) {
+            const sorted = [...r.event_frames].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            assignedFrames = sorted
+              .map((ef) => ef.frames)
+              .filter(Boolean)
+              .map((fr: any) => ({
+                id: String(fr.id),
+                name: String(fr.name),
+                slug: String(fr.slug),
+                template_type: fr.template_type,
+                preview_url: fr.preview_url || undefined,
+                config_json: parseJsonField(fr.config_json, {} as any),
+                is_active: Boolean(fr.is_active),
+              }));
+          }
+
+          // Compute stats
+          const entriesList = Array.isArray(r.entries) ? r.entries : [];
+          const stats = {
+            total_photos: entriesList.filter((e: any) => !!e.photo_url).length,
+            total_wishes: entriesList.filter((e: any) => !!e.message && String(e.message).trim() !== "").length,
+            total_voice_notes: entriesList.filter((e: any) => !!e.voice_note_url).length,
+          };
+
+          return mapEventRow(r, assignedFrames, stats);
+        });
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] getEvents exception:", err?.message);
+    }
   }
+
   return [...mockEvents].sort(
     (a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime()
   );
 }
 
 export async function getEventBySlug(slug: string): Promise<EventItem | null> {
-  try {
-    const row = await queryOne<any>(`
-      SELECT e.*,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.photo_url IS NOT NULL) AS total_photos,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.message IS NOT NULL AND en.message != '') AS total_wishes,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.voice_note_url IS NOT NULL) AS total_voice_notes
-      FROM events e
-      WHERE e.slug = ?
-      LIMIT 1
-    `, [slug]);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { data: row, error } = await client
+        .from("events")
+        .select(`
+          *,
+          event_frames (
+            sort_order,
+            frames (*)
+          ),
+          entries (
+            id,
+            photo_url,
+            voice_note_url,
+            message
+          )
+        `)
+        .eq("slug", slug)
+        .maybeSingle();
 
-    if (row) {
-      let assignedFrames: FrameItem[] = [];
-      try {
-        const frameRows = await query<any>(`
-          SELECT f.*
-          FROM frames f
-          JOIN event_frames ef ON ef.frame_id = f.id
-          WHERE ef.event_id = ?
-          ORDER BY ef.sort_order ASC
-        `, [row.id]);
-
-        if (frameRows && frameRows.length > 0) {
-          assignedFrames = frameRows.map((fr) => ({
-            id: String(fr.id),
-            name: String(fr.name),
-            slug: String(fr.slug),
-            template_type: fr.template_type,
-            preview_url: fr.preview_url || undefined,
-            config_json: parseJsonField(fr.config_json, {} as any),
-            is_active: Boolean(fr.is_active),
-          }));
+      if (error) {
+        console.warn("[Supabase] getEventBySlug error:", error.message);
+      } else if (row) {
+        let assignedFrames: FrameItem[] = [];
+        if (Array.isArray(row.event_frames) && row.event_frames.length > 0) {
+          const sorted = [...row.event_frames].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+          assignedFrames = sorted
+            .map((ef) => ef.frames)
+            .filter(Boolean)
+            .map((fr: any) => ({
+              id: String(fr.id),
+              name: String(fr.name),
+              slug: String(fr.slug),
+              template_type: fr.template_type,
+              preview_url: fr.preview_url || undefined,
+              config_json: parseJsonField(fr.config_json, {} as any),
+              is_active: Boolean(fr.is_active),
+            }));
         }
-      } catch {
-        // frame query can fail independently
-      }
 
-      if (assignedFrames.length === 0) {
-        assignedFrames = defaultDemoFrames;
-      }
+        const entriesList = Array.isArray(row.entries) ? row.entries : [];
+        const stats = {
+          total_photos: entriesList.filter((e: any) => !!e.photo_url).length,
+          total_wishes: entriesList.filter((e: any) => !!e.message && String(e.message).trim() !== "").length,
+          total_voice_notes: entriesList.filter((e: any) => !!e.voice_note_url).length,
+        };
 
-      return mapEventRow(row, assignedFrames.length > 0 ? assignedFrames : undefined);
+        return mapEventRow(row, assignedFrames, stats);
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] getEventBySlug exception:", err?.message);
     }
-    return null;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
   }
-  return mockEvents.find((e) => e.slug === slug) || null;
+
+  return mockEvents.find((e) => e.slug === slug || e.id === slug) || null;
 }
 
 export async function createEvent(event: Omit<EventItem, "id" | "created_at">): Promise<EventItem> {
@@ -560,150 +533,136 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
     created_at: new Date().toISOString(),
   };
 
-  try {
-    await query(
-      `INSERT INTO events (
-        id, slug, title, host_name, client_name, event_name, event_type, date, venue, city,
-        description, cover_image, cover_image_url, status, is_active, allow_guestbook,
-        allow_voice_note, allow_custom_frame, gallery_visibility, default_frame_config
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        newEvent.id,
-        newEvent.slug,
-        newEvent.title,
-        newEvent.host_name,
-        newEvent.client_name || newEvent.host_name,
-        newEvent.event_name || newEvent.title,
-        newEvent.event_type || "wedding",
-        newEvent.date,
-        newEvent.venue,
-        newEvent.city || "Palopo",
-        newEvent.description || "",
-        newEvent.cover_image || "",
-        newEvent.cover_image_url || newEvent.cover_image || "",
-        newEvent.status || "ACTIVE",
-        newEvent.is_active ? 1 : 0,
-        newEvent.allow_guestbook ? 1 : 0,
-        newEvent.allow_voice_note ? 1 : 0,
-        newEvent.allow_custom_frame ? 1 : 0,
-        newEvent.gallery_visibility || "PUBLIC",
-        JSON.stringify(newEvent.default_frame_config || {}),
-      ]
-    );
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error: evErr } = await client.from("events").insert({
+        id: newEvent.id,
+        slug: newEvent.slug,
+        title: newEvent.title,
+        host_name: newEvent.host_name,
+        client_name: newEvent.client_name || newEvent.host_name,
+        event_name: newEvent.event_name || newEvent.title,
+        event_type: newEvent.event_type || "wedding",
+        date: newEvent.date,
+        venue: newEvent.venue,
+        city: newEvent.city || "Palopo",
+        description: newEvent.description || "",
+        cover_image: newEvent.cover_image || "",
+        cover_image_url: newEvent.cover_image_url || newEvent.cover_image || "",
+        status: newEvent.status || "ACTIVE",
+        is_active: newEvent.is_active ?? true,
+        allow_guestbook: newEvent.allow_guestbook ?? true,
+        allow_voice_note: newEvent.allow_voice_note ?? true,
+        allow_custom_frame: newEvent.allow_custom_frame ?? true,
+        gallery_visibility: newEvent.gallery_visibility || "PUBLIC",
+        default_frame_config: newEvent.default_frame_config || {},
+      });
 
-    if (newEvent.assigned_frames && newEvent.assigned_frames.length > 0) {
-      for (let i = 0; i < newEvent.assigned_frames.length; i++) {
-        const fr = newEvent.assigned_frames[i];
-        try {
-          await query(
-            `INSERT INTO frames (id, name, slug, template_type, preview_url, config_json, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, 1)
-             ON DUPLICATE KEY UPDATE name = VALUES(name), preview_url = VALUES(preview_url), config_json = VALUES(config_json)`,
-            [fr.id, fr.name, fr.slug, fr.template_type, fr.preview_url || null, JSON.stringify(fr.config_json || {})]
-          );
-          await query(
-            `INSERT IGNORE INTO event_frames (id, event_id, frame_id, sort_order)
-             VALUES (?, ?, ?, ?)`,
-            [randomUUID(), newEvent.id, fr.id, i + 1]
-          );
-        } catch (fErr) {
-          console.warn("[MySQL] frame insert skipped:", (fErr as any)?.message);
+      if (evErr) {
+        throw new Error(evErr.message);
+      }
+
+      if (newEvent.assigned_frames && newEvent.assigned_frames.length > 0) {
+        for (let i = 0; i < newEvent.assigned_frames.length; i++) {
+          const fr = newEvent.assigned_frames[i];
+          try {
+            await client.from("frames").upsert({
+              id: fr.id,
+              name: fr.name,
+              slug: fr.slug,
+              template_type: fr.template_type || "custom",
+              preview_url: fr.preview_url || null,
+              config_json: fr.config_json || {},
+              is_active: true,
+            });
+
+            await client.from("event_frames").upsert({
+              id: randomUUID(),
+              event_id: newEvent.id,
+              frame_id: fr.id,
+              sort_order: i + 1,
+            });
+          } catch (fErr: any) {
+            console.warn("[Supabase] frame insert skipped:", fErr?.message);
+          }
         }
       }
-    }
 
-    return newEvent;
-  } catch (err: any) {
-    if (!isConnectionError(err)) {
-      throw err;
+      return newEvent;
+    } catch (err: any) {
+      console.warn("[Supabase] createEvent fallback to memory:", err?.message);
     }
-    console.warn("[MySQL] unreachable, event saved to memory only:", err?.message);
   }
 
   mockEvents.unshift(newEvent);
   return newEvent;
 }
 
-export async function updateEvent(id: string, updates: Partial<EventItem> & { assigned_frames?: FrameItem[] }): Promise<EventItem | null> {
-  try {
-    const fields: string[] = [];
-    const values: any[] = [];
-
-    if (updates.title !== undefined) { fields.push("title = ?"); values.push(updates.title); }
-    if (updates.slug !== undefined) { fields.push("slug = ?"); values.push(updates.slug); }
-    if (updates.host_name !== undefined) { fields.push("host_name = ?"); values.push(updates.host_name); }
-    if (updates.client_name !== undefined) { fields.push("client_name = ?"); values.push(updates.client_name); }
-    if (updates.event_name !== undefined) { fields.push("event_name = ?"); values.push(updates.event_name); }
-    if (updates.event_type !== undefined) { fields.push("event_type = ?"); values.push(updates.event_type); }
-    if (updates.date !== undefined) { fields.push("date = ?"); values.push(updates.date); }
-    if (updates.venue !== undefined) { fields.push("venue = ?"); values.push(updates.venue); }
-    if (updates.city !== undefined) { fields.push("city = ?"); values.push(updates.city); }
-    if (updates.description !== undefined) { fields.push("description = ?"); values.push(updates.description); }
-    if (updates.cover_image !== undefined) { fields.push("cover_image = ?"); values.push(updates.cover_image); fields.push("cover_image_url = ?"); values.push(updates.cover_image); }
-    if (updates.status !== undefined) { fields.push("status = ?"); values.push(updates.status); }
-    if (updates.is_active !== undefined) { fields.push("is_active = ?"); values.push(updates.is_active ? 1 : 0); }
-    if (updates.allow_guestbook !== undefined) { fields.push("allow_guestbook = ?"); values.push(updates.allow_guestbook ? 1 : 0); }
-    if (updates.allow_voice_note !== undefined) { fields.push("allow_voice_note = ?"); values.push(updates.allow_voice_note ? 1 : 0); }
-    if (updates.allow_custom_frame !== undefined) { fields.push("allow_custom_frame = ?"); values.push(updates.allow_custom_frame ? 1 : 0); }
-    if (updates.default_frame_config !== undefined) { fields.push("default_frame_config = ?"); values.push(JSON.stringify(updates.default_frame_config)); }
-
-    if (fields.length > 0) {
-      values.push(id);
-      await query(`UPDATE events SET ${fields.join(", ")} WHERE id = ?`, values);
-    }
-
-    if (updates.assigned_frames !== undefined) {
-      await query(`DELETE FROM event_frames WHERE event_id = ?`, [id]);
-
-      for (let i = 0; i < updates.assigned_frames.length; i++) {
-        const fr = updates.assigned_frames[i];
-        await query(
-          `INSERT INTO frames (id, name, slug, template_type, preview_url, config_json, is_active)
-           VALUES (?, ?, ?, ?, ?, ?, 1)
-           ON DUPLICATE KEY UPDATE name = VALUES(name), slug = VALUES(slug), template_type = VALUES(template_type), preview_url = VALUES(preview_url), config_json = VALUES(config_json)`,
-          [fr.id, fr.name, fr.slug, fr.template_type, fr.preview_url || null, JSON.stringify(fr.config_json || {})]
-        );
-        await query(
-          `INSERT INTO event_frames (id, event_id, frame_id, sort_order) VALUES (?, ?, ?, ?)`,
-          [randomUUID(), id, fr.id, i + 1]
-        );
-      }
-    }
-
-    let assignedFrames: FrameItem[] = [];
+export async function updateEvent(
+  id: string,
+  updates: Partial<EventItem> & { assigned_frames?: FrameItem[] }
+): Promise<EventItem | null> {
+  const client = getDbClient();
+  if (client) {
     try {
-      const frameRows = await query<any>(`
-        SELECT f.* FROM frames f
-        JOIN event_frames ef ON ef.frame_id = f.id
-        WHERE ef.event_id = ?
-        ORDER BY ef.sort_order ASC
-      `, [id]);
-      if (frameRows && frameRows.length > 0) {
-        assignedFrames = frameRows.map((fr) => ({
-          id: String(fr.id),
-          name: String(fr.name),
-          slug: String(fr.slug),
-          template_type: fr.template_type,
-          preview_url: fr.preview_url || undefined,
-          config_json: parseJsonField(fr.config_json, {} as any),
-          is_active: Boolean(fr.is_active),
-        }));
+      const updatePayload: Record<string, any> = {};
+      if (updates.title !== undefined) updatePayload.title = updates.title;
+      if (updates.slug !== undefined) updatePayload.slug = updates.slug;
+      if (updates.host_name !== undefined) updatePayload.host_name = updates.host_name;
+      if (updates.client_name !== undefined) updatePayload.client_name = updates.client_name;
+      if (updates.event_name !== undefined) updatePayload.event_name = updates.event_name;
+      if (updates.event_type !== undefined) updatePayload.event_type = updates.event_type;
+      if (updates.date !== undefined) updatePayload.date = updates.date;
+      if (updates.venue !== undefined) updatePayload.venue = updates.venue;
+      if (updates.city !== undefined) updatePayload.city = updates.city;
+      if (updates.description !== undefined) updatePayload.description = updates.description;
+      if (updates.cover_image !== undefined) {
+        updatePayload.cover_image = updates.cover_image;
+        updatePayload.cover_image_url = updates.cover_image;
       }
-    } catch {
-      // frame query can fail independently
-    }
+      if (updates.status !== undefined) updatePayload.status = updates.status;
+      if (updates.is_active !== undefined) updatePayload.is_active = updates.is_active;
+      if (updates.allow_guestbook !== undefined) updatePayload.allow_guestbook = updates.allow_guestbook;
+      if (updates.allow_voice_note !== undefined) updatePayload.allow_voice_note = updates.allow_voice_note;
+      if (updates.allow_custom_frame !== undefined) updatePayload.allow_custom_frame = updates.allow_custom_frame;
+      if (updates.default_frame_config !== undefined) updatePayload.default_frame_config = updates.default_frame_config;
 
-    const row = await queryOne<any>(`
-      SELECT e.*,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.photo_url IS NOT NULL) AS total_photos,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.message IS NOT NULL AND en.message != '') AS total_wishes,
-        (SELECT COUNT(*) FROM entries en WHERE en.event_id = e.id AND en.voice_note_url IS NOT NULL) AS total_voice_notes
-      FROM events e WHERE e.id = ?
-    `, [id]);
-    return row ? mapEventRow(row, assignedFrames.length > 0 ? assignedFrames : undefined) : null;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
-    console.warn("[MySQL] updateEvent fallback to memory:", err?.message);
+      if (Object.keys(updatePayload).length > 0) {
+        const { error: updErr } = await client.from("events").update(updatePayload).eq("id", id);
+        if (updErr) console.warn("[Supabase] updateEvent error:", updErr.message);
+      }
+
+      if (updates.assigned_frames !== undefined) {
+        await client.from("event_frames").delete().eq("event_id", id);
+
+        for (let i = 0; i < updates.assigned_frames.length; i++) {
+          const fr = updates.assigned_frames[i];
+          await client.from("frames").upsert({
+            id: fr.id,
+            name: fr.name,
+            slug: fr.slug,
+            template_type: fr.template_type || "custom",
+            preview_url: fr.preview_url || null,
+            config_json: fr.config_json || {},
+            is_active: true,
+          });
+
+          await client.from("event_frames").insert({
+            id: randomUUID(),
+            event_id: id,
+            frame_id: fr.id,
+            sort_order: i + 1,
+          });
+        }
+      }
+
+      // Fetch the updated event
+      const updated = await getEventBySlug(updates.slug || id);
+      if (updated) return updated;
+    } catch (err: any) {
+      console.warn("[Supabase] updateEvent fallback to memory:", err?.message);
+    }
   }
 
   const idx = mockEvents.findIndex((e) => e.id === id);
@@ -715,13 +674,20 @@ export async function updateEvent(id: string, updates: Partial<EventItem> & { as
 }
 
 export async function deleteEvent(id: string): Promise<boolean> {
-  try {
-    await query("DELETE FROM events WHERE id = ?", [id]);
-    return true;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
-    console.warn("[MySQL] deleteEvent fallback:", err?.message);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client.from("events").delete().eq("id", id);
+      if (error) {
+        console.warn("[Supabase] deleteEvent error:", error.message);
+      } else {
+        return true;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] deleteEvent exception:", err?.message);
+    }
   }
+
   mockEvents = mockEvents.filter((e) => e.id !== id);
   return true;
 }
@@ -730,19 +696,29 @@ export async function deleteEvent(id: string): Promise<boolean> {
 // BOOKINGS API
 // ============================================================================
 export async function getBookings(): Promise<Booking[]> {
-  try {
-    const rows = await query<any>("SELECT * FROM bookings ORDER BY created_at DESC");
-    if (rows && rows.length > 0) {
-      return rows.map(mapBookingRow);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.warn("[Supabase] getBookings error:", error.message);
+      } else if (data && data.length > 0) {
+        return data.map(mapBookingRow);
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] getBookings exception:", err?.message);
     }
-    return [];
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
   }
   return mockBookings;
 }
 
-export async function createBooking(booking: Omit<Booking, "id" | "created_at" | "status">): Promise<Booking> {
+export async function createBooking(
+  booking: Omit<Booking, "id" | "created_at" | "status">
+): Promise<Booking> {
   const newBooking: Booking = {
     ...booking,
     id: randomUUID(),
@@ -750,35 +726,35 @@ export async function createBooking(booking: Omit<Booking, "id" | "created_at" |
     created_at: new Date().toISOString(),
   };
 
-  try {
-    await query(
-      `INSERT INTO bookings (
-        id, customer_name, customer_email, customer_phone, event_type,
-        event_name, event_date, event_time, location, city, package_id,
-        package_name, status, notes, total_price
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        newBooking.id,
-        newBooking.customer_name,
-        newBooking.customer_email,
-        newBooking.customer_phone,
-        newBooking.event_type,
-        newBooking.event_name,
-        newBooking.event_date,
-        newBooking.event_time || null,
-        newBooking.location,
-        newBooking.city || "Palopo",
-        newBooking.package_id || null,
-        newBooking.package_name || null,
-        newBooking.status,
-        newBooking.notes || null,
-        newBooking.total_price,
-      ]
-    );
-    return newBooking;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
-    console.warn("[MySQL] createBooking fallback:", err?.message);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client.from("bookings").insert({
+        id: newBooking.id,
+        customer_name: newBooking.customer_name,
+        customer_email: newBooking.customer_email,
+        customer_phone: newBooking.customer_phone,
+        event_type: newBooking.event_type,
+        event_name: newBooking.event_name,
+        event_date: newBooking.event_date,
+        event_time: newBooking.event_time || null,
+        location: newBooking.location,
+        city: newBooking.city || "Palopo",
+        package_id: newBooking.package_id || null,
+        package_name: newBooking.package_name || null,
+        status: newBooking.status,
+        notes: newBooking.notes || null,
+        total_price: newBooking.total_price || 0,
+      });
+
+      if (error) {
+        console.warn("[Supabase] createBooking error:", error.message);
+      } else {
+        return newBooking;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] createBooking exception:", err?.message);
+    }
   }
 
   mockBookings.unshift(newBooking);
@@ -786,12 +762,20 @@ export async function createBooking(booking: Omit<Booking, "id" | "created_at" |
 }
 
 export async function updateBookingStatus(id: string, status: BookingStatus): Promise<boolean> {
-  try {
-    await query("UPDATE bookings SET status = ? WHERE id = ?", [status, id]);
-    return true;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client.from("bookings").update({ status }).eq("id", id);
+      if (error) {
+        console.warn("[Supabase] updateBookingStatus error:", error.message);
+      } else {
+        return true;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] updateBookingStatus exception:", err?.message);
+    }
   }
+
   const b = mockBookings.find((item) => item.id === id);
   if (b) {
     b.status = status;
@@ -804,24 +788,32 @@ export async function updateBookingStatus(id: string, status: BookingStatus): Pr
 // ENTRIES API (Guest Photobooth & Gallery)
 // ============================================================================
 export async function getEventEntries(eventId: string): Promise<GalleryEntry[]> {
-  try {
-    const rows = await query<any>(
-      `SELECT * FROM entries 
-       WHERE (event_id = ? OR event_slug = ?) AND is_approved = 1 
-       ORDER BY created_at DESC`,
-      [eventId, eventId]
-    );
-    if (rows && rows.length > 0) {
-      return rows.map(mapEntryRow);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from("entries")
+        .select("*")
+        .or(`event_id.eq.${eventId},event_slug.eq.${eventId}`)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.warn("[Supabase] getEventEntries error:", error.message);
+      } else if (data && data.length > 0) {
+        return data.map(mapEntryRow);
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] getEventEntries exception:", err?.message);
     }
-    return [];
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
   }
+
   return mockEntries.filter((e) => e.event_id === eventId || e.event_slug === eventId);
 }
 
-export async function createEntry(entry: Omit<GalleryEntry, "id" | "created_at" | "likes_count" | "is_approved">): Promise<GalleryEntry> {
+export async function createEntry(
+  entry: Omit<GalleryEntry, "id" | "created_at" | "likes_count" | "is_approved">
+): Promise<GalleryEntry> {
   const newEntry: GalleryEntry = {
     ...entry,
     id: randomUUID(),
@@ -830,27 +822,32 @@ export async function createEntry(entry: Omit<GalleryEntry, "id" | "created_at" 
     created_at: new Date().toISOString(),
   };
 
-  try {
-    await query(
-      `INSERT INTO entries (
-        id, event_id, event_slug, guest_name, photo_url, voice_note_url,
-        message, filter_used, likes_count, is_approved, moderation_status, is_published
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 'APPROVED', 1)`,
-      [
-        newEntry.id,
-        newEntry.event_id,
-        newEntry.event_slug || null,
-        newEntry.guest_name,
-        newEntry.photo_url,
-        newEntry.voice_note_url || null,
-        newEntry.message || null,
-        newEntry.filter_used || "normal",
-      ]
-    );
-    return newEntry;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
-    console.warn("[MySQL] createEntry fallback to memory:", err?.message);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client.from("entries").insert({
+        id: newEntry.id,
+        event_id: newEntry.event_id,
+        event_slug: newEntry.event_slug || null,
+        guest_name: newEntry.guest_name,
+        photo_url: newEntry.photo_url,
+        voice_note_url: newEntry.voice_note_url || null,
+        message: newEntry.message || null,
+        filter_used: newEntry.filter_used || "normal",
+        likes_count: 0,
+        is_approved: true,
+        moderation_status: "APPROVED",
+        is_published: true,
+      });
+
+      if (error) {
+        console.warn("[Supabase] createEntry error:", error.message);
+      } else {
+        return newEntry;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] createEntry fallback to memory:", err?.message);
+    }
   }
 
   mockEntries.unshift(newEntry);
@@ -858,12 +855,20 @@ export async function createEntry(entry: Omit<GalleryEntry, "id" | "created_at" 
 }
 
 export async function toggleEntryApproval(id: string, is_approved: boolean): Promise<boolean> {
-  try {
-    await query("UPDATE entries SET is_approved = ? WHERE id = ?", [is_approved ? 1 : 0, id]);
-    return true;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client.from("entries").update({ is_approved }).eq("id", id);
+      if (error) {
+        console.warn("[Supabase] toggleEntryApproval error:", error.message);
+      } else {
+        return true;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] toggleEntryApproval exception:", err?.message);
+    }
   }
+
   const item = mockEntries.find((e) => e.id === id);
   if (item) {
     item.is_approved = is_approved;
@@ -873,13 +878,20 @@ export async function toggleEntryApproval(id: string, is_approved: boolean): Pro
 }
 
 export async function deleteEntry(id: string): Promise<boolean> {
-  try {
-    await query("DELETE FROM entries WHERE id = ?", [id]);
-    return true;
-  } catch (err: any) {
-    if (!isConnectionError(err)) throw err;
-    console.warn("[MySQL] deleteEntry fallback:", err?.message);
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client.from("entries").delete().eq("id", id);
+      if (error) {
+        console.warn("[Supabase] deleteEntry error:", error.message);
+      } else {
+        return true;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] deleteEntry exception:", err?.message);
+    }
   }
+
   mockEntries = mockEntries.filter((e) => e.id !== id);
   return true;
 }

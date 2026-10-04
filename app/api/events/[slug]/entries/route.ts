@@ -37,9 +37,9 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: false, error: "Foto wajib ada" }, { status: 400 });
     }
 
-    // Save base64 photo and voice note to disk to keep database queries fast and light
-    const savedPhotoUrl = saveEntryPhoto(body.photo_url, `${event.slug}-photo`);
-    const savedVoiceNoteUrl = saveVoiceNote(body.voice_note_url, `${event.slug}-audio`);
+    // Save photo and voice note to Supabase Storage or disk
+    const savedPhotoUrl = await saveEntryPhoto(body.photo_url, `${event.slug}-photo`);
+    const savedVoiceNoteUrl = await saveVoiceNote(body.voice_note_url, `${event.slug}-audio`);
 
     const entry = await createEntry({
       event_id: event.id,

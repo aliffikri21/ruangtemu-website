@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const url = saveFrameImage(buffer, file.name);
+      const url = await saveFrameImage(buffer, file.name);
 
       return NextResponse.json({ success: true, url, fileName: file.name });
     }
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Data URL tidak ditemukan" }, { status: 400 });
     }
 
-    const url = saveFrameImage(body.dataUrl, body.fileName || "frame");
+    const url = await saveFrameImage(body.dataUrl, body.fileName || "frame");
     return NextResponse.json({ success: true, url, fileName: body.fileName });
   } catch (error: any) {
     console.error("Frame upload error:", error);
