@@ -814,9 +814,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       {/* ─── STEP 1.5: NAME INPUT SCREEN (SEPARATE STEP AFTER SPLASH DELAY) ─── */}
       {currentStep === "name_input" && (
         <main
-          className={`flex-1 flex flex-col px-5 overflow-y-auto relative z-10 min-h-[100dvh] justify-between ${
-            isNurulIqraWedding ? "bg-transparent text-stone-900" : "bg-[#111113] text-stone-100"
-          }`}
+          className={`flex-1 flex flex-col px-5 overflow-y-auto relative z-10 min-h-[100dvh] justify-between ${isNurulIqraWedding ? "bg-transparent text-stone-900" : "bg-[#111113] text-stone-100"
+            }`}
           style={{
             paddingTop: "max(1.25rem, env(safe-area-inset-top))",
             paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
@@ -828,9 +827,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               <button
                 type="button"
                 onClick={() => setCurrentStep("welcome")}
-                className={`min-h-[44px] px-3.5 flex items-center gap-1.5 text-xs font-medium rounded-full transition-colors ${
-                  isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border border-red-100 shadow-sm" : "text-stone-400 active:text-white"
-                }`}
+                className={`min-h-[44px] px-3.5 flex items-center gap-1.5 text-xs font-medium rounded-full transition-colors ${isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border border-red-100 shadow-sm" : "text-stone-400 active:text-white"
+                  }`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                 <span>Lihat Poster</span>
@@ -838,9 +836,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
               <Link
                 href={`/event/${event.slug}/gallery`}
-                className={`min-h-[44px] text-xs font-medium flex items-center gap-1 px-3.5 py-1.5 rounded-full border shadow-sm transition-colors ${
-                  isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border-red-100" : "text-stone-300 bg-stone-900 border-stone-800"
-                }`}
+                className={`min-h-[44px] text-xs font-medium flex items-center gap-1 px-3.5 py-1.5 rounded-full border shadow-sm transition-colors ${isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border-red-100" : "text-stone-300 bg-stone-900 border-stone-800"
+                  }`}
               >
                 <span>Galeri Foto</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
@@ -877,15 +874,13 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
               {/* Name Input Card */}
               <div
-                className={`p-6 rounded-2xl border space-y-4 shadow-xl ${
-                  isNurulIqraWedding ? "bg-white/95 backdrop-blur-sm border-2 border-[#c51d24]/20 shadow-red-950/5" : "bg-stone-900 border-stone-800 shadow-md"
-                }`}
+                className={`p-6 rounded-2xl border space-y-4 shadow-xl ${isNurulIqraWedding ? "bg-white/95 backdrop-blur-sm border-2 border-[#c51d24]/20 shadow-red-950/5" : "bg-stone-900 border-stone-800 shadow-md"
+                  }`}
               >
                 <div className="text-center space-y-1">
                   <label
-                    className={`block text-xs uppercase tracking-widest font-bold ${
-                      isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
-                    }`}
+                    className={`block text-xs uppercase tracking-widest font-bold ${isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
+                      }`}
                   >
                     Masukkan Nama Anda
                   </label>
@@ -908,22 +903,20 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                         setCurrentStep("frame_select");
                       }
                     }}
-                    className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${
-                      isNurulIqraWedding
+                    className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${isNurulIqraWedding
                         ? "bg-stone-50/70 border-2 border-[#c51d24]/30 focus:border-[#c51d24] focus:bg-white focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-inner"
                         : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
-                    }`}
+                      }`}
                   />
                 </div>
 
                 <button
                   disabled={!guestName.trim()}
                   onClick={() => setCurrentStep("frame_select")}
-                  className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg flex items-center justify-center gap-2 ${
-                    isNurulIqraWedding
+                  className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg flex items-center justify-center gap-2 ${isNurulIqraWedding
                       ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
                       : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
-                  }`}
+                    }`}
                 >
                   <span>Lanjut Pilih Frame</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
@@ -1087,11 +1080,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                             <img
                               src={overlayUrl}
                               alt={frame.name}
-                              className={`max-h-[370px] sm:max-h-[410px] w-auto object-contain transition-all duration-300 select-none pointer-events-none ${
-                                isSelected
+                              className={`max-h-[370px] sm:max-h-[410px] w-auto object-contain transition-all duration-300 select-none pointer-events-none ${isSelected
                                   ? "scale-100 opacity-100 drop-shadow-[0_16px_36px_rgba(0,0,0,0.26)]"
                                   : "scale-[0.88] opacity-50 hover:opacity-75 drop-shadow-[0_8px_18px_rgba(0,0,0,0.14)]"
-                              }`}
+                                }`}
                             />
                           ) : (
                             <div className="w-[180px] h-[270px] bg-white rounded-lg shadow-xl flex items-center justify-center font-mono text-xs text-stone-500">
@@ -1115,11 +1107,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           className="snap-center shrink-0 w-[250px] flex items-center justify-center cursor-pointer select-none py-3"
                         >
                           <div
-                            className={`w-[180px] h-[280px] bg-white text-stone-900 rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 ${
-                              isSelected
+                            className={`w-[180px] h-[280px] bg-white text-stone-900 rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 ${isSelected
                                 ? "scale-100 opacity-100 shadow-2xl ring-2 ring-[#c51d24]"
                                 : "scale-[0.88] opacity-50 shadow-md"
-                            }`}
+                              }`}
                           >
                             <div className="text-center font-bold text-sm">{tmpl.name}</div>
                             <div className="text-xs text-[#c51d24] font-semibold">{tmpl.shots} Pose Foto</div>
@@ -1142,15 +1133,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           type="button"
                           onClick={() => handleSelectFrame(frame, idx)}
                           aria-label={`Pilih Frame ${idx + 1}`}
-                          className={`transition-all duration-300 rounded-full ${
-                            isCurrent
+                          className={`transition-all duration-300 rounded-full ${isCurrent
                               ? isNurulIqraWedding
                                 ? "w-6 h-2 bg-[#c51d24] shadow-sm"
                                 : "w-6 h-2 bg-white"
                               : isNurulIqraWedding
                                 ? "w-2 h-2 bg-stone-300 hover:bg-stone-400"
                                 : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
-                          }`}
+                            }`}
                         />
                       );
                     })
@@ -1166,11 +1156,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                             scrollToFrame(idx);
                           }}
                           aria-label={`Pilih Frame ${idx + 1}`}
-                          className={`transition-all duration-300 rounded-full ${
-                            isCurrent
+                          className={`transition-all duration-300 rounded-full ${isCurrent
                               ? "w-6 h-2 bg-white shadow-sm"
                               : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
-                          }`}
+                            }`}
                         />
                       );
                     })
