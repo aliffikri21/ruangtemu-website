@@ -4,7 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import { EventItem, FrameConfig, FrameType, CameraFilter } from "@/types";
-import { renderPhotoboothFrame } from "@/lib/frame-canvas";
+import {
+  renderPhotoboothFrame,
+  applyFilterToContext,
+  isCanvasFilterSupported,
+  applyPixelFilter,
+} from "@/lib/frame-canvas";
 import { VoiceNoteRecorder } from "@/lib/audio";
 
 interface VirtualBoothProps {
@@ -315,6 +320,12 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       ctx.translate(outWidth, 0);
       ctx.scale(-1, 1);
     }
+
+    const useNativeFilter = isCanvasFilterSupported() && selectedFilter && selectedFilter !== "normal";
+    if (useNativeFilter) {
+      applyFilterToContext(ctx, selectedFilter);
+    }
+
     ctx.drawImage(
       video,
       sourceX,
@@ -326,6 +337,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       outWidth,
       outHeight
     );
+
+    if (facingMode === "user") {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    if (!useNativeFilter && selectedFilter && selectedFilter !== "normal") {
+      applyPixelFilter(ctx, outWidth, outHeight, selectedFilter);
+    }
 
     return tempCanvas.toDataURL("image/jpeg", 0.90);
   };
@@ -406,7 +425,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       const dataUrl = await renderPhotoboothFrame(canvasRef.current, {
         photos: photosToUse,
         config: frameConfig,
-        filter: selectedFilter,
+        filter: "normal", // Photos already have selectedFilter baked in at capture
         highRes: true,
       });
       setCompositeDataUrl(dataUrl);
