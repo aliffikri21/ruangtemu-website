@@ -37,6 +37,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     event.slug.toLowerCase().includes("nurul") ||
     event.title.toLowerCase().includes("nurul");
 
+  const isIlvaRickyWedding =
+    event.slug === "ilvaricky-wedding" ||
+    event.slug.toLowerCase().includes("ilva") ||
+    event.title.toLowerCase().includes("ilva");
+
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -695,8 +700,24 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </div>
       )}
 
-      {/* Minimal Top Bar (hidden on welcome and name_input screen for Nurul & Iqra to showcase clean bridal layout) */}
-      {(!isNurulIqraWedding || (currentStep !== "welcome" && currentStep !== "name_input")) && (
+      {/* Ilva & Ricky Couple Photo Background Overlay for screens after welcome */}
+      {isIlvaRickyWedding && currentStep !== "welcome" && currentStep !== "camera" && (
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/events/ilva-ricky-clean-bg.png"
+            alt=""
+            className="w-full h-full object-cover object-[center_25%] opacity-15 select-none"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050906]/85 via-[#050906]/90 to-[#050906]" />
+        </div>
+      )}
+
+      {/* Minimal Top Bar (hidden on welcome and name_input screen for custom wedding themes) */}
+      {((!isNurulIqraWedding && !isIlvaRickyWedding) || (currentStep !== "welcome" && currentStep !== "name_input")) && (
         <header
           className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${isNurulIqraWedding
             ? "border-red-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
@@ -721,6 +742,76 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       )}
 
       <canvas ref={canvasRef} className="hidden" />
+
+      {/* ─── STEP 1: WELCOME SCREEN (CUSTOM FULL-PAGE UI FOR ILVA & RICKY) ─── */}
+      {currentStep === "welcome" && isIlvaRickyWedding && (
+        <main
+          className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-end items-center px-6 overflow-hidden select-none bg-[#020404]"
+          style={{
+            paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+          }}
+        >
+          {/* Background Image: Couple Portrait with untouched top typography */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/events/ilva-ricky-clean-bg.png"
+              alt="The Wedding of Ilva & Ricky"
+              className="w-full h-full object-cover object-[center_top] select-none pointer-events-none"
+            />
+          </div>
+
+          {/* Accessible offscreen text for screen readers */}
+          <h1 className="sr-only">
+            The Wedding of Ilva & Ricky, 08 Oktober 2026, Gedung Opu Daeng Risadju
+          </h1>
+
+          {/* Bottom Interactive Action Buttons Area */}
+          <div className="w-full max-w-sm mx-auto relative z-10 flex flex-col items-center space-y-2.5 pb-1">
+            {/* Action 1: White pill button with red circle arrow */}
+            <button
+              type="button"
+              onClick={handleProceedToNameInput}
+              className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-white text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
+            >
+              <span className="tracking-tight pl-1">Tambahkan Momen Anda</span>
+              <span className="w-9 h-9 rounded-full bg-[#e50914] text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Action 2: Outline pill button linking to album */}
+            <Link
+              href={`/event/${event.slug}/gallery`}
+              className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-black/40 backdrop-blur-sm border-[1.5px] border-white text-white font-bold text-base flex items-center justify-center shadow-lg active:bg-white/15 transition-colors"
+            >
+              <span className="tracking-tight">Jelajahi Album</span>
+            </Link>
+
+            {/* Footer Text */}
+            <div className="pt-2 text-center">
+              <p className="text-[11px] sm:text-xs text-white/80 tracking-wide font-normal">
+                Virtual Photobooth by RUANGTEMUPHOTOBOOTH
+              </p>
+            </div>
+          </div>
+        </main>
+      )}
 
       {/* ─── STEP 1: WELCOME POSTER / SPLASH (CUSTOM FULL-PAGE BRIDAL UI FOR NURUL & IQRA) ─── */}
       {currentStep === "welcome" && isNurulIqraWedding && (
@@ -811,8 +902,135 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </main>
       )}
 
+      {/* ─── STEP 1.5: NAME INPUT SCREEN (CUSTOM UI FOR ILVA & RICKY) ─── */}
+      {currentStep === "name_input" && isIlvaRickyWedding && (
+        <main
+          className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-between px-6 overflow-hidden select-none bg-[#020302]"
+          style={{
+            paddingTop: "max(1rem, env(safe-area-inset-top))",
+            paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+          }}
+        >
+          {/* Background Image: Couple Portrait with untouched top calligraphy */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/events/ilva-ricky-name-bg.png"
+              alt="The Wedding of Ilva & Ricky"
+              className="w-full h-full object-cover object-[center_top] select-none pointer-events-none"
+            />
+          </div>
+
+          {/* Minimal top tap area to go back to welcome if needed */}
+          <div className="w-full max-w-sm mx-auto relative z-10 flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => setCurrentStep("welcome")}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 text-white/50 active:text-white transition-colors"
+              aria-label="Kembali ke poster"
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Middle-lower Content Area: Headline + Input field */}
+          <div
+            className="w-full max-w-sm mx-auto relative z-10 flex flex-col justify-end"
+            style={{ marginTop: "calc(51dvh)" }}
+          >
+            <h2 className="text-[32px] sm:text-[36px] font-bold text-white tracking-tight leading-[1.12]">
+              Dari Siapa<br />Kenangan Ini?
+            </h2>
+
+            <div className="mt-5">
+              <label
+                htmlFor="guest-name-input-ilva"
+                className="block text-base sm:text-lg font-medium text-white tracking-normal mb-1"
+              >
+                Nama Tamu
+              </label>
+              <div className="relative">
+                <input
+                  id="guest-name-input-ilva"
+                  type="text"
+                  autoFocus
+                  autoComplete="name"
+                  inputMode="text"
+                  placeholder="Ketik di Sini......."
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (!guestName.trim()) {
+                        e.currentTarget.focus();
+                      } else {
+                        setCurrentStep("frame_select");
+                      }
+                    }
+                  }}
+                  className="w-full bg-transparent border-b-[1.5px] border-stone-500/80 focus:border-white text-white placeholder:text-stone-500 text-lg font-normal py-2 pb-2.5 outline-none transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Action Area: 'Selanjutnya' pill button + footer */}
+          <div className="w-full max-w-sm mx-auto relative z-10 flex flex-col items-center space-y-2.5 pb-1 mt-auto">
+            <button
+              type="button"
+              onClick={() => {
+                if (!guestName.trim()) {
+                  document.getElementById("guest-name-input-ilva")?.focus();
+                  return;
+                }
+                setCurrentStep("frame_select");
+              }}
+              className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-white text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
+            >
+              <span className="tracking-tight pl-1">Selanjutnya</span>
+              <span className="w-9 h-9 rounded-full bg-[#e50914] text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Footer Text */}
+            <div className="pt-2 text-center">
+              <p className="text-[11px] sm:text-xs text-white/80 tracking-wide font-normal">
+                Virtual Photobooth by RUANGTEMUPHOTOBOOTH
+              </p>
+            </div>
+          </div>
+        </main>
+      )}
+
       {/* ─── STEP 1.5: NAME INPUT SCREEN (SEPARATE STEP AFTER SPLASH DELAY) ─── */}
-      {currentStep === "name_input" && (
+      {currentStep === "name_input" && !isIlvaRickyWedding && (
         <main
           className={`flex-1 flex flex-col px-5 overflow-y-auto relative z-10 min-h-[100dvh] justify-between ${isNurulIqraWedding ? "bg-transparent text-stone-900" : "bg-[#111113] text-stone-100"
             }`}
@@ -861,6 +1079,18 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     05/10/2026
                   </div>
                 </div>
+              ) : isIlvaRickyWedding ? (
+                <div className="text-center flex flex-col items-center">
+                  <span className="text-xs uppercase tracking-widest text-emerald-400 font-semibold">
+                    The Wedding
+                  </span>
+                  <h1 className="font-[family-name:var(--font-great-vibes)] text-4xl sm:text-5xl text-white tracking-wide mt-1 select-none">
+                    Ilva & Ricky
+                  </h1>
+                  <div className="text-xs text-stone-300 mt-1 select-none">
+                    08 Oktober 2026 • Gedung Opu Daeng Risadju
+                  </div>
+                </div>
               ) : (
                 <div className="text-center space-y-1">
                   <div className="inline-block px-3 py-1 bg-[#c47a5a]/15 text-[#c47a5a] text-xs font-medium rounded-full">
@@ -874,13 +1104,23 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
               {/* Name Input Card */}
               <div
-                className={`p-6 rounded-2xl border space-y-4 shadow-xl ${isNurulIqraWedding ? "bg-white/95 backdrop-blur-sm border-2 border-[#c51d24]/20 shadow-red-950/5" : "bg-stone-900 border-stone-800 shadow-md"
-                  }`}
+                className={`p-6 rounded-2xl border space-y-4 shadow-xl ${
+                  isNurulIqraWedding
+                    ? "bg-white/95 backdrop-blur-sm border-2 border-[#c51d24]/20 shadow-red-950/5"
+                    : isIlvaRickyWedding
+                    ? "bg-stone-900/90 backdrop-blur-md border border-emerald-500/30 shadow-emerald-950/20"
+                    : "bg-stone-900 border-stone-800 shadow-md"
+                }`}
               >
                 <div className="text-center space-y-1">
                   <label
-                    className={`block text-xs uppercase tracking-widest font-bold ${isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
-                      }`}
+                    className={`block text-xs uppercase tracking-widest font-bold ${
+                      isNurulIqraWedding
+                        ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]"
+                        : isIlvaRickyWedding
+                        ? "text-emerald-400 font-mono"
+                        : "text-stone-300 font-mono"
+                    }`}
                   >
                     Masukkan Nama Anda
                   </label>
@@ -903,20 +1143,24 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                         setCurrentStep("frame_select");
                       }
                     }}
-                    className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${isNurulIqraWedding
+                    className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${
+                      isNurulIqraWedding
                         ? "bg-stone-50/70 border-2 border-[#c51d24]/30 focus:border-[#c51d24] focus:bg-white focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-inner"
+                        : isIlvaRickyWedding
+                        ? "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
                         : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
-                      }`}
+                    }`}
                   />
                 </div>
 
                 <button
                   disabled={!guestName.trim()}
                   onClick={() => setCurrentStep("frame_select")}
-                  className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg flex items-center justify-center gap-2 ${isNurulIqraWedding
+                  className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg flex items-center justify-center gap-2 ${
+                    isNurulIqraWedding
                       ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
                       : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
-                    }`}
+                  }`}
                 >
                   <span>Lanjut Pilih Frame</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
@@ -936,7 +1180,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 1: WELCOME (DEFAULT DARK THEME FOR OTHER EVENTS) ─── */}
       {
-        currentStep === "welcome" && !isNurulIqraWedding && (
+        currentStep === "welcome" && !isNurulIqraWedding && !isIlvaRickyWedding && (
           <main className="flex-1 flex items-center justify-center px-5 py-8">
             <div className="w-full max-w-sm space-y-6">
               <div className="space-y-2 text-center">
@@ -1043,7 +1287,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   </p>
                 </div>
                 <button
-                  onClick={() => setCurrentStep(isNurulIqraWedding ? "name_input" : "welcome")}
+                  onClick={() => setCurrentStep(isNurulIqraWedding || isIlvaRickyWedding ? "name_input" : "welcome")}
                   className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border border-red-100 shadow-sm" : "text-stone-400 active:text-white"
                     }`}
                 >

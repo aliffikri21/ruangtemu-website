@@ -2,223 +2,304 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { GalleryEntry } from "@/types";
-import { formatDate } from "@/lib/utils";
+import { GalleryEntry, EventData } from "@/types";
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+function formatDateCustom(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "08 OKT 2026";
+    const day = String(d.getDate()).padStart(2, "0");
+    const months = [
+      "JAN", "FEB", "MAR", "APR", "MEI", "JUN",
+      "JULI", "AGU", "SEP", "OKT", "NOV", "DES"
+    ];
+    const month = months[d.getMonth()] || "OKT";
+    const year = d.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch {
+    return "08 OKT 2026";
+  }
+}
+
+function formatTimeCustom(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "18.57 WIB";
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${hours}.${minutes} WIB`;
+  } catch {
+    return "18.57 WIB";
+  }
 }
 
 export default function EventGalleryPage({ params }: Props) {
   const resolvedParams = use(params);
   const { slug } = resolvedParams;
 
+  const [event, setEvent] = useState<EventData | null>(null);
   const [entries, setEntries] = useState<GalleryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [likedEntries, setLikedEntries] = useState<Record<string, number>>({});
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const fetchGalleryData = async () => {
-    try {
-      setIsRefreshing(true);
-      const res = await fetch(`/api/events/${slug}/entries`, {
-        cache: "no-store",
-      });
-      const data = await res.json();
-      if (data.entries) {
-        setEntries(data.entries);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const [selectedEntry, setSelectedEntry] = useState<GalleryEntry | null>(null);
 
   useEffect(() => {
-    fetchGalleryData();
-    const interval = setInterval(fetchGalleryData, 12000);
-    return () => clearInterval(interval);
+    let isMounted = true;
+
+    async function loadData() {
+      try {
+        const [eventRes, entriesRes] = await Promise.all([
+          fetch(`/api/events/${slug}`),
+          fetch(`/api/events/${slug}/entries`, { cache: "no-store" }),
+        ]);
+
+        if (eventRes.ok) {
+          const evData = await eventRes.json();
+          if (isMounted && evData.event) {
+            setEvent(evData.event);
+          }
+        }
+
+        if (entriesRes.ok) {
+          const entData = await entriesRes.json();
+          if (isMounted && entData.entries) {
+            setEntries(entData.entries);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading gallery data:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadData();
+    const interval = setInterval(loadData, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [slug]);
 
-  const handleLike = (id: string, currentCount = 0) => {
-    setLikedEntries((prev) => ({
-      ...prev,
-      [id]: (prev[id] ?? currentCount) + 1,
-    }));
-  };
+  // Separate into 2 columns for a masonry flow
+  const col1 = entries.filter((_, idx) => idx % 2 === 0);
+  const col2 = entries.filter((_, idx) => idx % 2 === 1);
 
-  const filteredEntries = entries.filter((e) =>
-    e.guest_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (e.message && e.message.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const displayHostName = event?.host_name || (slug.includes("ilva") ? "Ilva & Ricky" : event?.title || "Wedding Memories");
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] text-stone-900 flex flex-col">
+    <div className="min-h-[100dvh] bg-[#f8fafc] text-stone-900 flex flex-col antialiased">
       {/* Top Header */}
-      <header className="border-b border-stone-200 bg-white px-5 sm:px-6 py-4 sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/event/${slug}`}
-              className="font-mono text-xs text-stone-500 hover:text-stone-900 transition-colors"
-            >
-              ← Booth
-            </Link>
-            <div className="border-l border-stone-200 pl-3">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#c47a5a] block">
-                [ Live Galeri ]
-              </span>
-              <h1 className="font-light text-base sm:text-lg text-stone-950">
-                Koleksi Foto & Doa Tamu
-              </h1>
-            </div>
-          </div>
+      <header className="w-full px-5 pt-6 pb-2 max-w-xl mx-auto flex items-center justify-between">
+        <Link
+          href={`/event/${slug}`}
+          className="w-12 h-12 rounded-full border border-stone-200 bg-white flex items-center justify-center shadow-sm text-stone-800 hover:bg-stone-50 active:scale-95 transition-all"
+          aria-label="Kembali ke photobooth"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </Link>
 
-          <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
-            <Link
-              href={`/event/${slug}/projection`}
-              className="text-stone-600 hover:text-stone-950 underline transition-colors"
-            >
-              Mode Layar ↗
-            </Link>
-            <Link
-              href={`/event/${slug}`}
-              className="min-h-[36px] px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-medium uppercase tracking-wider transition-colors flex items-center"
-            >
-              + Ambil Foto
-            </Link>
-          </div>
+        <div className="text-right select-none">
+          <span className="block font-sans text-[11px] tracking-wider font-semibold text-stone-600 uppercase">
+            WEDDING MEMORIES
+          </span>
+          <span className="block font-[family-name:var(--font-great-vibes)] text-3xl sm:text-4xl text-[#b50000] leading-none mt-0.5">
+            {displayHostName}
+          </span>
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Search and Refresh bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-6 border-b border-stone-200">
-          <div className="w-full sm:w-80">
-            <input
-              type="text"
-              placeholder="Cari nama tamu atau isi pesan..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full min-h-[40px] px-3.5 py-2 bg-white border border-stone-200 text-xs text-stone-900 placeholder-stone-400 focus:border-stone-900 outline-none transition-colors"
-            />
-          </div>
+      {/* Main Title */}
+      <div className="w-full px-5 max-w-xl mx-auto mt-4 mb-5">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-stone-950 tracking-tight">
+          Jelajahi <span className="text-[#b50000]">Kenangan</span>
+        </h1>
+      </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-4 text-xs font-mono">
-            <span className="text-stone-400">
-              {entries.length} foto tersimpan
-            </span>
-            <button
-              onClick={fetchGalleryData}
-              disabled={isRefreshing}
-              className="text-stone-600 hover:text-stone-950 transition-colors"
-            >
-              {isRefreshing ? "Memperbarui..." : "Perbarui Data ⟳"}
-            </button>
-          </div>
-        </div>
-
-        {/* Gallery Grid */}
+      {/* Gallery Content */}
+      <main className="flex-1 w-full max-w-xl mx-auto px-5 pb-12">
         {isLoading ? (
-          <div className="text-center py-20 font-mono text-xs text-stone-400">
-            Memuat kenangan acara...
+          <div className="text-center py-24 text-stone-400 font-sans text-sm">
+            Memuat album kenangan...
           </div>
-        ) : filteredEntries.length === 0 ? (
-          <div className="p-12 bg-white border border-stone-200 text-center space-y-4 max-w-sm mx-auto my-12">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#c47a5a]">
-              [ Kosong ]
-            </span>
-            <h3 className="font-light text-base text-stone-900">Belum Ada Foto</h3>
-            <p className="text-xs text-stone-500 leading-relaxed">
-              Jadilah yang pertama mengabadikan momen di photobooth ini.
+        ) : entries.length === 0 ? (
+          <div className="p-8 bg-white rounded-3xl border border-stone-200 text-center space-y-4 my-8 shadow-sm">
+            <h3 className="font-bold text-lg text-stone-900">Belum Ada Foto</h3>
+            <p className="text-xs text-stone-500 leading-relaxed max-w-xs mx-auto">
+              Foto yang diambil melalui virtual photobooth akan otomatis muncul di sini.
             </p>
             <Link
               href={`/event/${slug}`}
-              className="inline-block min-h-[38px] px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white font-mono text-xs uppercase tracking-wider transition-colors"
+              className="inline-flex items-center justify-center min-h-[46px] px-6 py-2.5 rounded-full bg-[#b50000] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:bg-[#990000] active:scale-95 transition-all"
             >
-              Buka Kamera
+              Mulai Ambil Foto
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {filteredEntries.map((entry) => {
-              const currentLikes = likedEntries[entry.id] ?? entry.likes_count ?? 0;
-              return (
+          <div className="grid grid-cols-2 gap-3.5 sm:gap-4 items-start">
+            {/* Column 1 */}
+            <div className="flex flex-col gap-3.5 sm:gap-4">
+              {col1.map((entry) => (
                 <div
                   key={entry.id}
-                  className="bg-white border border-stone-200 flex flex-col justify-between"
+                  onClick={() => setSelectedEntry(entry)}
+                  className="bg-[#ad0d0d] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 overflow-hidden shadow-md cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all"
                 >
-                  {/* Photo Canvas/Image */}
-                  <div className="bg-stone-50 p-2 flex items-center justify-center border-b border-stone-150">
+                  <div className="w-full bg-stone-900/10 rounded-xl sm:rounded-2xl overflow-hidden flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={entry.photo_url}
                       alt={`Foto oleh ${entry.guest_name}`}
-                      className="max-h-72 w-auto object-contain"
+                      className="w-full h-auto object-contain block select-none pointer-events-none"
+                      loading="lazy"
                     />
                   </div>
 
-                  {/* Entry Information */}
-                  <div className="p-4 space-y-3 flex-1 flex flex-col justify-between text-xs">
-                    <div className="space-y-2">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-medium text-stone-900 truncate">
-                          {entry.guest_name}
-                        </span>
-                        <button
-                          onClick={() => handleLike(entry.id, entry.likes_count)}
-                          className="font-mono text-[11px] text-stone-500 hover:text-stone-900 transition-colors"
-                        >
-                          ♥ {currentLikes}
-                        </button>
-                      </div>
-
-                      {entry.message && (
-                        <p className="text-xs text-stone-600 italic bg-stone-50 p-2.5 border border-stone-150 leading-relaxed">
-                          &ldquo;{entry.message}&rdquo;
-                        </p>
-                      )}
-
-                      {entry.voice_note_url && (
-                        <div className="pt-1.5">
-                          <span className="font-mono text-[10px] uppercase tracking-wider text-stone-400 flex items-center gap-1.5 mb-1">
-                            <span>🎤</span>
-                            <span>Pesan Suara (Voice Note)</span>
-                          </span>
-                          <audio
-                            src={entry.voice_note_url}
-                            controls
-                            preload="metadata"
-                            className="w-full h-9 rounded-lg"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-2 border-t border-stone-100 flex items-center justify-between font-mono text-[10px] text-stone-400">
-                      <span>{formatDate(entry.created_at)}</span>
-                      <a
-                        href={entry.photo_url}
-                        download={`ruangtemu_${entry.guest_name}.png`}
-                        className="text-stone-700 hover:text-stone-950 underline"
-                      >
-                        Unduh Foto
-                      </a>
+                  <div className="px-2.5 sm:px-3 pt-2 pb-2 text-white">
+                    <h3 className="font-bold text-xs sm:text-sm tracking-wide uppercase truncate leading-tight">
+                      {entry.guest_name}
+                    </h3>
+                    <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-white/90 font-medium tracking-wider uppercase mt-1">
+                      <span>{formatDateCustom(entry.created_at)}</span>
+                      <span>{formatTimeCustom(entry.created_at)}</span>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Column 2 */}
+            <div className="flex flex-col gap-3.5 sm:gap-4">
+              {col2.map((entry) => (
+                <div
+                  key={entry.id}
+                  onClick={() => setSelectedEntry(entry)}
+                  className="bg-[#ad0d0d] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 overflow-hidden shadow-md cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all"
+                >
+                  <div className="w-full bg-stone-900/10 rounded-xl sm:rounded-2xl overflow-hidden flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={entry.photo_url}
+                      alt={`Foto oleh ${entry.guest_name}`}
+                      className="w-full h-auto object-contain block select-none pointer-events-none"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  <div className="px-2.5 sm:px-3 pt-2 pb-2 text-white">
+                    <h3 className="font-bold text-xs sm:text-sm tracking-wide uppercase truncate leading-tight">
+                      {entry.guest_name}
+                    </h3>
+                    <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-white/90 font-medium tracking-wider uppercase mt-1">
+                      <span>{formatDateCustom(entry.created_at)}</span>
+                      <span>{formatTimeCustom(entry.created_at)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-stone-200 bg-white px-5 py-4 text-center font-mono text-[11px] text-stone-500">
-        RUANGTEMU Photobooth • Palopo
-      </footer>
+      {/* Modal Detail / Preview Popup */}
+      {selectedEntry && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          onClick={() => setSelectedEntry(null)}
+        >
+          <div
+            className="bg-[#ad0d0d] text-white rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm w-full relative overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Bar inside Modal */}
+            <div className="flex items-center justify-between pb-2 border-b border-white/20">
+              <a
+                href={selectedEntry.photo_url}
+                download={`ruangtemu_${selectedEntry.guest_name}.png`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-white hover:text-white/80 font-semibold text-xs sm:text-sm underline underline-offset-4"
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Unduh Softfile</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setSelectedEntry(null)}
+                className="text-white hover:text-white/80 font-semibold text-xs sm:text-sm underline underline-offset-4"
+              >
+                Tutup
+              </button>
+            </div>
+
+            {/* Photo Preview inside white framed container */}
+            <div className="bg-white rounded-2xl p-2 sm:p-3 my-3 shadow-inner flex items-center justify-center max-h-[55vh] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={selectedEntry.photo_url}
+                alt={selectedEntry.guest_name}
+                className="max-h-[50vh] w-auto max-w-full object-contain rounded-xl block"
+              />
+            </div>
+
+            {/* Guest Details */}
+            <div className="pt-1">
+              <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wide leading-tight">
+                {selectedEntry.guest_name}
+              </h2>
+              <div className="flex items-center justify-between text-xs sm:text-sm text-white/90 uppercase font-medium mt-1">
+                <span>{formatDateCustom(selectedEntry.created_at)}</span>
+                <span>{formatTimeCustom(selectedEntry.created_at)}</span>
+              </div>
+
+              {selectedEntry.message && (
+                <p className="mt-3 bg-black/20 rounded-xl p-2.5 text-xs text-white/95 italic leading-relaxed">
+                  &ldquo;{selectedEntry.message}&rdquo;
+                </p>
+              )}
+
+              {selectedEntry.voice_note_url && (
+                <div className="mt-2.5">
+                  <audio
+                    src={selectedEntry.voice_note_url}
+                    controls
+                    className="w-full h-8 rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
