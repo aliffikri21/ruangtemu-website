@@ -123,6 +123,8 @@ export interface EventItem {
   };
 }
 
+export type EventData = EventItem;
+
 export interface GalleryEntry {
   id: string;
   event_id: string;
