@@ -978,3 +978,27 @@ export async function deleteEntry(id: string): Promise<boolean> {
   mockEntries = mockEntries.filter((e) => e.id !== id);
   return true;
 }
+
+export async function clearEventEntries(eventId: string, eventSlug?: string): Promise<boolean> {
+  const client = getDbClient();
+  if (client) {
+    try {
+      const orFilter = eventSlug && eventSlug !== eventId
+        ? `event_id.eq.${eventId},event_slug.eq.${eventId},event_slug.eq.${eventSlug}`
+        : `event_id.eq.${eventId},event_slug.eq.${eventId}`;
+
+      const { error } = await client.from("entries").delete().or(orFilter);
+      if (error) {
+        console.warn("[Supabase] clearEventEntries error:", error.message);
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] clearEventEntries exception:", err?.message);
+    }
+  }
+
+  mockEntries = mockEntries.filter(
+    (e) => e.event_id !== eventId && e.event_slug !== eventId && (!eventSlug || e.event_slug !== eventSlug)
+  );
+  return true;
+}
+

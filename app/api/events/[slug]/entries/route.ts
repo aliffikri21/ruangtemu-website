@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEventBySlug, getEventEntries, createEntry } from "@/lib/db";
+import { getEventBySlug, getEventEntries, createEntry, clearEventEntries } from "@/lib/db";
 import { saveEntryPhoto, saveVoiceNote } from "@/lib/save-frame";
 
 export const dynamic = "force-dynamic";
@@ -65,5 +65,29 @@ export async function POST(req: NextRequest, context: RouteContext) {
   } catch (error: any) {
     console.error("Error creating entry:", error);
     return NextResponse.json({ success: false, error: error?.message || "Gagal menyimpan foto" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, context: RouteContext) {
+  try {
+    const { slug } = await context.params;
+    const event = await getEventBySlug(slug);
+
+    if (!event) {
+      return NextResponse.json({ success: false, error: "Event tidak ditemukan" }, { status: 404 });
+    }
+
+    await clearEventEntries(event.id, event.slug);
+
+    return NextResponse.json({
+      success: true,
+      message: `Semua foto galeri untuk ${event.title} berhasil dibersihkan`,
+    });
+  } catch (error: any) {
+    console.error("Error clearing entries:", error);
+    return NextResponse.json(
+      { success: false, error: error?.message || "Gagal membersihkan galeri" },
+      { status: 500 }
+    );
   }
 }
