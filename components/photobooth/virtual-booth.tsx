@@ -166,6 +166,12 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const requiredShots = frameConfig.photoCount || frameConfig.photoSlots?.length || getShotsForType(frameConfig.type);
 
   const getTargetSlotAspect = useCallback((shotIndex: number): number => {
+    // Untuk frame 1x jepret, gunakan rasio normal kamera (3:4 = 0.75)
+    // agar kamera tidak terlalu ngezoom dan menghasilkan sudut pandang natural
+    if (requiredShots === 1) {
+      return 3 / 4;
+    }
+
     if (frameConfig.photoSlots && frameConfig.photoSlots.length > 0) {
       const idx = Math.min(Math.max(0, shotIndex), frameConfig.photoSlots.length - 1);
       const slot = frameConfig.photoSlots[idx];
@@ -175,7 +181,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     }
     if (frameConfig.frameImageWidth && frameConfig.frameImageHeight && frameConfig.frameImageWidth > 0 && frameConfig.frameImageHeight > 0) {
       if (frameConfig.photoCount === 1) {
-        return frameConfig.frameImageWidth / frameConfig.frameImageHeight;
+        return 3 / 4;
       }
     }
     switch (frameConfig.type) {
@@ -185,7 +191,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       case "strip_3":
       default: return 1.45;
     }
-  }, [frameConfig]);
+  }, [frameConfig, requiredShots]);
 
   // ─── Camera Lifecycle ─────────────────────────────────────────
 
