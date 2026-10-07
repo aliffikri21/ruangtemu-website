@@ -173,6 +173,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         return slot.width / slot.height;
       }
     }
+    if (frameConfig.frameImageWidth && frameConfig.frameImageHeight && frameConfig.frameImageWidth > 0 && frameConfig.frameImageHeight > 0) {
+      if (frameConfig.photoCount === 1) {
+        return frameConfig.frameImageWidth / frameConfig.frameImageHeight;
+      }
+    }
     switch (frameConfig.type) {
       case "polaroid": return 1;
       case "deluxe": return 0.75;
@@ -271,24 +276,42 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     const vWidth = video.videoWidth || 1280;
     const vHeight = video.videoHeight || 960;
 
+    const targetIdx = capturedPhotos.length < requiredShots ? capturedPhotos.length : Math.max(0, requiredShots - 1);
+    const aspect = getTargetSlotAspect(targetIdx);
+    const vAspect = vWidth / vHeight;
+
+    let srcX = 0;
+    let srcY = 0;
+    let srcW = vWidth;
+    let srcH = vHeight;
+
+    if (vAspect > aspect) {
+      // Sensor is wider than target ratio: crop sides
+      srcW = Math.round(vHeight * aspect);
+      srcX = Math.round((vWidth - srcW) / 2);
+    } else if (vAspect < aspect) {
+      // Sensor is taller than target ratio: crop top/bottom
+      srcH = Math.round(vWidth / aspect);
+      srcY = Math.round((vHeight - srcH) / 2);
+    }
+
     const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = vWidth;
-    tempCanvas.height = vHeight;
+    tempCanvas.width = srcW;
+    tempCanvas.height = srcH;
     const ctx = tempCanvas.getContext("2d");
     if (!ctx) return;
 
     if (facingMode === "user") {
-      ctx.translate(vWidth, 0);
+      ctx.translate(srcW, 0);
       ctx.scale(-1, 1);
     }
 
-    ctx.drawImage(video, 0, 0, vWidth, vHeight);
+    ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
     const photoDataUrl = tempCanvas.toDataURL("image/jpeg", 0.95);
 
     triggerFlash();
 
     // Open Atur Foto modal for the current target slot
-    const targetIdx = capturedPhotos.length < requiredShots ? capturedPhotos.length : requiredShots - 1;
     setAdjustRawPhoto(photoDataUrl);
     setAdjustIndex(targetIdx);
     setAdjustZoom(1);
@@ -296,6 +319,39 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     setAdjustTy(0);
     setAdjustOpen(true);
   };
+
+  const captureFromVideoRef = useRef(captureFromVideo);
+  captureFromVideoRef.current = captureFromVideo;
+
+  const startCountdown = useCallback(() => {
+    if (cameraState === "countdown" || cameraState === "capturing" || adjustOpen) return;
+    if (!videoRef.current || cameraState !== "ready") return;
+
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+
+    setCameraState("countdown");
+    setCountdown(3);
+
+    let count = 3;
+    countdownTimerRef.current = setInterval(() => {
+      count -= 1;
+      if (count > 0) {
+        setCountdown(count);
+      } else {
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
+        }
+        setCountdown(null);
+        setCameraState("capturing");
+        captureFromVideoRef.current();
+        setCameraState("ready");
+      }
+    }, 1000);
+  }, [cameraState, adjustOpen]);
 
   const handleSelectFromGallery = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -690,11 +746,15 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           type: targetFrame.template_type,
           customOverlayUrl: targetFrame.preview_url || targetFrame.config_json?.customOverlayUrl,
         });
+        setCapturedPhotos([]);
+        setCurrentShotIndex(0);
       }
     } else if (!assignedFrames && FRAME_TEMPLATES[closestIdx]) {
       const tmpl = FRAME_TEMPLATES[closestIdx];
       if (frameConfig.type !== tmpl.type) {
         setFrameConfig({ ...frameConfig, type: tmpl.type });
+        setCapturedPhotos([]);
+        setCurrentShotIndex(0);
       }
     }
   }, [assignedFrames, selectedFrameId, frameConfig]);
@@ -706,6 +766,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       type: frame.template_type,
       customOverlayUrl: frame.preview_url || frame.config_json?.customOverlayUrl,
     });
+    setCapturedPhotos([]);
+    setCurrentShotIndex(0);
     scrollToFrame(index);
   };
 
@@ -760,8 +822,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </div>
       )}
 
-      {/* Minimal Top Bar (hidden on welcome and name_input screen for custom wedding themes) */}
-      {((!isNurulIqraWedding && !isIlvaRickyWedding) || (currentStep !== "welcome" && currentStep !== "name_input")) && (
+      {/* Minimal Top Bar (hidden for custom wedding themes like Ilva & Ricky, and during camera/welcome/name_input) */}
+      {!isIlvaRickyWedding && ((!isNurulIqraWedding) || (currentStep !== "welcome" && currentStep !== "name_input")) && currentStep !== "camera" && (
         <header
           className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${isNurulIqraWedding
             ? "border-red-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
@@ -1179,19 +1241,19 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               {/* Name Input Card */}
               <div
                 className={`p-6 rounded-2xl border space-y-4 shadow-xl ${isNurulIqraWedding
-                    ? "bg-white/95 backdrop-blur-sm border-2 border-[#c51d24]/20 shadow-red-950/5"
-                    : isIlvaRickyWedding
-                      ? "bg-stone-900/90 backdrop-blur-md border border-emerald-500/30 shadow-emerald-950/20"
-                      : "bg-stone-900 border-stone-800 shadow-md"
+                  ? "bg-white/95 backdrop-blur-sm border-2 border-[#c51d24]/20 shadow-red-950/5"
+                  : isIlvaRickyWedding
+                    ? "bg-stone-900/90 backdrop-blur-md border border-emerald-500/30 shadow-emerald-950/20"
+                    : "bg-stone-900 border-stone-800 shadow-md"
                   }`}
               >
                 <div className="text-center space-y-1">
                   <label
                     className={`block text-xs uppercase tracking-widest font-bold ${isNurulIqraWedding
-                        ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]"
-                        : isIlvaRickyWedding
-                          ? "text-emerald-400 font-mono"
-                          : "text-stone-300 font-mono"
+                      ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]"
+                      : isIlvaRickyWedding
+                        ? "text-emerald-400 font-mono"
+                        : "text-stone-300 font-mono"
                       }`}
                   >
                     Masukkan Nama Anda
@@ -1216,10 +1278,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                       }
                     }}
                     className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${isNurulIqraWedding
-                        ? "bg-stone-50/70 border-2 border-[#c51d24]/30 focus:border-[#c51d24] focus:bg-white focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-inner"
-                        : isIlvaRickyWedding
-                          ? "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
-                          : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
+                      ? "bg-stone-50/70 border-2 border-[#c51d24]/30 focus:border-[#c51d24] focus:bg-white focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-inner"
+                      : isIlvaRickyWedding
+                        ? "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
+                        : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
                       }`}
                   />
                 </div>
@@ -1228,8 +1290,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   disabled={!guestName.trim()}
                   onClick={() => setCurrentStep("frame_select")}
                   className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg flex items-center justify-center gap-2 ${isNurulIqraWedding
-                      ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
-                      : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
+                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
+                    : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
                     }`}
                 >
                   <span>Lanjut Pilih Frame</span>
@@ -1670,57 +1732,109 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               </div>
             </div>
 
-            {/* Camera Viewfinder (clean full-screen preview with no dark cutout blocking the view) */}
-            <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden px-4 pt-1 pb-2 min-h-0">
-              <div className="w-full h-full max-w-md mx-auto relative rounded-xl overflow-hidden bg-[#161616] flex items-center justify-center shadow-lg border border-white/10">
-                {cameraState === "error" ? (
-                  <div className="px-6 py-8 text-center space-y-4 max-w-xs">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-stone-800 flex items-center justify-center">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 7.5a4 4 0 1 0 0-3" /><path d="m2 2 20 20" /><path d="M11.5 15H17a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1" /><path d="M7 7H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2" /></svg>
-                    </div>
-                    <p className="text-sm text-stone-300 leading-relaxed">{cameraError}</p>
-                    <button
-                      onClick={() => startCamera()}
-                      className="min-h-[48px] px-6 bg-white text-stone-950 font-semibold text-sm rounded-lg"
-                    >
-                      Coba Lagi
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className={`w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : "scale-x-100"} ${selectedFilter === "grayscale"
-                        ? "grayscale"
-                        : selectedFilter === "sepia"
-                          ? "sepia"
-                          : selectedFilter === "soft-glow"
-                            ? "brightness-105 contrast-95 saturate-110"
-                            : selectedFilter === "warm-vintage"
-                              ? "sepia-[0.35] saturate-125"
-                              : selectedFilter === "cool-cinema"
-                                ? "hue-rotate-180 saturate-90"
-                                : ""
-                        }`}
-                    />
+            {/* Camera Viewfinder (adaptive aspect ratio matching the target frame slot) */}
+            <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden px-4 py-2 min-h-0 w-full">
+              {(() => {
+                const activeSlotIdx = capturedPhotos.length < requiredShots ? capturedPhotos.length : Math.max(0, requiredShots - 1);
+                const activeSlotAspect = getTargetSlotAspect(activeSlotIdx);
 
-                    {/* Flash toggle button at top-left of video */}
-                    <button
-                      type="button"
-                      onClick={() => setFlashOn((prev) => !prev)}
-                      className={`absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md z-20 ${flashOn ? "bg-white text-stone-950" : "bg-black/50 text-white/80 hover:text-white"}`}
-                      aria-label="Flash"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill={flashOn ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                      </svg>
-                    </button>
-                  </>
-                )}
-              </div>
+                return (
+                  <div
+                    className="relative rounded-2xl overflow-hidden bg-[#161616] flex items-center justify-center shadow-2xl border border-white/15 transition-all duration-300"
+                    style={{
+                      aspectRatio: `${activeSlotAspect}`,
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      width: activeSlotAspect >= 1 ? "100%" : "auto",
+                      height: activeSlotAspect < 1 ? "100%" : "auto",
+                    }}
+                  >
+                    {cameraState === "error" ? (
+                      <div className="px-6 py-8 text-center space-y-4 max-w-xs">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-stone-800 flex items-center justify-center">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 7.5a4 4 0 1 0 0-3" /><path d="m2 2 20 20" /><path d="M11.5 15H17a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1" /><path d="M7 7H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2" /></svg>
+                        </div>
+                        <p className="text-sm text-stone-300 leading-relaxed">{cameraError}</p>
+                        <button
+                          onClick={() => startCamera()}
+                          className="min-h-[48px] px-6 bg-white text-stone-950 font-semibold text-sm rounded-lg"
+                        >
+                          Coba Lagi
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className={`w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : "scale-x-100"} ${selectedFilter === "grayscale"
+                            ? "grayscale"
+                            : selectedFilter === "sepia"
+                              ? "sepia"
+                              : selectedFilter === "soft-glow"
+                                ? "brightness-105 contrast-95 saturate-110"
+                                : selectedFilter === "warm-vintage"
+                                  ? "sepia-[0.35] saturate-125"
+                                  : selectedFilter === "cool-cinema"
+                                    ? "hue-rotate-180 saturate-90"
+                                    : ""
+                            }`}
+                        />
+
+                        {/* Viewfinder Frame Corner Brackets */}
+                        <div className="absolute inset-3 pointer-events-none z-10 select-none">
+                          <span className="absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 border-white/50 rounded-tl-sm" />
+                          <span className="absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 border-white/50 rounded-tr-sm" />
+                          <span className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 border-white/50 rounded-bl-sm" />
+                          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 border-white/50 rounded-br-sm" />
+                        </div>
+
+                        {/* Flash toggle button at top-left of video */}
+                        <button
+                          type="button"
+                          onClick={() => setFlashOn((prev) => !prev)}
+                          className={`absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md z-20 ${flashOn ? "bg-white text-stone-950" : "bg-black/50 text-white/80 hover:text-white"}`}
+                          aria-label="Flash"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill={flashOn ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                          </svg>
+                        </button>
+
+                        {/* Badge indicator when frame requires 1 shot */}
+                        {requiredShots === 1 && (
+                          <div className="absolute top-3 right-3 z-20 pointer-events-none">
+                            <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white/90 text-[11px] font-medium border border-white/15 shadow-sm">
+                              1 Foto
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Countdown Overlay (3, 2, 1) */}
+                        {countdown !== null && (
+                          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none select-none bg-black/35 backdrop-blur-[1px]">
+                            {requiredShots > 1 && (
+                              <span className="text-xs font-semibold uppercase tracking-widest text-white/90 mb-3 px-3 py-1 rounded-full bg-black/60 border border-white/20 backdrop-blur-md shadow-lg">
+                                Foto {activeSlotIdx + 1} dari {requiredShots}
+                              </span>
+                            )}
+                            <div
+                              key={countdown}
+                              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-black/65 border border-white/30 backdrop-blur-md flex items-center justify-center shadow-2xl animate-in zoom-in-75 fade-in duration-200"
+                            >
+                              <span className="text-6xl sm:text-7xl font-extrabold text-white tabular-nums drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]">
+                                {countdown}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Filter Bar (compact, horizontal scroll) */}
@@ -1745,15 +1859,18 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               {Array.from({ length: requiredShots }).map((_, idx) => {
                 const photo = capturedPhotos[idx];
                 const isActive = idx === capturedPhotos.length;
+                const slotAspect = getTargetSlotAspect(idx);
+
                 return (
                   <div
                     key={idx}
-                    className={`relative w-12 h-16 rounded-md overflow-hidden flex items-center justify-center border transition-all ${photo
-                        ? "border-white/80 shadow-md bg-stone-900"
-                        : isActive
-                          ? "border-white bg-white/10 ring-2 ring-white/50"
-                          : "border-white/20 bg-stone-900/60 text-white/40"
+                    className={`relative h-14 rounded-md overflow-hidden flex items-center justify-center border transition-all ${photo
+                      ? "border-white/80 shadow-md bg-stone-900"
+                      : isActive
+                        ? "border-white bg-white/10 ring-2 ring-white/50"
+                        : "border-white/20 bg-stone-900/60 text-white/40"
                       }`}
+                    style={{ aspectRatio: `${slotAspect}` }}
                   >
                     {photo ? (
                       <>
@@ -1812,8 +1929,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   <button
                     type="button"
                     onClick={toggleCameraFacing}
+                    disabled={countdown !== null}
                     aria-label="Ganti kamera"
-                    className="w-12 h-12 rounded-full bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md"
+                    className={`w-12 h-12 rounded-full bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${
+                      countdown !== null ? "opacity-35 pointer-events-none" : ""
+                    }`}
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 2.21 1 4.21 2.6 5.6" />
@@ -1826,19 +1946,31 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   {/* Shutter button */}
                   <button
                     type="button"
-                    onClick={captureFromVideo}
-                    aria-label="Ambil foto"
-                    className="w-20 h-20 rounded-full border-2 border-white/80 p-1 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl bg-transparent"
+                    onClick={startCountdown}
+                    disabled={cameraState !== "ready" || countdown !== null || adjustOpen}
+                    aria-label={countdown !== null ? `Hitungan mundur ${countdown} detik` : "Ambil foto"}
+                    className={`w-20 h-20 rounded-full border-2 p-1 flex items-center justify-center transition-all shadow-xl bg-transparent ${
+                      countdown !== null
+                        ? "border-amber-400 scale-95 opacity-90 cursor-wait"
+                        : "border-white/80 hover:scale-105 active:scale-95"
+                    }`}
                   >
-                    <span className="w-14 h-14 rounded-full bg-[#f6f4ee] block shadow-inner" />
+                    <span
+                      className={`w-14 h-14 rounded-full block shadow-inner transition-colors ${
+                        countdown !== null ? "bg-amber-400 animate-pulse" : "bg-[#f6f4ee]"
+                      }`}
+                    />
                   </button>
 
                   {/* Gallery picker */}
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => !countdown && fileInputRef.current?.click()}
+                    disabled={countdown !== null}
                     aria-label="Pilih dari galeri"
-                    className="w-12 h-12 rounded-xl bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md"
+                    className={`w-12 h-12 rounded-xl bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${
+                      countdown !== null ? "opacity-35 pointer-events-none" : ""
+                    }`}
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="3" />
