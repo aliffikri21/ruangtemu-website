@@ -924,7 +924,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-white text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
             >
               <span className="tracking-tight pl-1">Tambahkan Momen Anda</span>
-              <span className="w-9 h-9 rounded-full bg-[#e50914] text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
+              <span className="w-9 h-9 rounded-full bg-[#3a716c] text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
                 <svg
                   width="18"
                   height="18"
@@ -1993,8 +1993,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     disabled={cameraState !== "ready" || countdown !== null || adjustOpen}
                     aria-label={countdown !== null ? `Hitungan mundur ${countdown} detik` : "Ambil foto"}
                     className={`w-20 h-20 rounded-full border-2 p-1 flex items-center justify-center transition-all shadow-xl bg-transparent ${countdown !== null
-                        ? "border-amber-400 scale-95 opacity-90 cursor-wait"
-                        : "border-white/80 hover:scale-105 active:scale-95"
+                      ? "border-amber-400 scale-95 opacity-90 cursor-wait"
+                      : "border-white/80 hover:scale-105 active:scale-95"
                       }`}
                   >
                     <span
