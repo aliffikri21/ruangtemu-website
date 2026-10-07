@@ -106,7 +106,6 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const flashRef = useRef<HTMLDivElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const cutoutRef = useRef<HTMLDivElement | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -119,6 +118,25 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [currentShotIndex, setCurrentShotIndex] = useState(0);
+
+  // Camera Adjust / Framing Overlay (matching reference: Pan & Pinch to slot ratio)
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustRawPhoto, setAdjustRawPhoto] = useState<string | null>(null);
+  const [adjustIndex, setAdjustIndex] = useState(0);
+  const [adjustZoom, setAdjustZoom] = useState(1);
+  const [adjustTx, setAdjustTx] = useState(0);
+  const [adjustTy, setAdjustTy] = useState(0);
+  const [adjNatDim, setAdjNatDim] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [flashOn, setFlashOn] = useState(false);
+  const adjustImgRef = useRef<HTMLImageElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const ptrsRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchDataRef = useRef<{ startDist: number; startZoom: number; lastX: number; lastY: number }>({
+    startDist: 1,
+    startZoom: 1,
+    lastX: 0,
+    lastY: 0,
+  });
 
   // Composite
   const [compositeDataUrl, setCompositeDataUrl] = useState<string | null>(null);
@@ -224,196 +242,201 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     };
   }, [stopCamera]);
 
-  // ─── Photo Capture ────────────────────────────────────────────
+  // ─── Photo Capture & Atur Foto Framing (Matching Reference) ───
 
-  const takeSinglePhoto = (targetAspect?: number): string | null => {
-    if (!videoRef.current) return null;
-
-    const video = videoRef.current;
-    const vWidth = video.videoWidth || 1280;
-    const vHeight = video.videoHeight || 960;
-    const videoAspect = vWidth / vHeight;
-
-    let sourceX = 0;
-    let sourceY = 0;
-    let sourceWidth = vWidth;
-    let sourceHeight = vHeight;
-
-    let mappedFromCutout = false;
-
-    // Map exact screen framing cutout window to raw camera stream coordinates
-    if (cutoutRef.current) {
-      const cutoutRect = cutoutRef.current.getBoundingClientRect();
-      const videoRect = video.getBoundingClientRect();
-
-      if (cutoutRect.width > 0 && cutoutRect.height > 0 && videoRect.width > 0 && videoRect.height > 0) {
-        // CSS object-cover scales video uniformly to cover videoRect
-        const scale = Math.max(videoRect.width / vWidth, videoRect.height / vHeight);
-        const renderedW = vWidth * scale;
-        const renderedH = vHeight * scale;
-
-        // Top-left origin of rendered video content on screen
-        const originX = videoRect.left + (videoRect.width - renderedW) / 2;
-        const originY = videoRect.top + (videoRect.height - renderedH) / 2;
-
-        // Position of cutout window relative to rendered video content
-        const cropXInRendered = cutoutRect.left - originX;
-        const cropYInRendered = cutoutRect.top - originY;
-        const cropWInRendered = cutoutRect.width;
-        const cropHInRendered = cutoutRect.height;
-
-        // Convert CSS pixels to raw camera video pixels
-        const cropX = cropXInRendered / scale;
-        const cropY = cropYInRendered / scale;
-        const cropW = cropWInRendered / scale;
-        const cropH = cropHInRendered / scale;
-
-        // Video element is mirrored with -scale-x-100 in CSS:
-        // On screen, X=0 corresponds to raw video's right edge
-        const mirroredCropX = vWidth - (cropX + cropW);
-
-        sourceX = Math.max(0, Math.min(vWidth - 1, Math.round(mirroredCropX)));
-        sourceY = Math.max(0, Math.min(vHeight - 1, Math.round(cropY)));
-        sourceWidth = Math.max(1, Math.min(vWidth - sourceX, Math.round(cropW)));
-        sourceHeight = Math.max(1, Math.min(vHeight - sourceY, Math.round(cropH)));
-        mappedFromCutout = true;
-      }
+  const getAdjustBoxDimensions = useCallback((aspect: number) => {
+    const maxW = typeof window !== "undefined" ? Math.min(window.innerWidth - 48, 320) : 300;
+    const maxH = typeof window !== "undefined" ? Math.min(window.innerHeight - 260, 420) : 400;
+    let w = maxW;
+    let h = Math.round(maxW / aspect);
+    if (h > maxH) {
+      h = maxH;
+      w = Math.round(maxH * aspect);
     }
-
-    if (!mappedFromCutout && targetAspect && targetAspect > 0) {
-      if (videoAspect > targetAspect) {
-        // Video is wider than target crop
-        sourceHeight = vHeight;
-        sourceWidth = Math.round(vHeight * targetAspect);
-        sourceX = Math.round((vWidth - sourceWidth) / 2);
-        sourceY = 0;
-      } else {
-        // Video is taller than target crop
-        sourceWidth = vWidth;
-        sourceHeight = Math.round(vWidth / targetAspect);
-        sourceX = 0;
-        sourceY = Math.round((vHeight - sourceHeight) / 2);
-      }
-    }
-
-    const maxDim = 1200;
-    const aspect = sourceWidth / sourceHeight;
-    let outWidth = sourceWidth;
-    let outHeight = sourceHeight;
-    if (outWidth > maxDim || outHeight > maxDim) {
-      if (outWidth > outHeight) {
-        outWidth = maxDim;
-        outHeight = Math.round(maxDim / aspect);
-      } else {
-        outHeight = maxDim;
-        outWidth = Math.round(maxDim * aspect);
-      }
-    }
-
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = outWidth;
-    tempCanvas.height = outHeight;
-    const ctx = tempCanvas.getContext("2d");
-    if (!ctx) return null;
-
-    if (facingMode === "user") {
-      ctx.translate(outWidth, 0);
-      ctx.scale(-1, 1);
-    }
-
-    const useNativeFilter = isCanvasFilterSupported() && selectedFilter && selectedFilter !== "normal";
-    if (useNativeFilter) {
-      applyFilterToContext(ctx, selectedFilter);
-    }
-
-    ctx.drawImage(
-      video,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      0,
-      0,
-      outWidth,
-      outHeight
-    );
-
-    if (facingMode === "user") {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
-
-    if (!useNativeFilter && selectedFilter && selectedFilter !== "normal") {
-      applyPixelFilter(ctx, outWidth, outHeight, selectedFilter);
-    }
-
-    return tempCanvas.toDataURL("image/jpeg", 0.90);
-  };
+    return { w: Math.max(140, Math.round(w)), h: Math.max(140, Math.round(h)) };
+  }, []);
 
   const triggerFlash = () => {
     if (!flashRef.current) return;
     const el = flashRef.current;
     el.style.opacity = "1";
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        el.style.opacity = "0";
-      }, 100);
-    });
+    setTimeout(() => {
+      el.style.opacity = "0";
+    }, 120);
   };
 
-  const startPhotoSequence = () => {
-    if (cameraState !== "ready") return;
+  const captureFromVideo = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const vWidth = video.videoWidth || 1280;
+    const vHeight = video.videoHeight || 960;
 
-    setCapturedPhotos([]);
-    setCurrentShotIndex(0);
-    setCameraState("countdown");
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = vWidth;
+    tempCanvas.height = vHeight;
+    const ctx = tempCanvas.getContext("2d");
+    if (!ctx) return;
 
-    let shotsTaken = 0;
-    const photos: string[] = [];
+    if (facingMode === "user") {
+      ctx.translate(vWidth, 0);
+      ctx.scale(-1, 1);
+    }
 
-    const captureNext = () => {
-      let count = 3;
-      setCountdown(count);
+    ctx.drawImage(video, 0, 0, vWidth, vHeight);
+    const photoDataUrl = tempCanvas.toDataURL("image/jpeg", 0.95);
 
-      countdownTimerRef.current = setInterval(() => {
-        count--;
-        if (count > 0) {
-          setCountdown(count);
-        } else {
-          if (countdownTimerRef.current) {
-            clearInterval(countdownTimerRef.current);
-            countdownTimerRef.current = null;
-          }
-          setCountdown(null);
-          setCameraState("capturing");
+    triggerFlash();
 
-          triggerFlash();
+    // Open Atur Foto modal for the current target slot
+    const targetIdx = capturedPhotos.length < requiredShots ? capturedPhotos.length : requiredShots - 1;
+    setAdjustRawPhoto(photoDataUrl);
+    setAdjustIndex(targetIdx);
+    setAdjustZoom(1);
+    setAdjustTx(0);
+    setAdjustTy(0);
+    setAdjustOpen(true);
+  };
 
-          const slotAspect = getTargetSlotAspect(shotsTaken);
-          const photo = takeSinglePhoto(slotAspect);
-          if (photo) {
-            photos.push(photo);
-            setCapturedPhotos([...photos]);
-          }
-
-          shotsTaken++;
-          setCurrentShotIndex(shotsTaken);
-
-          if (shotsTaken < requiredShots) {
-            setTimeout(() => {
-              setCameraState("countdown");
-              captureNext();
-            }, 1000);
-          } else {
-            setCameraState("processing");
-            stopCamera();
-            generateComposite(photos);
-            setCurrentStep("preview");
-          }
-        }
-      }, 1000);
+  const handleSelectFromGallery = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        const targetIdx = capturedPhotos.length < requiredShots ? capturedPhotos.length : requiredShots - 1;
+        setAdjustRawPhoto(reader.result);
+        setAdjustIndex(targetIdx);
+        setAdjustZoom(1);
+        setAdjustTx(0);
+        setAdjustTy(0);
+        setAdjustOpen(true);
+      }
     };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
-    captureNext();
+  const handleRetakeAdjust = () => {
+    setAdjustOpen(false);
+    setAdjustRawPhoto(null);
+  };
+
+  const handleConfirmAdjust = () => {
+    if (!adjustRawPhoto) {
+      setAdjustOpen(false);
+      return;
+    }
+
+    const slotIdx = adjustIndex;
+    const aspect = getTargetSlotAspect(slotIdx);
+    const imgEl = adjustImgRef.current;
+
+    const canvas = document.createElement("canvas");
+    const targetW = aspect >= 1 ? 1200 : Math.round(1200 * aspect);
+    const targetH = aspect >= 1 ? Math.round(1200 / aspect) : 1200;
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d");
+
+    if (ctx && imgEl && imgEl.naturalWidth && imgEl.naturalHeight) {
+      const natW = imgEl.naturalWidth;
+      const natH = imgEl.naturalHeight;
+      const boxDim = getAdjustBoxDimensions(aspect);
+      const boxW = boxDim.w;
+      const boxH = boxDim.h;
+
+      const baseScale = Math.max(boxW / natW, boxH / natH);
+      const s = baseScale * adjustZoom;
+
+      const srcLeft = -adjustTx / s;
+      const srcTop = -adjustTy / s;
+      const srcW = boxW / s;
+      const srcH = boxH / s;
+
+      const useNativeFilter = isCanvasFilterSupported() && selectedFilter && selectedFilter !== "normal";
+      if (useNativeFilter) {
+        applyFilterToContext(ctx, selectedFilter);
+      }
+
+      ctx.drawImage(imgEl, srcLeft, srcTop, srcW, srcH, 0, 0, targetW, targetH);
+
+      if (!useNativeFilter && selectedFilter && selectedFilter !== "normal") {
+        applyPixelFilter(ctx, targetW, targetH, selectedFilter);
+      }
+
+      const finalPhoto = canvas.toDataURL("image/jpeg", 0.92);
+      const updated = [...capturedPhotos];
+      updated[slotIdx] = finalPhoto;
+      setCapturedPhotos(updated);
+      setCurrentShotIndex(updated.length);
+    } else {
+      const updated = [...capturedPhotos];
+      updated[slotIdx] = adjustRawPhoto;
+      setCapturedPhotos(updated);
+      setCurrentShotIndex(updated.length);
+    }
+
+    setAdjustOpen(false);
+    setAdjustRawPhoto(null);
+  };
+
+  const handleDeleteShot = (indexToDelete: number) => {
+    const updated = capturedPhotos.filter((_, idx) => idx !== indexToDelete);
+    setCapturedPhotos(updated);
+    setCurrentShotIndex(updated.length);
+  };
+
+  const handleProceedToPreview = () => {
+    if (capturedPhotos.length < requiredShots) return;
+    setCameraState("processing");
+    stopCamera();
+    generateComposite(capturedPhotos);
+    setCurrentStep("preview");
+  };
+
+  // Pointer event handlers for Pan & Pinch in Atur Foto
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    ptrsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch { }
+    if (ptrsRef.current.size === 1) {
+      pinchDataRef.current.lastX = e.clientX;
+      pinchDataRef.current.lastY = e.clientY;
+    } else if (ptrsRef.current.size === 2) {
+      const ptrs = Array.from(ptrsRef.current.values());
+      pinchDataRef.current.startDist = Math.hypot(ptrs[0].x - ptrs[1].x, ptrs[0].y - ptrs[1].y) || 1;
+      pinchDataRef.current.startZoom = adjustZoom;
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!ptrsRef.current.has(e.pointerId)) return;
+    ptrsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (ptrsRef.current.size >= 2) {
+      const ptrs = Array.from(ptrsRef.current.values());
+      const dist = Math.hypot(ptrs[0].x - ptrs[1].x, ptrs[0].y - ptrs[1].y) || 1;
+      const newZoom = Math.max(1, Math.min(4, pinchDataRef.current.startZoom * (dist / pinchDataRef.current.startDist)));
+      setAdjustZoom(newZoom);
+    } else if (ptrsRef.current.size === 1) {
+      const dx = e.clientX - pinchDataRef.current.lastX;
+      const dy = e.clientY - pinchDataRef.current.lastY;
+      pinchDataRef.current.lastX = e.clientX;
+      pinchDataRef.current.lastY = e.clientY;
+
+      setAdjustTx((prev) => prev + dx);
+      setAdjustTy((prev) => prev + dy);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    ptrsRef.current.delete(e.pointerId);
+    if (ptrsRef.current.size === 1) {
+      const remaining = Array.from(ptrsRef.current.values())[0];
+      pinchDataRef.current.lastX = remaining.x;
+      pinchDataRef.current.lastY = remaining.y;
+    }
   };
 
   // ─── Canvas Composite ─────────────────────────────────────────
@@ -617,6 +640,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     setSaveError(null);
     setSelectedFilter("normal");
     setCurrentShotIndex(0);
+    setAdjustOpen(false);
+    setAdjustRawPhoto(null);
     if (assignedFrames && assignedFrames.length > 0) {
       const first = assignedFrames[0];
       setSelectedFrameId(first.id);
@@ -789,22 +814,22 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           </div>
 
           {/* Top Typography Section: Matching user reference image layout */}
-          <header className="w-full max-w-sm mx-auto relative z-10 flex flex-col pt-1">
+          <header className="w-full max-w-sm mx-auto relative z-10 flex flex-col pt-2 sm:pt-4">
             {/* Top row: 'The Wedding' & 'Memories' */}
             <div className="w-full flex items-center justify-between text-white/95 text-[15px] sm:text-base font-normal tracking-wide">
               <span>The Wedding</span>
               <span>Memories</span>
             </div>
 
-            {/* 'Ilva & Ricky': Left-aligned under 'The Wedding', natural flow */}
-            <div className="mt-2 text-left pl-0.5">
-              <h1 className="text-[clamp(44px,13vw,62px)] text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] select-none">
+            {/* 'Ilva & Ricky': Lowered with balanced spacing */}
+            <div className="mt-6 sm:mt-8 text-center w-full">
+              <h1 className="text-[clamp(44px,13vw,62px)] text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] select-none text-center">
                 Ilva &amp; Ricky
               </h1>
             </div>
 
-            {/* '08 Oktober 2026' & 'Gedung Opu Daeng Risadju': spaced down in dark gap above bride */}
-            <div className="mt-[clamp(3.5rem,9.5vh,6rem)] text-left text-white/95 text-[13px] sm:text-sm font-normal leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)] pl-0.5">
+            {/* '08 Oktober 2026' & 'Gedung Opu Daeng Risadju': aligned to the left, away from center/bride's head */}
+            <div className="mt-[clamp(2.5rem,6.5vh,4rem)] text-left pl-2 sm:pl-3 text-white/95 text-[13px] sm:text-sm font-normal leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
               <p>08 Oktober 2026</p>
               <p>Gedung Opu Daeng Risadju</p>
             </div>
@@ -952,7 +977,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
           }}
         >
-          {/* Background Image: Couple Portrait with dark overlay for legibility */}
+          {/* Background Image: Couple Portrait Overlay with 50% opacity */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
@@ -961,9 +986,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             <img
               src="/images/events/ilvaricky-bg.jpeg"
               alt="The Wedding of Ilva & Ricky"
-              className="w-full h-full object-cover object-[center_top] select-none pointer-events-none opacity-40"
+              className="w-full h-full object-cover object-[center_top] select-none pointer-events-none opacity-50"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/85 to-[#020302]" />
+            {/* Contrast overlays: preserve image clarity while ensuring text & input readability */}
+            <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/70 via-black/30 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
           </div>
 
           {/* Minimal top tap area to go back to welcome with crisp typography */}
@@ -999,14 +1026,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           <div
             className="w-full max-w-sm mx-auto relative z-10 flex flex-col justify-end mt-auto mb-6"
           >
-            <h2 className="text-[32px] sm:text-[36px] font-bold text-white tracking-tight leading-[1.12]">
+            <h2 className="text-[32px] sm:text-[36px] font-bold text-white tracking-tight leading-[1.12] drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
               Dari Siapa<br />Kenangan Ini?
             </h2>
 
             <div className="mt-5">
               <label
                 htmlFor="guest-name-input-ilva"
-                className="block text-base sm:text-lg font-medium text-white tracking-normal mb-1"
+                className="block text-base sm:text-lg font-medium text-white tracking-normal mb-1 drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]"
               >
                 Nama Tamu
               </label>
@@ -1151,23 +1178,21 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
               {/* Name Input Card */}
               <div
-                className={`p-6 rounded-2xl border space-y-4 shadow-xl ${
-                  isNurulIqraWedding
+                className={`p-6 rounded-2xl border space-y-4 shadow-xl ${isNurulIqraWedding
                     ? "bg-white/95 backdrop-blur-sm border-2 border-[#c51d24]/20 shadow-red-950/5"
                     : isIlvaRickyWedding
-                    ? "bg-stone-900/90 backdrop-blur-md border border-emerald-500/30 shadow-emerald-950/20"
-                    : "bg-stone-900 border-stone-800 shadow-md"
-                }`}
+                      ? "bg-stone-900/90 backdrop-blur-md border border-emerald-500/30 shadow-emerald-950/20"
+                      : "bg-stone-900 border-stone-800 shadow-md"
+                  }`}
               >
                 <div className="text-center space-y-1">
                   <label
-                    className={`block text-xs uppercase tracking-widest font-bold ${
-                      isNurulIqraWedding
+                    className={`block text-xs uppercase tracking-widest font-bold ${isNurulIqraWedding
                         ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]"
                         : isIlvaRickyWedding
-                        ? "text-emerald-400 font-mono"
-                        : "text-stone-300 font-mono"
-                    }`}
+                          ? "text-emerald-400 font-mono"
+                          : "text-stone-300 font-mono"
+                      }`}
                   >
                     Masukkan Nama Anda
                   </label>
@@ -1190,24 +1215,22 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                         setCurrentStep("frame_select");
                       }
                     }}
-                    className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${
-                      isNurulIqraWedding
+                    className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${isNurulIqraWedding
                         ? "bg-stone-50/70 border-2 border-[#c51d24]/30 focus:border-[#c51d24] focus:bg-white focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-inner"
                         : isIlvaRickyWedding
-                        ? "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
-                        : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
-                    }`}
+                          ? "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
+                          : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
+                      }`}
                   />
                 </div>
 
                 <button
                   disabled={!guestName.trim()}
                   onClick={() => setCurrentStep("frame_select")}
-                  className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg flex items-center justify-center gap-2 ${
-                    isNurulIqraWedding
+                  className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg flex items-center justify-center gap-2 ${isNurulIqraWedding
                       ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
                       : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
-                  }`}
+                    }`}
                 >
                   <span>Lanjut Pilih Frame</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
@@ -1372,8 +1395,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                               src={overlayUrl}
                               alt={frame.name}
                               className={`max-h-[370px] sm:max-h-[410px] w-auto object-contain transition-all duration-300 select-none pointer-events-none ${isSelected
-                                  ? "scale-100 opacity-100 drop-shadow-[0_16px_36px_rgba(0,0,0,0.26)]"
-                                  : "scale-[0.88] opacity-50 hover:opacity-75 drop-shadow-[0_8px_18px_rgba(0,0,0,0.14)]"
+                                ? "scale-100 opacity-100 drop-shadow-[0_16px_36px_rgba(0,0,0,0.26)]"
+                                : "scale-[0.88] opacity-50 hover:opacity-75 drop-shadow-[0_8px_18px_rgba(0,0,0,0.14)]"
                                 }`}
                             />
                           ) : (
@@ -1399,8 +1422,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                         >
                           <div
                             className={`w-[180px] h-[280px] bg-white text-stone-900 rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 ${isSelected
-                                ? "scale-100 opacity-100 shadow-2xl ring-2 ring-[#c51d24]"
-                                : "scale-[0.88] opacity-50 shadow-md"
+                              ? "scale-100 opacity-100 shadow-2xl ring-2 ring-[#c51d24]"
+                              : "scale-[0.88] opacity-50 shadow-md"
                               }`}
                           >
                             <div className="text-center font-bold text-sm">{tmpl.name}</div>
@@ -1425,12 +1448,12 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           onClick={() => handleSelectFrame(frame, idx)}
                           aria-label={`Pilih Frame ${idx + 1}`}
                           className={`transition-all duration-300 rounded-full ${isCurrent
-                              ? isNurulIqraWedding
-                                ? "w-6 h-2 bg-[#c51d24] shadow-sm"
-                                : "w-6 h-2 bg-white"
-                              : isNurulIqraWedding
-                                ? "w-2 h-2 bg-stone-300 hover:bg-stone-400"
-                                : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
+                            ? isNurulIqraWedding
+                              ? "w-6 h-2 bg-[#c51d24] shadow-sm"
+                              : "w-6 h-2 bg-white"
+                            : isNurulIqraWedding
+                              ? "w-2 h-2 bg-stone-300 hover:bg-stone-400"
+                              : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
                             }`}
                         />
                       );
@@ -1448,8 +1471,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           }}
                           aria-label={`Pilih Frame ${idx + 1}`}
                           className={`transition-all duration-300 rounded-full ${isCurrent
-                              ? "w-6 h-2 bg-white shadow-sm"
-                              : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
+                            ? "w-6 h-2 bg-white shadow-sm"
+                            : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
                             }`}
                         />
                       );
@@ -1501,209 +1524,338 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       {/* ─── STEP 3: CAMERA ─── */}
       {
         currentStep === "camera" && (
-          <main className="flex-1 flex flex-col relative overflow-hidden">
+          <main className="flex-1 flex flex-col relative overflow-hidden bg-[#0a0a0a]">
             {/* Flash Overlay */}
             <div
               ref={flashRef}
-              className="absolute inset-0 bg-white pointer-events-none z-30"
+              className="absolute inset-0 bg-white pointer-events-none z-40"
               style={{ opacity: 0, transition: "opacity 120ms ease-out" }}
             />
 
-            {/* Progress bar */}
-            <div className={`px-4 py-3 flex items-center justify-between backdrop-blur-sm z-10 ${isNurulIqraWedding ? "bg-black/75 text-white" : "bg-[#111113]/90 text-stone-200"
-              }`}>
+            {/* ─── ATUR FOTO (PAN & PINCH FRAMING OVERLAY) ─── */}
+            {adjustOpen && (
+              <div className="absolute inset-0 z-50 bg-[#0d0d0d] flex flex-col justify-between text-white select-none">
+                {/* Header */}
+                <div className="flex flex-col items-center text-center pt-5 pb-1 px-5 shrink-0">
+                  <h3 className="font-bold text-lg text-white tracking-tight">Atur Foto</h3>
+                  <p className="text-xs text-white/60 mt-0.5 tracking-wide">
+                    {requiredShots > 1
+                      ? `Foto ${adjustIndex + 1} dari ${requiredShots}`
+                      : "Atur posisi foto"}
+                  </p>
+                </div>
+
+                {/* Center Framing Window Box */}
+                {(() => {
+                  const currentAspect = getTargetSlotAspect(adjustIndex);
+                  const boxDim = getAdjustBoxDimensions(currentAspect);
+                  const natW = adjNatDim.w || 1;
+                  const natH = adjNatDim.h || 1;
+                  const baseScale = Math.max(boxDim.w / natW, boxDim.h / natH);
+                  const currentScale = baseScale * adjustZoom;
+                  const dispW = natW * currentScale;
+                  const dispH = natH * currentScale;
+                  const minTx = boxDim.w - dispW;
+                  const clampedTx = Math.min(0, Math.max(minTx, adjustTx));
+                  const minTy = boxDim.h - dispH;
+                  const clampedTy = Math.min(0, Math.max(minTy, adjustTy));
+
+                  return (
+                    <div className="flex-1 min-h-0 flex items-center justify-center p-3 overflow-hidden">
+                      <div
+                        className="relative overflow-hidden rounded-xl bg-[#151515] shadow-2xl border border-white/20 touch-none"
+                        style={{
+                          width: `${boxDim.w}px`,
+                          height: `${boxDim.h}px`,
+                        }}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                        onWheel={(e) => {
+                          e.preventDefault();
+                          setAdjustZoom((prev) => Math.max(1, Math.min(4, prev * (e.deltaY < 0 ? 1.08 : 0.92))));
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          ref={adjustImgRef}
+                          src={adjustRawPhoto || ""}
+                          alt="Preview atur foto"
+                          onLoad={(e) => {
+                            const img = e.currentTarget;
+                            setAdjNatDim({ w: img.naturalWidth, h: img.naturalHeight });
+                            const bs = Math.max(boxDim.w / (img.naturalWidth || 1), boxDim.h / (img.naturalHeight || 1));
+                            const dw = (img.naturalWidth || 1) * bs;
+                            const dh = (img.naturalHeight || 1) * bs;
+                            setAdjustTx((boxDim.w - dw) / 2);
+                            setAdjustTy((boxDim.h - dh) / 2);
+                            setAdjustZoom(1);
+                          }}
+                          className={`absolute max-w-none cursor-grab active:cursor-grabbing select-none ${selectedFilter === "grayscale"
+                            ? "grayscale"
+                            : selectedFilter === "sepia"
+                              ? "sepia"
+                              : selectedFilter === "soft-glow"
+                                ? "brightness-105 contrast-95 saturate-110"
+                                : selectedFilter === "warm-vintage"
+                                  ? "sepia-[0.35] saturate-125"
+                                  : selectedFilter === "cool-cinema"
+                                    ? "hue-rotate-180 saturate-90"
+                                    : ""
+                            }`}
+                          style={{
+                            left: `${clampedTx}px`,
+                            top: `${clampedTy}px`,
+                            width: `${dispW}px`,
+                            height: `${dispH}px`,
+                            userSelect: "none",
+                            WebkitUserSelect: "none",
+                          }}
+                          draggable={false}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Helper pill: Pan & pinch guidance */}
+                <div className="flex justify-center px-4 pb-2 shrink-0">
+                  <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-xs text-white/80 border border-white/10">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l-3 3M21 12l-3-3M21 12l3 3" />
+                    </svg>
+                    <span>Geser &amp; cubit untuk menyesuaikan foto</span>
+                  </div>
+                </div>
+
+                {/* Buttons: Ulangi & Pakai */}
+                <div className="p-5 pt-2 pb-8 flex gap-3 shrink-0 max-w-sm mx-auto w-full">
+                  <button
+                    type="button"
+                    onClick={handleRetakeAdjust}
+                    className="flex-1 min-h-[48px] rounded-full border border-white/60 bg-transparent text-white font-medium text-sm hover:bg-white/10 active:scale-95 transition-all"
+                  >
+                    Ulangi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmAdjust}
+                    className="flex-1 min-h-[48px] rounded-full bg-white text-stone-950 font-bold text-sm hover:bg-stone-100 active:scale-95 transition-all shadow-lg"
+                  >
+                    Pakai
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Top Bar with Back button and Event Info */}
+            <div className={`px-4 py-3 flex items-center justify-between backdrop-blur-sm z-10 shrink-0 ${isNurulIqraWedding ? "bg-black/75 text-white" : "bg-[#111113]/90 text-stone-200"}`}>
               <button
-                disabled={cameraState === "countdown" || cameraState === "capturing"}
+                type="button"
                 onClick={() => {
                   stopCamera();
                   setCameraState("idle");
                   setCurrentStep("frame_select");
                 }}
                 className="min-h-[44px] min-w-[44px] flex items-center justify-center text-stone-400 active:text-white"
+                aria-label="Kembali ke pilih frame"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
               </button>
 
-              <div className={`text-sm font-semibold flex items-center gap-1.5 ${isNurulIqraWedding ? "text-white" : "text-stone-200"}`}>
-                {isNurulIqraWedding && <span className="w-2 h-2 rounded-full bg-[#c51d24] animate-pulse" />}
-                <span>Foto {currentShotIndex} / {requiredShots}</span>
+              <div className="text-right">
+                <span className="block text-[10px] uppercase tracking-wider text-white/60 font-medium">Virtual Photobooth</span>
+                <span className="block text-sm font-semibold text-white truncate max-w-[180px]">{event.host_name || event.title}</span>
               </div>
-
-              {/* Top flip camera button */}
-              <button
-                type="button"
-                disabled={cameraState === "countdown" || cameraState === "capturing"}
-                onClick={toggleCameraFacing}
-                aria-label="Balik Kamera"
-                title="Ganti ke kamera belakang / depan"
-                className="min-h-[44px] min-w-[44px] px-2 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all border border-white/20 shadow-sm"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 2.21 1 4.21 2.6 5.6" />
-                  <path d="M4 14c0 4.418 3.582 8 8 8s8-3.582 8-8c0-2.21-1-4.21-2.6-5.6" />
-                  <path d="m19 14 3-3-3-3" />
-                  <path d="m5 10-3 3 3 3" />
-                </svg>
-              </button>
             </div>
 
-            {/* Camera Viewfinder */}
-            <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
-              {cameraState === "error" ? (
-                <div className="px-6 py-8 text-center space-y-4 max-w-xs">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-stone-800 flex items-center justify-center">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 7.5a4 4 0 1 0 0-3" /><path d="m2 2 20 20" /><path d="M11.5 15H17a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1" /><path d="M7 7H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2" /></svg>
+            {/* Camera Viewfinder (clean full-screen preview with no dark cutout blocking the view) */}
+            <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden px-4 pt-1 pb-2 min-h-0">
+              <div className="w-full h-full max-w-md mx-auto relative rounded-xl overflow-hidden bg-[#161616] flex items-center justify-center shadow-lg border border-white/10">
+                {cameraState === "error" ? (
+                  <div className="px-6 py-8 text-center space-y-4 max-w-xs">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-stone-800 flex items-center justify-center">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 7.5a4 4 0 1 0 0-3" /><path d="m2 2 20 20" /><path d="M11.5 15H17a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1" /><path d="M7 7H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2" /></svg>
+                    </div>
+                    <p className="text-sm text-stone-300 leading-relaxed">{cameraError}</p>
+                    <button
+                      onClick={() => startCamera()}
+                      className="min-h-[48px] px-6 bg-white text-stone-950 font-semibold text-sm rounded-lg"
+                    >
+                      Coba Lagi
+                    </button>
                   </div>
-                  <p className="text-sm text-stone-300 leading-relaxed">{cameraError}</p>
-                  <button
-                    onClick={() => startCamera()}
-                    className="min-h-[48px] px-6 bg-white text-stone-950 font-semibold text-sm rounded-lg"
+                ) : (
+                  <>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : "scale-x-100"} ${selectedFilter === "grayscale"
+                        ? "grayscale"
+                        : selectedFilter === "sepia"
+                          ? "sepia"
+                          : selectedFilter === "soft-glow"
+                            ? "brightness-105 contrast-95 saturate-110"
+                            : selectedFilter === "warm-vintage"
+                              ? "sepia-[0.35] saturate-125"
+                              : selectedFilter === "cool-cinema"
+                                ? "hue-rotate-180 saturate-90"
+                                : ""
+                        }`}
+                    />
+
+                    {/* Flash toggle button at top-left of video */}
+                    <button
+                      type="button"
+                      onClick={() => setFlashOn((prev) => !prev)}
+                      className={`absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md z-20 ${flashOn ? "bg-white text-stone-950" : "bg-black/50 text-white/80 hover:text-white"}`}
+                      aria-label="Flash"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill={flashOn ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Bar (compact, horizontal scroll) */}
+            <div className="flex gap-2 overflow-x-auto pb-1 px-4 max-w-md mx-auto w-full shrink-0">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  disabled={cameraState !== "ready"}
+                  onClick={() => setSelectedFilter(f.id)}
+                  className={`min-h-[36px] px-3.5 text-xs font-medium whitespace-nowrap border rounded-full transition-colors ${selectedFilter === f.id
+                    ? "bg-white text-stone-950 border-white"
+                    : "bg-stone-900/60 text-stone-400 border-stone-800 active:bg-stone-800"
+                    }`}
+                >
+                  {f.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Capture Slots Row: Thumbnails & Slot progress */}
+            <div className="flex items-center justify-center gap-2.5 px-4 py-2 shrink-0 max-w-md mx-auto w-full">
+              {Array.from({ length: requiredShots }).map((_, idx) => {
+                const photo = capturedPhotos[idx];
+                const isActive = idx === capturedPhotos.length;
+                return (
+                  <div
+                    key={idx}
+                    className={`relative w-12 h-16 rounded-md overflow-hidden flex items-center justify-center border transition-all ${photo
+                        ? "border-white/80 shadow-md bg-stone-900"
+                        : isActive
+                          ? "border-white bg-white/10 ring-2 ring-white/50"
+                          : "border-white/20 bg-stone-900/60 text-white/40"
+                      }`}
                   >
-                    Coba Lagi
+                    {photo ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo}
+                          alt={`Foto ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteShot(idx)}
+                          aria-label={`Hapus foto ${idx + 1}`}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white text-stone-950 flex items-center justify-center shadow-md hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs font-semibold text-white/50">{idx + 1}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Controls Bar */}
+            <div
+              className="px-6 py-4 pb-6 bg-[#0d0d0d] border-t border-white/10 shrink-0"
+              style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+            >
+              {capturedPhotos.length >= requiredShots ? (
+                /* All shots taken: 'Lanjut' button */
+                <div className="max-w-xs mx-auto w-full">
+                  <button
+                    type="button"
+                    onClick={handleProceedToPreview}
+                    className="w-full min-h-[52px] px-6 rounded-full bg-white text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
+                  >
+                    <span className="tracking-tight pl-2">Lanjutkan</span>
+                    <span className="w-8 h-8 rounded-full bg-stone-950 text-white flex items-center justify-center shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                      </svg>
+                    </span>
                   </button>
                 </div>
               ) : (
-                <>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className={`w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : "scale-x-100"} ${selectedFilter === "grayscale"
-                      ? "grayscale"
-                      : selectedFilter === "sepia"
-                        ? "sepia"
-                        : selectedFilter === "soft-glow"
-                          ? "brightness-105 contrast-95 saturate-110"
-                          : selectedFilter === "warm-vintage"
-                            ? "sepia-[0.35] saturate-125"
-                            : selectedFilter === "cool-cinema"
-                              ? "hue-rotate-180 saturate-90"
-                              : ""
-                      }`}
+                /* Still capturing: Flip camera, Shutter, Gallery */
+                <div className="flex items-center justify-between max-w-xs mx-auto w-full">
+                  {/* Flip camera */}
+                  <button
+                    type="button"
+                    onClick={toggleCameraFacing}
+                    aria-label="Ganti kamera"
+                    className="w-12 h-12 rounded-full bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 2.21 1 4.21 2.6 5.6" />
+                      <path d="M4 14c0 4.418 3.582 8 8 8s8-3.582 8-8c0-2.21-1-4.21-2.6-5.6" />
+                      <path d="m19 14 3-3-3-3" />
+                      <path d="m5 10-3 3 3 3" />
+                    </svg>
+                  </button>
+
+                  {/* Shutter button */}
+                  <button
+                    type="button"
+                    onClick={captureFromVideo}
+                    aria-label="Ambil foto"
+                    className="w-20 h-20 rounded-full border-2 border-white/80 p-1 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl bg-transparent"
+                  >
+                    <span className="w-14 h-14 rounded-full bg-[#f6f4ee] block shadow-inner" />
+                  </button>
+
+                  {/* Gallery picker */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Pilih dari galeri"
+                    className="w-12 h-12 rounded-xl bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="3" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="m21 15-5-5L5 21" />
+                    </svg>
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSelectFromGallery}
+                    className="hidden"
                   />
-
-                  {/* Dark Mask Overlay with Framing Cutout Window */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10 overflow-hidden p-4">
-                    <div
-                      ref={cutoutRef}
-                      className="relative rounded-2xl transition-all duration-300 ease-out"
-                      style={{
-                        aspectRatio: `${getTargetSlotAspect(currentShotIndex)}`,
-                        width: getTargetSlotAspect(currentShotIndex) >= 1 ? "min(88vw, 440px)" : "auto",
-                        height: getTargetSlotAspect(currentShotIndex) < 1 ? "min(62vh, 480px)" : "auto",
-                        maxWidth: "92%",
-                        maxHeight: "82%",
-                        boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.72)",
-                      }}
-                    >
-                      {/* Corner framing brackets */}
-                      <div className="absolute -top-[1px] -left-[1px] w-6 h-6 border-t-2 border-l-2 border-white rounded-tl-lg shadow-sm" />
-                      <div className="absolute -top-[1px] -right-[1px] w-6 h-6 border-t-2 border-r-2 border-white rounded-tr-lg shadow-sm" />
-                      <div className="absolute -bottom-[1px] -left-[1px] w-6 h-6 border-b-2 border-l-2 border-white rounded-bl-lg shadow-sm" />
-                      <div className="absolute -bottom-[1px] -right-[1px] w-6 h-6 border-b-2 border-r-2 border-white rounded-br-lg shadow-sm" />
-
-                      {/* Rule of thirds grid lines */}
-                      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-20">
-                        <div className="border-r border-b border-white" />
-                        <div className="border-r border-b border-white" />
-                        <div className="border-b border-white" />
-                        <div className="border-r border-b border-white" />
-                        <div className="border-r border-b border-white" />
-                        <div className="border-b border-white" />
-                        <div className="border-r border-white" />
-                        <div className="border-r border-white" />
-                        <div />
-                      </div>
-
-                      {/* Slot Info Badge on top of frame */}
-                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-sm border border-white/20 text-[10px] font-mono tracking-wider text-white flex items-center gap-1.5 shadow-md whitespace-nowrap">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                        <span>
-                          Batas Foto {currentShotIndex + 1}/{requiredShots} {getTargetSlotAspect(currentShotIndex) >= 1 ? "(Landscape)" : "(Portrait)"}
-                        </span>
-                      </div>
-
-                      {/* Guidance helper at bottom of frame */}
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[10px] font-sans text-white/80 border border-white/10 whitespace-nowrap">
-                        Posisikan di dalam batas area
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Countdown Overlay */}
-              {countdown !== null && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
-                  <span className={`text-8xl font-bold drop-shadow-2xl ${isNurulIqraWedding ? "text-white" : "text-white"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
-                    {countdown}
-                  </span>
                 </div>
               )}
-            </div>
-
-            {/* Bottom Controls */}
-            <div
-              className={`border-t px-4 py-4 space-y-3 ${isNurulIqraWedding ? "bg-[#111113] border-stone-800" : "bg-[#111113] border-stone-800/60"
-                }`}
-              style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-            >
-              {/* Filter Bar */}
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f.id}
-                    disabled={cameraState !== "ready"}
-                    onClick={() => setSelectedFilter(f.id)}
-                    className={`min-h-[40px] px-4 text-xs font-medium whitespace-nowrap border rounded-full transition-colors ${selectedFilter === f.id
-                      ? isNurulIqraWedding
-                        ? "bg-[#c51d24] text-white border-[#c51d24]"
-                        : "bg-white text-stone-950 border-white"
-                      : "bg-stone-900/60 text-stone-400 border-stone-700 active:bg-stone-800"
-                      }`}
-                  >
-                    {f.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Capture & Flip Controls */}
-              <div className="flex items-center gap-2.5">
-                <button
-                  disabled={cameraState !== "ready"}
-                  onClick={startPhotoSequence}
-                  className={`flex-1 min-h-[56px] font-bold text-base uppercase tracking-wider transition-all rounded-xl shadow-lg ${isNurulIqraWedding
-                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-800 disabled:text-stone-500 text-white"
-                    : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
-                    }`}
-                >
-                  {cameraState === "countdown" || cameraState === "capturing"
-                    ? "Mengambil Foto..."
-                    : cameraState === "requesting"
-                      ? "Menyiapkan Kamera..."
-                      : "Ambil Foto"}
-                </button>
-
-                <button
-                  type="button"
-                  disabled={cameraState !== "ready"}
-                  onClick={toggleCameraFacing}
-                  aria-label="Balik Kamera"
-                  title="Ganti ke kamera belakang / depan"
-                  className="min-h-[56px] min-w-[56px] px-2 rounded-xl flex flex-col items-center justify-center gap-1 bg-stone-900 border border-stone-700/80 text-stone-200 hover:border-stone-500 active:bg-stone-800 transition-all active:scale-95 shadow-md shrink-0"
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5" />
-                    <path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5" />
-                    <path d="m20 10-3-3 3-3" />
-                    <path d="m4 14 3 3-3 3" />
-                  </svg>
-                  <span className="text-[9px] font-semibold tracking-wider uppercase leading-none">
-                    {facingMode === "user" ? "Belakang" : "Depan"}
-                  </span>
-                </button>
-              </div>
             </div>
           </main>
         )
