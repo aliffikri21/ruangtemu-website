@@ -88,6 +88,10 @@ export default function EventGalleryPage({ params }: Props) {
   const col1 = entries.filter((_, idx) => idx % 2 === 0);
   const col2 = entries.filter((_, idx) => idx % 2 === 1);
 
+  const isNurulIqra = slug.includes("nurul") || slug.includes("iqra");
+  const primaryColor = isNurulIqra ? "#ad0d0d" : "#093333";
+  const accentTextColor = isNurulIqra ? "#b50000" : "#093333";
+
   const displayHostName = event?.host_name || (slug.includes("ilva") ? "Ilva & Ricky" : event?.title || "Wedding Memories");
 
   return (
@@ -117,7 +121,10 @@ export default function EventGalleryPage({ params }: Props) {
           <span className="block font-sans text-[11px] tracking-wider font-semibold text-stone-600 uppercase">
             WEDDING MEMORIES
           </span>
-          <span className="block font-[family-name:var(--font-great-vibes)] text-3xl sm:text-4xl text-[#b50000] leading-none mt-0.5">
+          <span
+            className="block font-[family-name:var(--font-great-vibes)] text-3xl sm:text-4xl leading-none mt-0.5"
+            style={{ color: accentTextColor }}
+          >
             {displayHostName}
           </span>
         </div>
@@ -126,7 +133,7 @@ export default function EventGalleryPage({ params }: Props) {
       {/* Main Title */}
       <div className="w-full px-5 max-w-xl mx-auto mt-4 mb-5">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-stone-950 tracking-tight">
-          Jelajahi <span className="text-[#b50000]">Kenangan</span>
+          Jelajahi <span style={{ color: accentTextColor }}>Kenangan</span>
         </h1>
       </div>
 
@@ -144,7 +151,8 @@ export default function EventGalleryPage({ params }: Props) {
             </p>
             <Link
               href={`/event/${slug}`}
-              className="inline-flex items-center justify-center min-h-[46px] px-6 py-2.5 rounded-full bg-[#b50000] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:bg-[#990000] active:scale-95 transition-all"
+              className="inline-flex items-center justify-center min-h-[46px] px-6 py-2.5 rounded-full text-white font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all"
+              style={{ backgroundColor: primaryColor }}
             >
               Mulai Ambil Foto
             </Link>
@@ -157,7 +165,8 @@ export default function EventGalleryPage({ params }: Props) {
                 <div
                   key={entry.id}
                   onClick={() => setSelectedEntry(entry)}
-                  className="bg-[#ad0d0d] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 overflow-hidden shadow-md cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all"
+                  className="rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 overflow-hidden shadow-md cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all text-white"
+                  style={{ backgroundColor: primaryColor }}
                 >
                   <div className="w-full bg-stone-900/10 rounded-xl sm:rounded-2xl overflow-hidden flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -188,7 +197,8 @@ export default function EventGalleryPage({ params }: Props) {
                 <div
                   key={entry.id}
                   onClick={() => setSelectedEntry(entry)}
-                  className="bg-[#ad0d0d] rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 overflow-hidden shadow-md cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all"
+                  className="rounded-2xl sm:rounded-3xl p-1 sm:p-1.5 overflow-hidden shadow-md cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all text-white"
+                  style={{ backgroundColor: primaryColor }}
                 >
                   <div className="w-full bg-stone-900/10 rounded-xl sm:rounded-2xl overflow-hidden flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -223,7 +233,8 @@ export default function EventGalleryPage({ params }: Props) {
           onClick={() => setSelectedEntry(null)}
         >
           <div
-            className="bg-[#ad0d0d] text-white rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm w-full relative overflow-hidden flex flex-col"
+            className="text-white rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm w-full relative overflow-hidden flex flex-col"
+            style={{ backgroundColor: primaryColor }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Bar inside Modal */}

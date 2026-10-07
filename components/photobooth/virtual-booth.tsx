@@ -727,7 +727,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/images/events/ilva-ricky-clean-bg.png"
+            src="/images/events/ilvaricky-bg.jpeg"
             alt=""
             className="w-full h-full object-cover object-[center_25%] opacity-15 select-none"
           />
@@ -765,31 +765,53 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       {/* ─── STEP 1: WELCOME SCREEN (CUSTOM FULL-PAGE UI FOR ILVA & RICKY) ─── */}
       {currentStep === "welcome" && isIlvaRickyWedding && (
         <main
-          className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-end items-center px-6 overflow-hidden select-none bg-[#020404]"
+          className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-between items-center px-7 sm:px-8 overflow-hidden select-none bg-black"
           style={{
-            paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+            paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+            paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
           }}
         >
-          {/* Background Image: Couple Portrait with untouched top typography */}
+          {/* Background Image: High-resolution clean couple portrait */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/events/ilva-ricky-clean-bg.png"
+              src="/images/events/ilvaricky-bg.jpeg"
               alt="The Wedding of Ilva & Ricky"
               className="w-full h-full object-cover object-[center_top] select-none pointer-events-none"
             />
+            {/* Soft top gradient to guarantee crystal-clear text contrast */}
+            <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
+            {/* Soft bottom gradient for button readability */}
+            <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none" />
           </div>
 
-          {/* Accessible offscreen text for screen readers */}
-          <h1 className="sr-only">
-            The Wedding of Ilva & Ricky, 08 Oktober 2026, Gedung Opu Daeng Risadju
-          </h1>
+          {/* Top Typography Section: Matching user reference image layout */}
+          <header className="w-full max-w-sm mx-auto relative z-10 flex flex-col pt-1">
+            {/* Top row: 'The Wedding' & 'Memories' */}
+            <div className="w-full flex items-center justify-between text-white/95 text-[15px] sm:text-base font-normal tracking-wide">
+              <span>The Wedding</span>
+              <span>Memories</span>
+            </div>
+
+            {/* 'Ilva & Ricky': Left-aligned under 'The Wedding', natural flow */}
+            <div className="mt-2 text-left pl-0.5">
+              <h1 className="text-[clamp(44px,13vw,62px)] text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] select-none">
+                Ilva &amp; Ricky
+              </h1>
+            </div>
+
+            {/* '08 Oktober 2026' & 'Gedung Opu Daeng Risadju': spaced down in dark gap above bride */}
+            <div className="mt-[clamp(3.5rem,9.5vh,6rem)] text-left text-white/95 text-[13px] sm:text-sm font-normal leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)] pl-0.5">
+              <p>08 Oktober 2026</p>
+              <p>Gedung Opu Daeng Risadju</p>
+            </div>
+          </header>
 
           {/* Bottom Interactive Action Buttons Area */}
-          <div className="w-full max-w-sm mx-auto relative z-10 flex flex-col items-center space-y-2.5 pb-1">
+          <div className="w-full max-w-sm mx-auto relative z-10 flex flex-col items-center space-y-2.5 pb-1 mt-auto">
             {/* Action 1: White pill button with red circle arrow */}
             <button
               type="button"
@@ -930,25 +952,26 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
           }}
         >
-          {/* Background Image: Couple Portrait with untouched top calligraphy */}
+          {/* Background Image: Couple Portrait with dark overlay for legibility */}
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/events/ilva-ricky-name-bg.png"
+              src="/images/events/ilvaricky-bg.jpeg"
               alt="The Wedding of Ilva & Ricky"
-              className="w-full h-full object-cover object-[center_top] select-none pointer-events-none"
+              className="w-full h-full object-cover object-[center_top] select-none pointer-events-none opacity-40"
             />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/85 to-[#020302]" />
           </div>
 
-          {/* Minimal top tap area to go back to welcome if needed */}
+          {/* Minimal top tap area to go back to welcome with crisp typography */}
           <div className="w-full max-w-sm mx-auto relative z-10 flex items-center justify-between pt-1">
             <button
               type="button"
               onClick={() => setCurrentStep("welcome")}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 text-white/50 active:text-white transition-colors"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 text-white/70 active:text-white transition-colors"
               aria-label="Kembali ke poster"
             >
               <svg
@@ -964,12 +987,17 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
+            <div className="text-right">
+              <span className="block text-[11px] text-white/70 font-normal tracking-wide">The Wedding of</span>
+              <span className="block text-2xl text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none">
+                Ilva &amp; Ricky
+              </span>
+            </div>
           </div>
 
           {/* Middle-lower Content Area: Headline + Input field */}
           <div
-            className="w-full max-w-sm mx-auto relative z-10 flex flex-col justify-end"
-            style={{ marginTop: "calc(51dvh)" }}
+            className="w-full max-w-sm mx-auto relative z-10 flex flex-col justify-end mt-auto mb-6"
           >
             <h2 className="text-[32px] sm:text-[36px] font-bold text-white tracking-tight leading-[1.12]">
               Dari Siapa<br />Kenangan Ini?
