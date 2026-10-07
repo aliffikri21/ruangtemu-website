@@ -110,6 +110,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [streamAspect, setStreamAspect] = useState<number>(9 / 16);
 
   // Frame Carousel
   const carouselRef = useRef<HTMLDivElement | null>(null);
@@ -166,10 +167,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const requiredShots = frameConfig.photoCount || frameConfig.photoSlots?.length || getShotsForType(frameConfig.type);
 
   const getTargetSlotAspect = useCallback((shotIndex: number): number => {
-    // Untuk frame 1x jepret, gunakan rasio normal kamera (3:4 = 0.75)
-    // agar kamera tidak terlalu ngezoom dan menghasilkan sudut pandang natural
+    // Untuk frame 1x jepret, gunakan rasio normal kamera depan (9:16 atau rasio asli sensor)
+    // agar kamera tampil full-frame dan tidak terpotong/ngezoom sama sekali
     if (requiredShots === 1) {
-      return 3 / 4;
+      return streamAspect || (9 / 16);
     }
 
     if (frameConfig.photoSlots && frameConfig.photoSlots.length > 0) {
@@ -181,7 +182,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     }
     if (frameConfig.frameImageWidth && frameConfig.frameImageHeight && frameConfig.frameImageWidth > 0 && frameConfig.frameImageHeight > 0) {
       if (frameConfig.photoCount === 1) {
-        return 3 / 4;
+        return streamAspect || (9 / 16);
       }
     }
     switch (frameConfig.type) {
@@ -191,7 +192,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       case "strip_3":
       default: return 1.45;
     }
-  }, [frameConfig, requiredShots]);
+  }, [frameConfig, requiredShots, streamAspect]);
 
   // ─── Camera Lifecycle ─────────────────────────────────────────
 
@@ -231,6 +232,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         await videoRef.current.play();
+        if (videoRef.current.videoWidth && videoRef.current.videoHeight) {
+          setStreamAspect(videoRef.current.videoWidth / videoRef.current.videoHeight);
+        }
       }
 
       setCameraState("ready");
@@ -291,14 +295,17 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     let srcW = vWidth;
     let srcH = vHeight;
 
-    if (vAspect > aspect) {
-      // Sensor is wider than target ratio: crop sides
-      srcW = Math.round(vHeight * aspect);
-      srcX = Math.round((vWidth - srcW) / 2);
-    } else if (vAspect < aspect) {
-      // Sensor is taller than target ratio: crop top/bottom
-      srcH = Math.round(vWidth / aspect);
-      srcY = Math.round((vHeight - srcH) / 2);
+    // Untuk frame 1x jepret, gunakan 100% sensor kamera tanpa crop agar tidak ngezoom
+    if (requiredShots !== 1) {
+      if (vAspect > aspect) {
+        // Sensor is wider than target ratio: crop sides
+        srcW = Math.round(vHeight * aspect);
+        srcX = Math.round((vWidth - srcW) / 2);
+      } else if (vAspect < aspect) {
+        // Sensor is taller than target ratio: crop top/bottom
+        srcH = Math.round(vWidth / aspect);
+        srcY = Math.round((vHeight - srcH) / 2);
+      }
     }
 
     const tempCanvas = document.createElement("canvas");
@@ -1802,6 +1809,12 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           autoPlay
                           playsInline
                           muted
+                          onLoadedMetadata={(e) => {
+                            const v = e.currentTarget;
+                            if (v.videoWidth && v.videoHeight) {
+                              setStreamAspect(v.videoWidth / v.videoHeight);
+                            }
+                          }}
                           className={`w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : "scale-x-100"} ${selectedFilter === "grayscale"
                             ? "grayscale"
                             : selectedFilter === "sepia"
