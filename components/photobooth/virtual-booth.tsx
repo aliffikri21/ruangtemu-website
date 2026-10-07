@@ -1172,7 +1172,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-white text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
             >
               <span className="tracking-tight pl-1">Selanjutnya</span>
-              <span className="w-9 h-9 rounded-full bg-[#e50914] text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
+              <span className="w-9 h-9 rounded-full bg-[#3a716c] text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
                 <svg
                   width="18"
                   height="18"
