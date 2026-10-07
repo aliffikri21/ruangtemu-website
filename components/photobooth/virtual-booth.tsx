@@ -325,6 +325,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
   const startCountdown = useCallback(() => {
     if (cameraState === "countdown" || cameraState === "capturing" || adjustOpen) return;
+    if (capturedPhotos.length >= requiredShots) return;
     if (!videoRef.current || cameraState !== "ready") return;
 
     if (countdownTimerRef.current) {
@@ -394,6 +395,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     canvas.height = targetH;
     const ctx = canvas.getContext("2d");
 
+    const updated = [...capturedPhotos];
     if (ctx && imgEl && imgEl.naturalWidth && imgEl.naturalHeight) {
       const natW = imgEl.naturalWidth;
       const natH = imgEl.naturalHeight;
@@ -421,19 +423,24 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       }
 
       const finalPhoto = canvas.toDataURL("image/jpeg", 0.92);
-      const updated = [...capturedPhotos];
       updated[slotIdx] = finalPhoto;
-      setCapturedPhotos(updated);
-      setCurrentShotIndex(updated.length);
     } else {
-      const updated = [...capturedPhotos];
       updated[slotIdx] = adjustRawPhoto;
-      setCapturedPhotos(updated);
-      setCurrentShotIndex(updated.length);
     }
+
+    setCapturedPhotos(updated);
+    setCurrentShotIndex(updated.length);
 
     setAdjustOpen(false);
     setAdjustRawPhoto(null);
+
+    // Otomatis langsung lanjut ke preview jika semua slot foto sudah terisi (khususnya frame 1 foto)
+    if (updated.length >= requiredShots) {
+      setCameraState("processing");
+      stopCamera();
+      generateComposite(updated);
+      setCurrentStep("preview");
+    }
   };
 
   const handleDeleteShot = (indexToDelete: number) => {
@@ -923,12 +930,28 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               </span>
             </button>
 
-            {/* Action 2: Outline pill button linking to album */}
+            {/* Action 2: Outline pill button linking to album with gallery icon badge */}
             <Link
               href={`/event/${event.slug}/gallery`}
-              className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-black/40 backdrop-blur-sm border-[1.5px] border-white text-white font-bold text-base flex items-center justify-center shadow-lg active:bg-white/15 transition-colors"
+              className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-black/40 backdrop-blur-sm border-[1.5px] border-white text-white font-bold text-base flex items-center justify-between shadow-lg active:scale-[0.98] transition-all cursor-pointer"
             >
-              <span className="tracking-tight">Jelajahi Album</span>
+              <span className="tracking-tight pl-1">Jelajahi Album</span>
+              <span className="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                </svg>
+              </span>
             </Link>
 
             {/* Footer Text */}
@@ -1568,6 +1591,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               {/* CTA */}
               <button
                 onClick={() => {
+                  setCapturedPhotos([]);
+                  setCurrentShotIndex(0);
                   setCurrentStep("camera");
                   startCamera();
                 }}
@@ -1711,8 +1736,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               </div>
             )}
 
-            {/* Top Bar with Back button and Event Info */}
-            <div className={`px-4 py-3 flex items-center justify-between backdrop-blur-sm z-10 shrink-0 ${isNurulIqraWedding ? "bg-black/75 text-white" : "bg-[#111113]/90 text-stone-200"}`}>
+            {/* Top Bar with Back button and Event Info (Header text hidden for Ilva & Ricky theme) */}
+            <div className={`px-4 py-3 flex items-center justify-between z-10 shrink-0 ${isNurulIqraWedding ? "bg-black/75 text-white backdrop-blur-sm" : isIlvaRickyWedding ? "bg-transparent text-white" : "bg-[#111113]/90 text-stone-200 backdrop-blur-sm"}`}>
               <button
                 type="button"
                 onClick={() => {
@@ -1726,10 +1751,12 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
               </button>
 
-              <div className="text-right">
-                <span className="block text-[10px] uppercase tracking-wider text-white/60 font-medium">Virtual Photobooth</span>
-                <span className="block text-sm font-semibold text-white truncate max-w-[180px]">{event.host_name || event.title}</span>
-              </div>
+              {!isIlvaRickyWedding && (
+                <div className="text-right">
+                  <span className="block text-[10px] uppercase tracking-wider text-white/60 font-medium">Virtual Photobooth</span>
+                  <span className="block text-sm font-semibold text-white truncate max-w-[180px]">{event.host_name || event.title}</span>
+                </div>
+              )}
             </div>
 
             {/* Camera Viewfinder (adaptive aspect ratio matching the target frame slot) */}
@@ -1931,9 +1958,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     onClick={toggleCameraFacing}
                     disabled={countdown !== null}
                     aria-label="Ganti kamera"
-                    className={`w-12 h-12 rounded-full bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${
-                      countdown !== null ? "opacity-35 pointer-events-none" : ""
-                    }`}
+                    className={`w-12 h-12 rounded-full bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${countdown !== null ? "opacity-35 pointer-events-none" : ""
+                      }`}
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 2.21 1 4.21 2.6 5.6" />
@@ -1949,16 +1975,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     onClick={startCountdown}
                     disabled={cameraState !== "ready" || countdown !== null || adjustOpen}
                     aria-label={countdown !== null ? `Hitungan mundur ${countdown} detik` : "Ambil foto"}
-                    className={`w-20 h-20 rounded-full border-2 p-1 flex items-center justify-center transition-all shadow-xl bg-transparent ${
-                      countdown !== null
+                    className={`w-20 h-20 rounded-full border-2 p-1 flex items-center justify-center transition-all shadow-xl bg-transparent ${countdown !== null
                         ? "border-amber-400 scale-95 opacity-90 cursor-wait"
                         : "border-white/80 hover:scale-105 active:scale-95"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-14 h-14 rounded-full block shadow-inner transition-colors ${
-                        countdown !== null ? "bg-amber-400 animate-pulse" : "bg-[#f6f4ee]"
-                      }`}
+                      className={`w-14 h-14 rounded-full block shadow-inner transition-colors ${countdown !== null ? "bg-amber-400 animate-pulse" : "bg-[#f6f4ee]"
+                        }`}
                     />
                   </button>
 
@@ -1968,9 +1992,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     onClick={() => !countdown && fileInputRef.current?.click()}
                     disabled={countdown !== null}
                     aria-label="Pilih dari galeri"
-                    className={`w-12 h-12 rounded-xl bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${
-                      countdown !== null ? "opacity-35 pointer-events-none" : ""
-                    }`}
+                    className={`w-12 h-12 rounded-xl bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${countdown !== null ? "opacity-35 pointer-events-none" : ""
+                      }`}
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="3" />
