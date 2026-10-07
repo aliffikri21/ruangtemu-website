@@ -110,7 +110,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
-  const [streamAspect, setStreamAspect] = useState<number>(9 / 16);
+  const [streamAspect, setStreamAspect] = useState<number>(3 / 4);
 
   // Frame Carousel
   const carouselRef = useRef<HTMLDivElement | null>(null);
@@ -167,10 +167,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const requiredShots = frameConfig.photoCount || frameConfig.photoSlots?.length || getShotsForType(frameConfig.type);
 
   const getTargetSlotAspect = useCallback((shotIndex: number): number => {
-    // Untuk frame 1x jepret, gunakan rasio normal kamera depan (9:16 atau rasio asli sensor)
-    // agar kamera tampil full-frame dan tidak terpotong/ngezoom sama sekali
+    // Untuk frame 1x jepret, gunakan rasio normal kamera 3:4 (0.75)
+    // agar tidak menjadi 16:9 dan tidak terlalu ngezoom
     if (requiredShots === 1) {
-      return streamAspect || (9 / 16);
+      return 3 / 4;
     }
 
     if (frameConfig.photoSlots && frameConfig.photoSlots.length > 0) {
@@ -221,8 +221,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: targetFacing },
-          width: isMobile ? { ideal: 1080 } : { ideal: 1920 },
-          height: isMobile ? { ideal: 1920 } : { ideal: 1080 },
+          aspectRatio: isMobile ? { ideal: 3 / 4 } : { ideal: 4 / 3 },
+          width: isMobile ? { ideal: 1440 } : { ideal: 1920 },
+          height: isMobile ? { ideal: 1920 } : { ideal: 1440 },
         },
         audio: false,
       });
@@ -295,17 +296,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     let srcW = vWidth;
     let srcH = vHeight;
 
-    // Untuk frame 1x jepret, gunakan 100% sensor kamera tanpa crop agar tidak ngezoom
-    if (requiredShots !== 1) {
-      if (vAspect > aspect) {
-        // Sensor is wider than target ratio: crop sides
-        srcW = Math.round(vHeight * aspect);
-        srcX = Math.round((vWidth - srcW) / 2);
-      } else if (vAspect < aspect) {
-        // Sensor is taller than target ratio: crop top/bottom
-        srcH = Math.round(vWidth / aspect);
-        srcY = Math.round((vHeight - srcH) / 2);
-      }
+    if (vAspect > aspect) {
+      // Sensor lebih lebar dari target rasio 3:4: potong sisi kiri/kanan sedikit agar pas
+      srcW = Math.round(vHeight * aspect);
+      srcX = Math.round((vWidth - srcW) / 2);
+    } else if (vAspect < aspect) {
+      // Sensor lebih panjang dari target rasio 3:4: potong sisi atas/bawah sedikit agar pas
+      srcH = Math.round(vWidth / aspect);
+      srcY = Math.round((vHeight - srcH) / 2);
     }
 
     const tempCanvas = document.createElement("canvas");
