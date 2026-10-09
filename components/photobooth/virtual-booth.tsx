@@ -47,6 +47,36 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     event.slug.toLowerCase().includes("ilva") ||
     event.title.toLowerCase().includes("ilva");
 
+  const isJayaRikaWedding =
+    event.slug === "jayarika-wedding" ||
+    event.slug.toLowerCase().includes("jayarika") ||
+    event.slug.toLowerCase().includes("jaya") ||
+    event.title.toLowerCase().includes("jaya");
+
+  const isCustomWedding = isIlvaRickyWedding || isJayaRikaWedding;
+
+  const customCoupleName = isJayaRikaWedding
+    ? "Jaya & Rika"
+    : isIlvaRickyWedding
+      ? "Ilva & Ricky"
+      : (event.host_name || event.title);
+
+  const customDateText = isJayaRikaWedding
+    ? "12 Oktober 2026"
+    : isIlvaRickyWedding
+      ? "08 Oktober 2026"
+      : event.date;
+
+  const customVenueText = isJayaRikaWedding
+    ? "D'Twins Cafe"
+    : isIlvaRickyWedding
+      ? "Gedung Opu Daeng Risadju"
+      : event.venue;
+
+  const customBgImage = isJayaRikaWedding
+    ? "/images/events/jayarika-2.jpeg"
+    : "/images/events/ilvaricky-bg.jpeg";
+
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -824,15 +854,15 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </div>
       )}
 
-      {/* Ilva & Ricky Couple Photo Background Overlay for screens after welcome */}
-      {isIlvaRickyWedding && currentStep !== "welcome" && currentStep !== "camera" && (
+      {/* Custom Wedding Couple Photo Background Overlay for screens after welcome */}
+      {isCustomWedding && currentStep !== "welcome" && currentStep !== "camera" && (
         <div
           aria-hidden="true"
           className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/images/events/ilvaricky-bg.jpeg"
+            src={customBgImage}
             alt=""
             className="w-full h-full object-cover object-[center_25%] opacity-15 select-none"
           />
@@ -840,8 +870,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </div>
       )}
 
-      {/* Minimal Top Bar (hidden for custom wedding themes like Ilva & Ricky, and during camera/welcome/name_input) */}
-      {!isIlvaRickyWedding && ((!isNurulIqraWedding) || (currentStep !== "welcome" && currentStep !== "name_input")) && currentStep !== "camera" && (
+      {/* Minimal Top Bar (hidden for custom wedding themes, and during camera/welcome/name_input) */}
+      {!isCustomWedding && ((!isNurulIqraWedding) || (currentStep !== "welcome" && currentStep !== "name_input")) && currentStep !== "camera" && (
         <header
           className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${isNurulIqraWedding
             ? "border-red-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
@@ -867,8 +897,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* ─── STEP 1: WELCOME SCREEN (CUSTOM FULL-PAGE UI FOR ILVA & RICKY) ─── */}
-      {currentStep === "welcome" && isIlvaRickyWedding && (
+      {/* ─── STEP 1: WELCOME SCREEN (CUSTOM FULL-PAGE UI FOR ILVA & RICKY / JAYA & RIKA) ─── */}
+      {currentStep === "welcome" && isCustomWedding && (
         <main
           className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-between items-center px-7 sm:px-8 overflow-hidden select-none bg-black"
           style={{
@@ -883,12 +913,12 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/events/ilvaricky-bg.jpeg"
-              alt="The Wedding of Ilva & Ricky"
+              src={customBgImage}
+              alt={event.title}
               className="w-full h-full object-cover object-[center_top] select-none pointer-events-none"
             />
             {/* Soft top gradient to guarantee crystal-clear text contrast */}
-            <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
+            <div className={`absolute inset-x-0 top-0 ${isJayaRikaWedding ? "h-64 bg-gradient-to-b from-black/80 via-black/45 to-transparent" : "h-56 bg-gradient-to-b from-black/60 via-black/20 to-transparent"} pointer-events-none`} />
             {/* Soft bottom gradient for button readability */}
             <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none" />
           </div>
@@ -896,22 +926,22 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           {/* Top Typography Section: Matching user reference image layout */}
           <header className="w-full max-w-sm mx-auto relative z-10 flex flex-col pt-2 sm:pt-4">
             {/* Top row: 'The Wedding' & 'Memories' */}
-            <div className="w-full flex items-center justify-between text-white/95 text-[15px] sm:text-base font-normal tracking-wide">
+            <div className="w-full flex items-center justify-between text-white/95 text-[15px] sm:text-base font-normal tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]">
               <span>The Wedding</span>
               <span>Memories</span>
             </div>
 
-            {/* 'Ilva & Ricky': Lowered with balanced spacing */}
+            {/* Couple Name: Lowered with balanced spacing */}
             <div className="mt-6 sm:mt-8 text-center w-full">
-              <h1 className="text-[clamp(44px,13vw,62px)] text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] select-none text-center">
-                Ilva &amp; Ricky
+              <h1 className="text-[clamp(44px,13vw,62px)] text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap drop-shadow-[0_2px_14px_rgba(0,0,0,0.95)] select-none text-center">
+                {customCoupleName}
               </h1>
             </div>
 
-            {/* '08 Oktober 2026' & 'Gedung Opu Daeng Risadju': aligned to the left, away from center/bride's head */}
-            <div className="mt-[clamp(2.5rem,6.5vh,4rem)] text-left pl-2 sm:pl-3 text-white/95 text-[13px] sm:text-sm font-normal leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
-              <p>08 Oktober 2026</p>
-              <p>Gedung Opu Daeng Risadju</p>
+            {/* Date & Venue: aligned to the left, away from center/couple's head */}
+            <div className="mt-[clamp(2.5rem,6.5vh,4rem)] text-left pl-2 sm:pl-3 text-white/95 text-[13px] sm:text-sm font-normal leading-snug drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
+              <p>{customDateText}</p>
+              <p>{customVenueText}</p>
             </div>
           </header>
 
@@ -1064,8 +1094,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </main>
       )}
 
-      {/* ─── STEP 1.5: NAME INPUT SCREEN (CUSTOM UI FOR ILVA & RICKY) ─── */}
-      {currentStep === "name_input" && isIlvaRickyWedding && (
+      {/* ─── STEP 1.5: NAME INPUT SCREEN (CUSTOM UI FOR ILVA & RICKY / JAYA & RIKA) ─── */}
+      {currentStep === "name_input" && isCustomWedding && (
         <main
           className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-between px-6 overflow-hidden select-none bg-[#020302]"
           style={{
@@ -1080,8 +1110,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/events/ilvaricky-bg.jpeg"
-              alt="The Wedding of Ilva & Ricky"
+              src={customBgImage}
+              alt={event.title}
               className="w-full h-full object-cover object-[center_top] select-none pointer-events-none opacity-50"
             />
             {/* Contrast overlays: preserve image clarity while ensuring text & input readability */}
@@ -1113,7 +1143,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             <div className="text-right">
               <span className="block text-[11px] text-white/70 font-normal tracking-wide">The Wedding of</span>
               <span className="block text-2xl text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none">
-                Ilva &amp; Ricky
+                {customCoupleName}
               </span>
             </div>
           </div>
@@ -1128,14 +1158,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
             <div className="mt-5">
               <label
-                htmlFor="guest-name-input-ilva"
+                htmlFor="guest-name-input-custom"
                 className="block text-base sm:text-lg font-medium text-white tracking-normal mb-1 drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]"
               >
                 Nama Tamu
               </label>
               <div className="relative">
                 <input
-                  id="guest-name-input-ilva"
+                  id="guest-name-input-custom"
                   type="text"
                   autoFocus
                   autoComplete="name"
@@ -1164,7 +1194,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               type="button"
               onClick={() => {
                 if (!guestName.trim()) {
-                  document.getElementById("guest-name-input-ilva")?.focus();
+                  document.getElementById("guest-name-input-custom")?.focus();
                   return;
                 }
                 setCurrentStep("frame_select");
@@ -1200,7 +1230,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       )}
 
       {/* ─── STEP 1.5: NAME INPUT SCREEN (SEPARATE STEP AFTER SPLASH DELAY) ─── */}
-      {currentStep === "name_input" && !isIlvaRickyWedding && (
+      {currentStep === "name_input" && !isCustomWedding && (
         <main
           className={`flex-1 flex flex-col px-5 overflow-y-auto relative z-10 min-h-[100dvh] justify-between ${isNurulIqraWedding ? "bg-transparent text-stone-900" : "bg-[#111113] text-stone-100"
             }`}
@@ -1313,7 +1343,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     }}
                     className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${isNurulIqraWedding
                       ? "bg-stone-50/70 border-2 border-[#c51d24]/30 focus:border-[#c51d24] focus:bg-white focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-inner"
-                      : isIlvaRickyWedding
+                      : isCustomWedding
                         ? "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
                         : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
                       }`}
@@ -1346,7 +1376,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 1: WELCOME (DEFAULT DARK THEME FOR OTHER EVENTS) ─── */}
       {
-        currentStep === "welcome" && !isNurulIqraWedding && !isIlvaRickyWedding && (
+        currentStep === "welcome" && !isNurulIqraWedding && !isCustomWedding && (
           <main className="flex-1 flex items-center justify-center px-5 py-8">
             <div className="w-full max-w-sm space-y-6">
               <div className="space-y-2 text-center">
@@ -1453,7 +1483,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   </p>
                 </div>
                 <button
-                  onClick={() => setCurrentStep(isNurulIqraWedding || isIlvaRickyWedding ? "name_input" : "welcome")}
+                  onClick={() => setCurrentStep(isNurulIqraWedding || isCustomWedding ? "name_input" : "welcome")}
                   className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border border-red-100 shadow-sm" : "text-stone-400 active:text-white"
                     }`}
                 >
@@ -1747,8 +1777,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               </div>
             )}
 
-            {/* Top Bar with Back button and Event Info (Header text hidden for Ilva & Ricky theme) */}
-            <div className={`px-4 py-3 flex items-center justify-between z-10 shrink-0 ${isNurulIqraWedding ? "bg-black/75 text-white backdrop-blur-sm" : isIlvaRickyWedding ? "bg-transparent text-white" : "bg-[#111113]/90 text-stone-200 backdrop-blur-sm"}`}>
+            {/* Top Bar with Back button and Event Info (Header text hidden for custom wedding theme) */}
+            <div className={`px-4 py-3 flex items-center justify-between z-10 shrink-0 ${isNurulIqraWedding ? "bg-black/75 text-white backdrop-blur-sm" : isCustomWedding ? "bg-transparent text-white" : "bg-[#111113]/90 text-stone-200 backdrop-blur-sm"}`}>
               <button
                 type="button"
                 onClick={() => {
@@ -1762,7 +1792,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
               </button>
 
-              {!isIlvaRickyWedding && (
+              {!isCustomWedding && (
                 <div className="text-right">
                   <span className="block text-[10px] uppercase tracking-wider text-white/60 font-medium">Virtual Photobooth</span>
                   <span className="block text-sm font-semibold text-white truncate max-w-[180px]">{event.host_name || event.title}</span>

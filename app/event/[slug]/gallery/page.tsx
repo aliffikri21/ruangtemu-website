@@ -92,7 +92,7 @@ export default function EventGalleryPage({ params }: Props) {
   const primaryColor = isNurulIqra ? "#ad0d0d" : "#3a716c";
   const accentTextColor = isNurulIqra ? "#b50000" : "#3a716c";
 
-  const displayHostName = event?.host_name || (slug.includes("ilva") ? "Ilva & Ricky" : event?.title || "Wedding Memories");
+  const displayHostName = event?.host_name || (slug.includes("ilva") ? "Ilva & Ricky" : slug.includes("jaya") ? "Jaya & Rika" : event?.title || "Wedding Memories");
 
   return (
     <div className="min-h-[100dvh] bg-[#f8fafc] text-stone-900 flex flex-col antialiased">
