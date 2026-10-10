@@ -488,6 +488,7 @@ function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { t
       borderRadius: 12,
     }),
     assigned_frames: assignedFrames && assignedFrames.length > 0 ? assignedFrames : defaultDemoFrames,
+    theme_config: row.theme_config ? parseJsonField(row.theme_config, undefined) : undefined,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
     stats: computedStats || {
       total_photos: Number(row.total_photos || 0),
@@ -810,6 +811,7 @@ export async function updateEvent(
       if (updates.allow_voice_note !== undefined) updatePayload.allow_voice_note = updates.allow_voice_note;
       if (updates.allow_custom_frame !== undefined) updatePayload.allow_custom_frame = updates.allow_custom_frame;
       if (updates.default_frame_config !== undefined) updatePayload.default_frame_config = updates.default_frame_config;
+      if (updates.theme_config !== undefined) updatePayload.theme_config = updates.theme_config;
 
       if (Object.keys(updatePayload).length > 0) {
         const { error: updErr } = await client.from("events").update(updatePayload).eq("id", id);

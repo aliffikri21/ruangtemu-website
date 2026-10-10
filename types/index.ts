@@ -114,12 +114,92 @@ export interface EventItem {
   gallery_visibility?: "PUBLIC" | "PRIVATE";
   default_frame_config: FrameConfig;
   assigned_frames?: FrameItem[];
+  theme_config?: LandingThemeConfig;
   created_at: string;
   updated_at?: string;
   stats?: {
     total_photos: number;
     total_wishes: number;
     total_voice_notes: number;
+  };
+}
+
+export interface LandingThemeConfig {
+  global: {
+    font: string;
+  };
+  background: {
+    image: string;
+    color: string;
+    overlay: number;
+    fade: number;
+    posY: number;
+  };
+  header: {
+    show: boolean;
+    left: string;
+    right: string;
+    color: string;
+    size: number;
+  };
+  title: {
+    show: boolean;
+    text: string;
+    font: string;
+    size: number;
+    color: string;
+    top: number;
+    align: "left" | "center" | "right";
+  };
+  info: {
+    show: boolean;
+    line1: string;
+    line2: string;
+    color: string;
+    size: number;
+    align: "left" | "center" | "right";
+    top: number;
+  };
+  cta1: {
+    show: boolean;
+    text: string;
+    href: string;
+    icon: string;
+    bg: string;
+    color: string;
+    iconBg: string;
+    iconColor: string;
+  };
+  cta2: {
+    show: boolean;
+    text: string;
+    href: string;
+    variant: "outline" | "glass" | "solid";
+    bg: string;
+    borderColor: string;
+    color: string;
+    icon: string;
+    iconBg: string;
+    iconColor: string;
+  };
+  footer: {
+    show: boolean;
+    text: string;
+    color: string;
+  };
+  layout: {
+    variant: "classic" | "center" | "sheet" | "polaroid" | "arch" | "editorial";
+    surface: string;
+    accent: string;
+    photoHeight?: number;
+    buttonStyle: "pill" | "rounded" | "square";
+    buttonHeight: number;
+    buttonFont: number;
+    gap: number;
+    sidePadding: number;
+    topPadding: number;
+    bottomPadding: number;
+    footerGap: number;
   };
 }
 

@@ -11,6 +11,7 @@ import {
   applyPixelFilter,
 } from "@/lib/frame-canvas";
 import { VoiceNoteRecorder } from "@/lib/audio";
+import { LandingPageView } from "@/lib/theme-config";
 
 interface VirtualBoothProps {
   event: EventItem;
@@ -897,8 +898,23 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* ─── STEP 1: WELCOME SCREEN (CUSTOM FULL-PAGE UI FOR JAYA & RIKA / ILVA & RICKY) ─── */}
-      {currentStep === "welcome" && isCustomWedding && (
+      {/* ─── STEP 1: WELCOME SCREEN (DYNAMIC FROM THEME_CONFIG IF CONFIGURED) ─── */}
+      {currentStep === "welcome" && event.theme_config && (
+        <main className="flex-1 w-full min-h-[100dvh] relative overflow-hidden select-none">
+          <LandingPageView
+            config={event.theme_config}
+            onCta1Click={handleProceedToNameInput}
+            onCta2Click={() => {
+              window.location.href =
+                event.theme_config?.cta2?.href || `/event/${event.slug}/gallery`;
+            }}
+            interactive={true}
+          />
+        </main>
+      )}
+
+      {/* ─── STEP 1: WELCOME SCREEN (CUSTOM FULL-PAGE UI FOR JAYA & RIKA / ILVA & RICKY FALLBACK) ─── */}
+      {currentStep === "welcome" && !event.theme_config && isCustomWedding && (
         <main
           className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-between items-center px-7 sm:px-8 overflow-hidden select-none bg-black"
           style={{
@@ -1006,7 +1022,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       )}
 
       {/* ─── STEP 1: WELCOME POSTER / SPLASH (CUSTOM FULL-PAGE BRIDAL UI FOR NURUL & IQRA) ─── */}
-      {currentStep === "welcome" && isNurulIqraWedding && (
+      {currentStep === "welcome" && !event.theme_config && isNurulIqraWedding && (
         <main
           role="button"
           tabIndex={0}
@@ -1378,7 +1394,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 1: WELCOME (DEFAULT DARK THEME FOR OTHER EVENTS) ─── */}
       {
-        currentStep === "welcome" && !isNurulIqraWedding && !isCustomWedding && (
+        currentStep === "welcome" && !event.theme_config && !isNurulIqraWedding && !isCustomWedding && (
           <main className="flex-1 flex items-center justify-center px-5 py-8">
             <div className="w-full max-w-sm space-y-6">
               <div className="space-y-2 text-center">

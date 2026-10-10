@@ -97,6 +97,8 @@ export async function PUT(
       updates.allow_voice_note = body.allow_voice_note;
     if (body.default_frame_config !== undefined)
       updates.default_frame_config = body.default_frame_config;
+    if (body.theme_config !== undefined)
+      updates.theme_config = body.theme_config;
     if (assigned_frames !== undefined)
       updates.assigned_frames = assigned_frames;
 

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { EventItem, Booking, Package, GalleryEntry, BookingStatus, FrameItem, FrameType, PhotoSlot } from "@/types";
+import { EventItem, Booking, Package, GalleryEntry, BookingStatus, FrameItem, FrameType, PhotoSlot, LandingThemeConfig } from "@/types";
 import { formatRupiah, formatDate } from "@/lib/utils";
 import { detectTransparentRegions } from "@/lib/frame-detect";
+import { LandingUIEditor } from "./landing-ui-editor";
+import { getDefaultThemeConfigForEvent } from "@/lib/theme-config";
 
 interface AdminViewProps {
   initialEvents: EventItem[];
@@ -93,6 +95,7 @@ export function AdminView({
     description: "",
   });
   const [editFrames, setEditFrames] = useState<FrameUploadSlot[]>([]);
+  const [editThemeConfig, setEditThemeConfig] = useState<LandingThemeConfig | undefined>(undefined);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editSuccessMsg, setEditSuccessMsg] = useState("");
   const [editErrorMsg, setEditErrorMsg] = useState("");
@@ -111,6 +114,7 @@ export function AdminView({
       city: evt.city || "Palopo",
       description: evt.description || "",
     });
+    setEditThemeConfig(evt.theme_config || getDefaultThemeConfigForEvent(evt));
 
     const slots: FrameUploadSlot[] = (evt.assigned_frames && evt.assigned_frames.length > 0)
       ? evt.assigned_frames.map((fr, idx) => ({
@@ -350,6 +354,7 @@ export function AdminView({
       default_frame_config: assigned_frames.length > 0
         ? assigned_frames[0].config_json
         : undefined,
+      theme_config: editThemeConfig,
     };
 
     try {
@@ -364,7 +369,7 @@ export function AdminView({
           prev.map((ev) => (ev.id === data.event.id ? data.event : ev))
         );
         setEditingEvent(data.event);
-        setEditSuccessMsg("Perubahan nama event dan frame berhasil disimpan!");
+        setEditSuccessMsg("Perubahan event, frame, dan tampilan landing page berhasil disimpan!");
       } else {
         setEditErrorMsg(data.error || "Gagal memperbarui event.");
       }
@@ -1722,6 +1727,15 @@ export function AdminView({
                     </div>
                   </div>
 
+                  {/* SECTION 3: EDITOR TAMPILAN LANDING PAGE (UI EDITOR) */}
+                  <div className="space-y-3">
+                    <LandingUIEditor
+                      initialConfig={editThemeConfig}
+                      onChange={(newConfig) => setEditThemeConfig(newConfig)}
+                      eventSlug={editForm.slug}
+                    />
+                  </div>
+
                   {/* SUBMIT BUTTONS */}
                   <div className="flex items-center gap-3 pt-2">
                     <button
@@ -1735,7 +1749,7 @@ export function AdminView({
                           Menyimpan Perubahan...
                         </>
                       ) : (
-                        "Simpan Perubahan Event & Frame"
+                        "Simpan Semua Perubahan (Event, Frame & Desain UI)"
                       )}
                     </button>
 
