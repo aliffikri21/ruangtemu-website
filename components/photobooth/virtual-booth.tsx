@@ -934,7 +934,13 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               className="w-full h-full object-cover object-[center_top] select-none pointer-events-none"
             />
             {/* Soft top gradient to guarantee crystal-clear text contrast */}
-            <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
+            <div
+              className={`absolute inset-x-0 top-0 h-56 pointer-events-none ${
+                isJayaRikaWedding
+                  ? "bg-gradient-to-b from-white/80 via-white/25 to-transparent"
+                  : "bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+              }`}
+            />
             {/* Soft bottom gradient for button readability */}
             <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none" />
           </div>
@@ -942,20 +948,38 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           {/* Top Typography Section: Matching user reference image layout */}
           <header className="w-full max-w-sm mx-auto relative z-10 flex flex-col pt-2 sm:pt-4">
             {/* Top row: 'The Wedding' & 'Memories' */}
-            <div className="w-full flex items-center justify-between text-white/95 text-[15px] sm:text-base font-normal tracking-wide">
+            <div
+              className={`w-full flex items-center justify-between text-[15px] sm:text-base tracking-wide ${
+                isJayaRikaWedding
+                  ? "text-[#224DA5] font-semibold"
+                  : "text-white/95 font-normal"
+              }`}
+            >
               <span>The Wedding</span>
               <span>Memories</span>
             </div>
 
             {/* Couple's Name: Lowered with balanced spacing */}
             <div className="mt-6 sm:mt-8 text-center w-full">
-              <h1 className="text-[clamp(44px,13vw,62px)] text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] select-none text-center">
+              <h1
+                className={`text-[clamp(44px,13vw,62px)] font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap select-none text-center ${
+                  isJayaRikaWedding
+                    ? "text-[#224DA5] drop-shadow-[0_2px_12px_rgba(255,255,255,0.9)]"
+                    : "text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
+                }`}
+              >
                 {customCoupleName}
               </h1>
             </div>
 
             {/* Date & Venue: aligned to the left, away from center/couple */}
-            <div className="mt-[clamp(2.5rem,6.5vh,4rem)] text-left pl-2 sm:pl-3 text-white/95 text-[13px] sm:text-sm font-normal leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
+            <div
+              className={`mt-[clamp(2.5rem,6.5vh,4rem)] text-left pl-2 sm:pl-3 text-[13px] sm:text-sm font-normal leading-snug ${
+                isJayaRikaWedding
+                  ? "text-[#224DA5] font-medium drop-shadow-[0_1px_6px_rgba(255,255,255,0.9)]"
+                  : "text-white/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]"
+              }`}
+            >
               <p>{customDateText}</p>
               <p>{customVenueText}</p>
             </div>
