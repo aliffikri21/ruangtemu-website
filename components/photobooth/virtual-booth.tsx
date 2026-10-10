@@ -897,121 +897,113 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* ─── STEP 1: WELCOME SCREEN (CUSTOM ARCH UI FOR JAYA & RIKA / CUSTOM WEDDING) ─── */}
-      {currentStep === "welcome" && isCustomWedding && (() => {
-        const nameParts = customCoupleName.includes("&")
-          ? customCoupleName.split("&").map((s) => s.trim())
-          : [customCoupleName, ""];
-        const partner1 = nameParts[0] || "Jaya";
-        const partner2 = nameParts[1] || "Rika";
-        const hasTwoPartners = Boolean(nameParts[1]);
-
-        return (
-          <main
-            className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-end items-center overflow-hidden select-none bg-stone-950"
+      {/* ─── STEP 1: WELCOME SCREEN (CUSTOM FULL-PAGE UI FOR JAYA & RIKA / ILVA & RICKY) ─── */}
+      {currentStep === "welcome" && isCustomWedding && (
+        <main
+          className="flex-1 w-full min-h-[100dvh] relative flex flex-col justify-between items-center px-7 sm:px-8 overflow-hidden select-none bg-black"
+          style={{
+            paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+            paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
+          }}
+        >
+          {/* Background Image: High-resolution clean couple portrait */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
           >
-            {/* Background Couple Photo (bg-jayarika.png) */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={customBgImage}
-                alt={event.title}
-                className="w-full h-[145%] object-cover object-center select-none pointer-events-none -translate-y-[17%]"
-              />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={customBgImage}
+              alt={event.title}
+              className="w-full h-full object-cover object-[center_top] select-none pointer-events-none"
+            />
+            {/* Soft top gradient to guarantee crystal-clear text contrast */}
+            <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
+            {/* Soft bottom gradient for button readability */}
+            <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none" />
+          </div>
+
+          {/* Top Typography Section: Matching user reference image layout */}
+          <header className="w-full max-w-sm mx-auto relative z-10 flex flex-col pt-2 sm:pt-4">
+            {/* Top row: 'The Wedding' & 'Memories' */}
+            <div className="w-full flex items-center justify-between text-white/95 text-[15px] sm:text-base font-normal tracking-wide">
+              <span>The Wedding</span>
+              <span>Memories</span>
             </div>
 
-            {/* White Arched Card: Full device width, touching left and right edges */}
-            <div
-              className="w-full relative z-10 bg-white shadow-[0_-12px_36px_rgba(0,0,0,0.25)] flex flex-col items-center pt-5 px-5 overflow-hidden"
-              style={{
-                borderTopLeftRadius: "50% 120px",
-                borderTopRightRadius: "50% 120px",
-                paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
-              }}
-            >
-              {/* Inner content wrapper */}
-              <div className="w-full max-w-[320px] mx-auto flex flex-col items-center">
-                {/* Header: The Wedding of */}
-                <div className="w-full text-center text-[#224DA5] text-[15px] sm:text-[16px] font-normal tracking-wider">
-                  The Wedding of
-                </div>
-
-                {/* Couple's Names: Staggered Layout from Figma (Beauty Gadish font) */}
-                {hasTwoPartners ? (
-                  <div className="w-full max-w-[270px] mx-auto relative h-[92px] mt-1 text-[#224DA5] select-none">
-                    {/* Name 1 (Jaya) - top-left */}
-                    <span
-                      className="absolute left-1 sm:left-2 top-0 text-[30px] sm:text-[33px] leading-none font-normal"
-                      style={{ fontFamily: "'Beauty Gadish', var(--font-great-vibes), 'Great Vibes', cursive, serif" }}
-                    >
-                      {partner1}
-                    </span>
-                    {/* Ampersand (&) - center */}
-                    <span
-                      className="absolute left-1/2 -translate-x-1/2 top-[22px] text-[36px] sm:text-[40px] leading-none font-normal"
-                      style={{ fontFamily: "'Beauty Gadish', var(--font-great-vibes), 'Great Vibes', cursive, serif" }}
-                    >
-                      &amp;
-                    </span>
-                    {/* Name 2 (Rika) - bottom-right */}
-                    <span
-                      className="absolute right-1 sm:right-2 bottom-0 text-[30px] sm:text-[33px] leading-none font-normal"
-                      style={{ fontFamily: "'Beauty Gadish', var(--font-great-vibes), 'Great Vibes', cursive, serif" }}
-                    >
-                      {partner2}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="w-full text-center py-2 text-[#224DA5]">
-                    <span
-                      className="text-[32px] sm:text-[36px] leading-tight font-normal"
-                      style={{ fontFamily: "'Beauty Gadish', var(--font-great-vibes), 'Great Vibes', cursive, serif" }}
-                    >
-                      {customCoupleName}
-                    </span>
-                  </div>
-                )}
-
-                {/* Date Divider with Thin Accent Lines */}
-                <div className="w-full max-w-[280px] mx-auto flex items-center justify-center gap-3 mt-2.5">
-                  <div className="flex-1 h-[0.7px] bg-[#224DA5]/60" />
-                  <span className="text-[#224DA5] text-[13px] sm:text-[14px] italic font-normal tracking-wide shrink-0">
-                    {customDateText}
-                  </span>
-                  <div className="flex-1 h-[0.7px] bg-[#224DA5]/60" />
-                </div>
-
-                {/* Action 1: Primary Button (Tambahkan Momen Anda) */}
-                <button
-                  type="button"
-                  onClick={handleProceedToNameInput}
-                  className="w-full max-w-[290px] mx-auto min-h-[46px] py-2.5 mt-4 rounded-[14px] bg-[#224DA5] hover:bg-[#1b3e85] active:scale-[0.98] text-white font-bold text-[16px] sm:text-[17px] tracking-normal shadow-md hover:shadow-lg transition-all flex items-center justify-center cursor-pointer touch-manipulation"
-                >
-                  Tambahkan Momen Anda
-                </button>
-
-                {/* Action 2: Secondary Button (Jelajahi Galeri) */}
-                <Link
-                  href={`/event/${event.slug}/gallery`}
-                  className="w-full max-w-[290px] mx-auto min-h-[46px] py-2.5 mt-2 rounded-[14px] bg-white border border-[#224DA5] hover:bg-blue-50/50 active:scale-[0.98] text-[#224DA5] font-bold text-[16px] sm:text-[17px] tracking-normal transition-all flex items-center justify-center cursor-pointer touch-manipulation"
-                >
-                  Jelajahi Galeri
-                </Link>
-
-                {/* Footer Branding Text */}
-                <div className="w-full text-center mt-3 pt-1">
-                  <p className="text-[#224DA5] text-[10px] sm:text-[11px] font-normal tracking-wide">
-                    Virtual Photobooth by RUANGTEMUPHOTOBOOTH
-                  </p>
-                </div>
-              </div>
+            {/* Couple's Name: Lowered with balanced spacing */}
+            <div className="mt-6 sm:mt-8 text-center w-full">
+              <h1 className="text-[clamp(44px,13vw,62px)] text-white font-[family-name:var(--font-great-vibes),'Great_Vibes',cursive] leading-none whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] select-none text-center">
+                {customCoupleName}
+              </h1>
             </div>
-          </main>
-        );
-      })()}
+
+            {/* Date & Venue: aligned to the left, away from center/couple */}
+            <div className="mt-[clamp(2.5rem,6.5vh,4rem)] text-left pl-2 sm:pl-3 text-white/95 text-[13px] sm:text-sm font-normal leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
+              <p>{customDateText}</p>
+              <p>{customVenueText}</p>
+            </div>
+          </header>
+
+          {/* Bottom Interactive Action Buttons Area */}
+          <div className="w-full max-w-sm mx-auto relative z-10 flex flex-col items-center space-y-2.5 pb-1 mt-auto">
+            {/* Action 1: White pill button with teal circle arrow */}
+            <button
+              type="button"
+              onClick={handleProceedToNameInput}
+              className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-white text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
+            >
+              <span className="tracking-tight pl-1">Tambahkan Momen Anda</span>
+              <span className={`w-9 h-9 rounded-full ${isJayaRikaWedding ? "bg-[#224DA5]" : "bg-[#3a716c]"} text-white flex items-center justify-center shrink-0 shadow-sm ml-2`}>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
+              </span>
+            </button>
+
+            {/* Action 2: Outline pill button linking to album with gallery icon badge */}
+            <Link
+              href={`/event/${event.slug}/gallery`}
+              className="w-full min-h-[52px] px-5 py-2.5 rounded-full bg-black/40 backdrop-blur-sm border-[1.5px] border-white text-white font-bold text-base flex items-center justify-between shadow-lg active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <span className="tracking-tight pl-1">Jelajahi Album</span>
+              <span className="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 shadow-sm ml-2">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                </svg>
+              </span>
+            </Link>
+
+            {/* Footer Text */}
+            <div className="pt-2 text-center">
+              <p className="text-[11px] sm:text-xs text-white/80 tracking-wide font-normal">
+                Virtual Photobooth by RUANGTEMUPHOTOBOOTH
+              </p>
+            </div>
+          </div>
+        </main>
+      )}
 
       {/* ─── STEP 1: WELCOME POSTER / SPLASH (CUSTOM FULL-PAGE BRIDAL UI FOR NURUL & IQRA) ─── */}
       {currentStep === "welcome" && isNurulIqraWedding && (
@@ -1352,7 +1344,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     className={`w-full min-h-[52px] px-4 text-center font-semibold text-base outline-none transition-all rounded-xl ${isNurulIqraWedding
                       ? "bg-stone-50/70 border-2 border-[#c51d24]/30 focus:border-[#c51d24] focus:bg-white focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-inner"
                       : isCustomWedding
-                        ? "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
+                        ? isJayaRikaWedding
+                          ? "bg-stone-950 border border-[#224DA5]/40 focus:border-[#224DA5] focus:ring-4 focus:ring-[#224DA5]/10 text-white placeholder:text-stone-500 shadow-inner"
+                          : "bg-stone-950 border border-emerald-500/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 text-white placeholder:text-stone-500 shadow-inner"
                         : "bg-stone-950 border border-stone-700 focus:border-stone-400 text-white"
                       }`}
                   />
