@@ -89,8 +89,9 @@ export default function EventGalleryPage({ params }: Props) {
   const col2 = entries.filter((_, idx) => idx % 2 === 1);
 
   const isNurulIqra = slug.includes("nurul") || slug.includes("iqra");
-  const primaryColor = isNurulIqra ? "#ad0d0d" : "#3a716c";
-  const accentTextColor = isNurulIqra ? "#b50000" : "#3a716c";
+  const isJayaRika = slug.includes("jaya") || slug.includes("rika");
+  const primaryColor = isNurulIqra ? "#ad0d0d" : isJayaRika ? "#224DA5" : "#3a716c";
+  const accentTextColor = isNurulIqra ? "#b50000" : isJayaRika ? "#224DA5" : "#3a716c";
 
   const displayHostName = event?.host_name || (slug.includes("ilva") ? "Ilva & Ricky" : slug.includes("jaya") ? "Jaya & Rika" : event?.title || "Wedding Memories");
 
