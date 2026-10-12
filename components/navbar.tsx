@@ -10,8 +10,10 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-stone-200 bg-white/90 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-sm font-semibold tracking-tight text-zinc-950">
+        <Link href="/" className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-7 h-7 rounded-md object-cover shadow-xs" />
+          <span className="text-sm font-bold tracking-tight text-zinc-950">
             RUANGTEMU
           </span>
           <span className="text-[10px] tracking-widest uppercase text-stone-400 font-medium">

@@ -1036,7 +1036,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             </Link>
 
             {/* Footer Text */}
-            <div className="pt-2 text-center">
+            <div className="pt-2 text-center flex items-center justify-center gap-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-4 h-4 rounded-xs object-cover inline-block" />
               <p className="text-[11px] sm:text-xs text-white/80 tracking-wide font-normal">
                 Virtual Photobooth by RUANGTEMUPHOTOBOOTH
               </p>
@@ -1260,7 +1262,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             </button>
 
             {/* Footer Text */}
-            <div className="pt-2 text-center">
+            <div className="pt-2 text-center flex items-center justify-center gap-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-4 h-4 rounded-xs object-cover inline-block" />
               <p className="text-[11px] sm:text-xs text-white/80 tracking-wide font-normal">
                 Virtual Photobooth by RUANGTEMUPHOTOBOOTH
               </p>
@@ -2349,7 +2353,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             className="border-t border-stone-800/40 bg-[#111113] px-4 py-3 text-center text-[11px] text-stone-600"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
           >
-            RUANGTEMU Photobooth • Palopo
+            <div className="flex items-center justify-center gap-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-3.5 h-3.5 rounded-xs object-cover inline-block" />
+              <span>RUANGTEMU Photobooth • Palopo</span>
+            </div>
           </footer>
         )
       }

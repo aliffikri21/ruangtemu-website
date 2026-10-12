@@ -43,3 +43,113 @@ body {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   RUANGTEMU ADMIN DARK MODE (Charcoal & Sleek Dark Palette)
+   ───────────────────────────────────────────────────────────── */
+.admin-dark {
+  color-scheme: dark;
+  background-color: #121214 !important;
+  color: #F8F9FA !important;
+}
+
+/* Containers and surfaces */
+.admin-dark .bg-white {
+  background-color: #1A1B1E !important;
+}
+
+.admin-dark .bg-\[\#F4F7FE\],
+.admin-dark .bg-\[\#f4f7fe\] {
+  background-color: #121214 !important;
+}
+
+.admin-dark .bg-\[\#f0f1f3\] {
+  background-color: #0E0E10 !important;
+}
+
+/* Text colors */
+.admin-dark .text-\[\#1B2559\],
+.admin-dark .text-\[\#2B3674\] {
+  color: #F8F9FA !important;
+}
+
+.admin-dark .text-\[\#8F9BBA\],
+.admin-dark .text-\[\#a3aed0\] {
+  color: #909296 !important;
+}
+
+/* Borders and dividers */
+.admin-dark .border-\[\#E0E5F2\],
+.admin-dark .border-\[\#e0e5f2\] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.admin-dark .divide-\[\#E0E5F2\] > * + *,
+.admin-dark .divide-\[\#e0e5f2\] > * + * {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Sidebar and Header */
+.admin-dark aside {
+  background-color: #1A1B1E !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.admin-dark header {
+  background-color: #1A1B1E !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Form controls */
+.admin-dark input,
+.admin-dark select,
+.admin-dark textarea {
+  background-color: #141517 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #F8F9FA !important;
+}
+
+.admin-dark input::placeholder,
+.admin-dark textarea::placeholder {
+  color: #5C5F66 !important;
+}
+
+/* Hover and active states */
+.admin-dark .hover\:bg-\[\#F4F7FE\]:hover,
+.admin-dark .hover\:bg-\[\#f4f7fe\]:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.admin-dark .hover\:bg-\[\#F4F7FE\]\/40:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.admin-dark .hover\:bg-\[\#EAEFFA\]:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.admin-dark .hover\:bg-\[\#E0E5F2\]:hover,
+.admin-dark .hover\:bg-\[\#e0e5f2\]:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Card badges */
+.admin-dark .bg-\[\#E9FAF4\],
+.admin-dark .bg-\[\#e9faf4\] {
+  background-color: rgba(1, 181, 116, 0.15) !important;
+}
+
+.admin-dark .bg-\[\#FFF6E9\],
+.admin-dark .bg-\[\#fff6e9\] {
+  background-color: rgba(255, 181, 71, 0.15) !important;
+}
+
+.admin-dark .bg-\[\#FEEFEE\],
+.admin-dark .bg-\[\#feefee\] {
+  background-color: rgba(238, 93, 80, 0.15) !important;
+}
+
+/* Card shadows */
+.admin-dark .shadow-\[0_18px_40px_0_rgba\(112\,144\,176\,0\.06\)\] {
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.5) !important;
+}

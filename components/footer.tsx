@@ -6,9 +6,13 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           <div className="space-y-3">
-            <span className="font-semibold text-sm text-zinc-950 tracking-tight">
+            <div className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-7 h-7 rounded-md object-cover shadow-xs" />
+              <span className="font-bold text-sm text-zinc-950 tracking-tight">
               RUANGTEMU
             </span>
+            </div>
             <p className="text-xs text-stone-400 leading-relaxed max-w-xs">
               Platform photobooth fisik dan virtual modern di Kota Palopo dan Tana Luwu.
             </p>

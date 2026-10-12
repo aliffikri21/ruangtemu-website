@@ -56,7 +56,9 @@ export default function QrStandeePage({ params }: Props) {
       {/* Standee Card (Editorial Paper Card) */}
       <div className="w-full max-w-sm bg-white border border-stone-300 p-8 text-center space-y-6 print:border-none print:max-w-none print:w-full print:h-screen print:flex print:flex-col print:justify-center">
         {/* Brand Header */}
-        <div className="space-y-1 pb-4 border-b border-stone-200">
+        <div className="space-y-2 pb-4 border-b border-stone-200 flex flex-col items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-12 h-12 rounded-xl object-cover shadow-sm mb-1" />
           <div className="font-mono text-xs uppercase tracking-widest text-stone-400">
             [ RUANGTEMU PHOTOBOOTH ]
           </div>
