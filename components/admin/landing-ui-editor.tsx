@@ -24,12 +24,12 @@ const DEVICES = [
 ];
 
 const ICON_OPTIONS = [
-  { id: "arrow", label: "Panah (↗)" },
-  { id: "camera", label: "Kamera (📸)" },
-  { id: "image", label: "Galeri (🖼️)" },
-  { id: "heart", label: "Hati (❤️)" },
-  { id: "sparkle", label: "Kilau (✨)" },
-  { id: "play", label: "Play (▶)" },
+  { id: "arrow", label: "Panah" },
+  { id: "camera", label: "Kamera" },
+  { id: "image", label: "Galeri" },
+  { id: "heart", label: "Hati" },
+  { id: "sparkle", label: "Kilau" },
+  { id: "play", label: "Play" },
   { id: "none", label: "Tanpa ikon" },
 ];
 
@@ -1236,7 +1236,7 @@ export function LandingUIEditor({
             className="text-[11px] text-stone-400 font-mono tracking-wide text-center z-20 shrink-0 bg-stone-950/70 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-stone-800/80 mx-auto"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <span>🖐️ Geser kanvas untuk memindahkan • 🔍 Scroll mouse untuk zoom • 👆 Klik elemen HP untuk mengedit</span>
+            <span>Geser kanvas untuk memindahkan &bull; Scroll mouse untuk zoom &bull; Klik elemen HP untuk mengedit</span>
           </div>
 
           {/* Floating Toast Notification */}

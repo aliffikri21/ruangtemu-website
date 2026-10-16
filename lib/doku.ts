@@ -91,7 +91,6 @@ export const VIRTUAL_BOOTH_PACKAGES: Record<"bronze" | "silver" | "gold", Virtua
 
 export const ADDON_PRICING = {
   qrCardsPer100: 50000, // +50K/100pcs
-  customFrameDesign: 25000, // +25K
 };
 
 export interface DokuPaymentSessionRequest {
@@ -104,7 +103,6 @@ export interface DokuPaymentSessionRequest {
   packageName: string;
   addons?: {
     qrCardsCount: number;
-    customDesign: boolean;
   };
 }
 

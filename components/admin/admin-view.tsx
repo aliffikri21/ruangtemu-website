@@ -180,9 +180,9 @@ function IconStar({ size = 13 }: { size?: number }) {
     </svg>
   );
 }
-function IconCheck({ size = 14 }: { size?: number }) {
+function IconCheck({ size = 14, className = "" }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
@@ -194,6 +194,49 @@ function IconRefresh({ size = 16, className = "" }: { size?: number; className?:
     </svg>
   );
 }
+function IconCamera({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+function IconMonitor({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+function IconQrCode({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <path d="M14 14h3v3h-3zM14 20h3M20 14v3M20 20h.01" />
+    </svg>
+  );
+}
+function IconUser({ size = 13, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+function IconMapPin({ size = 13, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
 
 export function AdminView({
   initialEvents,
@@ -201,7 +244,7 @@ export function AdminView({
   initialPackages,
   initialEntries,
 }: AdminViewProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -278,7 +321,6 @@ export function AdminView({
   // Virtual Booth Package & DOKU Payment States
   const [selectedPackage, setSelectedPackage] = useState<"bronze" | "silver" | "gold">("silver");
   const [addonQrCards, setAddonQrCards] = useState<number>(0);
-  const [addonCustomDesign, setAddonCustomDesign] = useState<boolean>(false);
   const [showDokuModal, setShowDokuModal] = useState<boolean>(false);
   const [dokuInvoiceId, setDokuInvoiceId] = useState<string>("");
   const [isProcessingDoku, setIsProcessingDoku] = useState<boolean>(false);
@@ -288,8 +330,7 @@ export function AdminView({
   const currentPackage = VIRTUAL_BOOTH_PACKAGES[selectedPackage];
   const packagePrice = currentPackage.price;
   const qrCardsPrice = (addonQrCards / 100) * ADDON_PRICING.qrCardsPer100;
-  const customDesignPrice = addonCustomDesign ? ADDON_PRICING.customFrameDesign : 0;
-  const totalPayment = packagePrice + qrCardsPrice + customDesignPrice;
+  const totalPayment = packagePrice + qrCardsPrice;
 
   const startDateStr = newEvent.date || new Date().toISOString().split("T")[0];
   const startDateObj = new Date(startDateStr);
@@ -733,20 +774,32 @@ export function AdminView({
     if (e) e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
+
+    const validEmails = ["admin@ruangtemu.id", "admin"];
+    const validPasswords = [
+      "ruangtemu2026",
+      "ruangtemupalopo2026",
+      "palopo2026",
+      "admin123",
+    ];
+
     if (
-      !cleanEmail ||
-      cleanEmail === "admin@ruangtemu.id" ||
-      cleanEmail === "admin" ||
-      cleanPassword === "ruangtemu2026" ||
-      cleanPassword === "admin123" ||
-      cleanPassword === "palopo2026" ||
-      cleanEmail.includes("admin")
+      cleanEmail &&
+      cleanPassword &&
+      validEmails.includes(cleanEmail) &&
+      validPasswords.includes(cleanPassword)
     ) {
       setIsAuthenticated(true);
       setLoginError("");
     } else {
-      setLoginError("Kredensial tidak valid. Demo: admin@ruangtemu.id / ruangtemu2026");
+      setLoginError("Email atau password tidak valid. Demo: admin@ruangtemu.id / ruangtemu2026");
     }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPassword("");
+    setLoginError("");
   };
 
   const handleStatusChange = async (bookingId: string, newStatus: BookingStatus) => {
@@ -955,7 +1008,6 @@ export function AdminView({
             description: "",
           });
           setAddonQrCards(0);
-          setAddonCustomDesign(false);
         }, 2200);
       } else {
         alert(data.error || "Gagal menyimpan event. Coba lagi.");
@@ -995,11 +1047,14 @@ export function AdminView({
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#1B2559] mb-1.5">
+              <label htmlFor="admin-email-input" className="block text-sm font-medium text-[#1B2559] mb-1.5">
                 Email
               </label>
               <input
+                id="admin-email-input"
                 type="text"
+                autoComplete="username"
+                required
                 placeholder="admin@ruangtemu.id"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -1008,11 +1063,14 @@ export function AdminView({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1B2559] mb-1.5">
+              <label htmlFor="admin-password-input" className="block text-sm font-medium text-[#1B2559] mb-1.5">
                 Password
               </label>
               <input
+                id="admin-password-input"
                 type="password"
+                autoComplete="current-password"
+                required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -1024,8 +1082,9 @@ export function AdminView({
             </div>
 
             <button
+              id="admin-login-button"
               type="submit"
-              className="w-full h-11 bg-[#4318FF] hover:bg-[#3311DB] text-white font-medium text-sm rounded-lg transition-colors"
+              className="w-full h-11 bg-[#4318FF] hover:bg-[#3311DB] text-white font-medium text-sm rounded-lg transition-colors cursor-pointer"
             >
               Masuk
             </button>
@@ -1264,7 +1323,7 @@ export function AdminView({
           </Link>
           <button
             type="button"
-            onClick={() => setIsAuthenticated(false)}
+            onClick={handleLogout}
             className={`w-full flex items-center gap-3 h-10 rounded-xl text-[#8F9BBA] hover:text-[#EE5D50] hover:bg-red-50 transition-colors ${sidebarCollapsed ? "justify-center px-0" : "px-3"
               }`}
             title="Keluar / Logout"
@@ -1345,6 +1404,15 @@ export function AdminView({
                 <div className="text-sm font-bold text-[#1B2559] leading-tight">Admin Ruangtemu</div>
                 <div className="text-[11px] text-[#A3AED0]">Operator Palopo</div>
               </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors ml-1"
+                title="Keluar / Logout"
+              >
+                <IconLogout size={15} />
+                <span className="hidden sm:inline">Keluar</span>
+              </button>
             </div>
           </div>
         </header>
@@ -1370,9 +1438,9 @@ export function AdminView({
             <button
               type="button"
               onClick={() => setPaymentSuccessToast(null)}
-              className="text-white/70 hover:text-white text-base font-bold px-1.5 py-0.5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              className="text-white/70 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
             >
-              ✕
+              <IconClose size={16} />
             </button>
           </div>
         )}
@@ -1571,11 +1639,20 @@ export function AdminView({
                                   )}
                                 </div>
                                 <div className="text-xs text-[#A3AED0] mt-1 flex items-center gap-2 flex-wrap">
-                                  <span>👤 {evt.host_name}</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <IconUser size={12} className="text-[#A3AED0]" />
+                                    {evt.host_name}
+                                  </span>
                                   <span>&bull;</span>
-                                  <span>📍 {evt.venue}, {evt.city}</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <IconMapPin size={12} className="text-[#A3AED0]" />
+                                    {evt.venue}, {evt.city}
+                                  </span>
                                   <span>&bull;</span>
-                                  <span>📅 {evt.date}</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <IconCalendar size={12} />
+                                    {evt.date}
+                                  </span>
                                 </div>
                               </div>
 
@@ -1584,37 +1661,41 @@ export function AdminView({
                                 <Link
                                   href={`/event/${evt.slug}`}
                                   target="_blank"
-                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#4318FF] hover:text-white text-xs font-semibold text-[#4318FF] inline-flex items-center gap-1 transition-colors"
+                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#4318FF] hover:text-white text-xs font-semibold text-[#4318FF] inline-flex items-center gap-1.5 transition-colors"
                                   title="Akses halaman kamera tamu"
                                 >
-                                  <span>📸 Booth</span>
+                                  <IconCamera size={13} />
+                                  <span>Booth</span>
                                   <IconExternalLink size={11} />
                                 </Link>
                                 <Link
                                   href={`/event/${evt.slug}/projection`}
                                   target="_blank"
-                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#1B2559] hover:text-white text-xs font-semibold text-[#2B3674] inline-flex items-center gap-1 transition-colors"
+                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#1B2559] hover:text-white text-xs font-semibold text-[#2B3674] inline-flex items-center gap-1.5 transition-colors"
                                   title="Tampilan layar panggung videotron"
                                 >
-                                  <span>🖥️ Layar</span>
+                                  <IconMonitor size={13} />
+                                  <span>Layar</span>
                                   <IconExternalLink size={11} />
                                 </Link>
                                 <Link
                                   href={`/event/${evt.slug}/gallery`}
                                   target="_blank"
-                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#1B2559] hover:text-white text-xs font-semibold text-[#2B3674] inline-flex items-center gap-1 transition-colors"
+                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#1B2559] hover:text-white text-xs font-semibold text-[#2B3674] inline-flex items-center gap-1.5 transition-colors"
                                   title="Galeri foto live"
                                 >
-                                  <span>🖼️ Galeri</span>
+                                  <IconImage size={13} />
+                                  <span>Galeri</span>
                                   <IconExternalLink size={11} />
                                 </Link>
                                 <Link
                                   href={`/event/${evt.slug}/qr`}
                                   target="_blank"
-                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#01B574] hover:text-white text-xs font-semibold text-[#01B574] inline-flex items-center gap-1 transition-colors"
+                                  className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#01B574] hover:text-white text-xs font-semibold text-[#01B574] inline-flex items-center gap-1.5 transition-colors"
                                   title="Buka / Cetak QR Standee"
                                 >
-                                  <span>📱 QR</span>
+                                  <IconQrCode size={13} />
+                                  <span>QR</span>
                                   <IconExternalLink size={11} />
                                 </Link>
                                 <button
@@ -1924,23 +2005,23 @@ export function AdminView({
 
                           <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo Only)</strong></span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Free <strong className="text-[#8C4A4A] font-semibold">1 desain</strong> template frame (Strip/4R/Polaroid)</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">100 pcs</strong> kartu QR code</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">7 hari</strong></span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Unlimited foto</span>
                             </li>
                           </ul>
@@ -1968,8 +2049,8 @@ export function AdminView({
                       >
                         {/* Recommended Ribbon (From Image 1) */}
                         <div className="absolute top-0 right-0 overflow-hidden w-28 h-28 pointer-events-none">
-                          <div className="bg-[#E52534] text-white text-[9px] font-black uppercase tracking-widest text-center py-1 absolute top-5 -right-7 w-32 rotate-45 shadow-md flex items-center justify-center gap-0.5">
-                            <span>★</span> RECOMMENDED
+                          <div className="bg-[#E52534] text-white text-[9px] font-black uppercase tracking-widest text-center py-1 absolute top-5 -right-7 w-32 rotate-45 shadow-md flex items-center justify-center gap-1">
+                            <IconStar size={9} /> RECOMMENDED
                           </div>
                         </div>
 
@@ -1987,27 +2068,27 @@ export function AdminView({
 
                           <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo &amp; Voice Message)</strong></span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Free <strong className="text-[#8C4A4A] font-semibold">2 desain</strong> template frame (Strip/4R/Polaroid)</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">200 pcs</strong> kartu QR code</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Unlimited Akses QR Code</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">10 hari</strong></span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Unlimited foto</span>
                             </li>
                           </ul>
@@ -2047,27 +2128,27 @@ export function AdminView({
 
                           <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo &amp; Voice Message)</strong></span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Free <strong className="text-[#8C4A4A] font-semibold">3 desain</strong> template frame (Strip/4R/Polaroid)</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">300 pcs</strong> kartu QR code</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Unlimited Akses QR Code</span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">14 hari</strong></span>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
                               <span>Unlimited foto</span>
                             </li>
                           </ul>
@@ -2090,7 +2171,7 @@ export function AdminView({
                       <div className="flex items-center justify-between pb-2 border-b border-[#E0E5F2]">
                         <span className="text-xs font-bold text-[#1B2559]">Add-On Tambahan &amp; Catatan Khusus:</span>
                         <span className="text-[11px] font-semibold text-[#01B574] bg-[#E9FAF4] px-2.5 py-0.5 rounded-full">
-                          Available in 2 Languages (Indonesia / English) 🇮🇩 🇬🇧
+                          Available in 2 Languages (ID / EN)
                         </span>
                       </div>
 
@@ -2119,20 +2200,19 @@ export function AdminView({
                           </div>
                         </div>
 
-                        {/* Add-on 2: Custom Frame Design */}
-                        <div className="p-3 bg-[#F4F7FE] rounded-xl flex items-center justify-between gap-3">
+                        {/* Included: Template Frame Personal Admin */}
+                        <div className="p-3 bg-[#E9FAF4]/60 border border-[#b5f5e0] rounded-xl flex items-center justify-between gap-3">
                           <div>
-                            <div className="text-xs font-bold text-[#1B2559]">Add-on Custom Personal Frame</div>
-                            <div className="text-[11px] text-[#8F9BBA] leading-tight mt-0.5">
-                              Desain eksklusif oleh desainer RUANGTEMU disesuaikan tema acara (+Rp 25.000)
+                            <div className="text-xs font-bold text-[#01B574] flex items-center gap-1.5">
+                              <IconCheck size={14} /> Template Frame Personal
+                            </div>
+                            <div className="text-[11px] text-[#5B6B8B] leading-tight mt-0.5">
+                              Sudah termasuk (include) desain frame eksklusif dari admin untuk tiap acara
                             </div>
                           </div>
-                          <input
-                            type="checkbox"
-                            checked={addonCustomDesign}
-                            onChange={(e) => setAddonCustomDesign(e.target.checked)}
-                            className="w-5 h-5 rounded text-[#4318FF] accent-[#4318FF] cursor-pointer shrink-0"
-                          />
+                          <span className="text-[11px] font-bold text-[#01B574] bg-[#E9FAF4] px-2.5 py-1 rounded-lg border border-[#01B574]/20 shrink-0">
+                            Included
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -2144,28 +2224,28 @@ export function AdminView({
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-[#1B2559]">
                         <div className="flex items-start gap-2">
-                          <span className="text-base">📖</span>
+                          <span className="text-[#4318FF] mt-0.5"><IconBooking size={15} /></span>
                           <div>
                             <div className="font-bold">Buku ucapan tamu</div>
                             <p className="text-[11px] text-[#8F9BBA] leading-tight">Tamu berfoto dan merekam pesan ucapan lewat QR di meja</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
-                          <span className="text-base">💌</span>
+                          <span className="text-[#4318FF] mt-0.5"><IconEdit size={15} /></span>
                           <div>
                             <div className="font-bold">Undangan online</div>
                             <p className="text-[11px] text-[#8F9BBA] leading-tight">Sebar tautan undangan ke tamu sebelum atau saat acara</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
-                          <span className="text-base">📸</span>
+                          <span className="text-[#4318FF] mt-0.5"><IconCamera size={15} /></span>
                           <div>
                             <div className="font-bold">Photobooth virtual</div>
                             <p className="text-[11px] text-[#8F9BBA] leading-tight">Tamu berfoto sendiri dari ponselnya, berbingkai frame acara</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
-                          <span className="text-base">🖼️</span>
+                          <span className="text-[#4318FF] mt-0.5"><IconImage size={15} /></span>
                           <div>
                             <div className="font-bold">Album foto online</div>
                             <p className="text-[11px] text-[#8F9BBA] leading-tight">Klien melihat, unduh foto semua sesi &amp; live videotron panggung</p>
@@ -2335,7 +2415,7 @@ export function AdminView({
                             {evt.package_tier && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E52534]/10 text-[#E52534]">
-                                  ★ Paket {evt.package_name || evt.package_tier.toUpperCase()} &bull; DOKU Lunas
+                                  <IconStar size={10} /> Paket {evt.package_name || evt.package_tier.toUpperCase()} &bull; DOKU Lunas
                                 </span>
                               </div>
                             )}
@@ -2933,7 +3013,7 @@ export function AdminView({
                     >
                       {pkg.popular && (
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#4318FF] text-white text-[10px] font-extrabold tracking-wider uppercase rounded-full shadow-md flex items-center gap-1">
-                          <span>⭐</span> RECOMMENDED
+                          <IconStar size={11} /> RECOMMENDED
                         </div>
                       )}
 

@@ -301,7 +301,7 @@ export function DokuPaymentModal({
               <div className="text-right">
                 <div className="text-[10px] text-[#8F9BBA]">Batas Pembayaran</div>
                 <div className="text-xs font-bold text-[#EE5D50] font-mono bg-red-50 px-2.5 py-1 rounded-lg border border-red-100 mt-0.5">
-                  ⏱ {formatTimer(countdown)}
+                  {formatTimer(countdown)}
                 </div>
                 <div className="text-[10px] text-[#A3AED0] mt-1 truncate max-w-[140px]" title={invoiceId}>
                   {invoiceId}
@@ -485,7 +485,7 @@ export function DokuPaymentModal({
                         onClick={() => handleCopyVa(currentVaRaw)}
                         className="h-9 px-3.5 bg-white border border-[#E0E5F2] hover:border-[#D9222A] text-xs font-bold text-[#1B2559] rounded-xl transition-all inline-flex items-center gap-1.5 shadow-sm active:scale-95"
                       >
-                        {copied ? "✓ Disalin" : "Salin VA"}
+                        {copied ? "Disalin" : "Salin VA"}
                       </button>
                     </div>
 
@@ -506,7 +506,7 @@ export function DokuPaymentModal({
 
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 space-y-1.5">
                   <div className="font-bold flex items-center gap-1.5 text-blue-950">
-                    <span>💡</span> Cara Bayar di DOKU Payment Simulator:
+                    Cara Bayar di DOKU Payment Simulator:
                   </div>
                   <ol className="text-[11px] text-blue-800 space-y-1 pl-4 list-decimal leading-relaxed">
                     <li>Klik <strong>Salin VA</strong> di atas ({currentVaRaw}).</li>
@@ -585,7 +585,7 @@ export function DokuPaymentModal({
                     </>
                   ) : (
                     <>
-                      <span>🔄 Cek Status Pembayaran</span>
+                      <span>Cek Status Pembayaran</span>
                     </>
                   )}
                 </button>
@@ -624,7 +624,7 @@ export function DokuPaymentModal({
                   </>
                 ) : (
                   <>
-                    <span>✓ Konfirmasi Pembayaran Selesai (Sandbox Test)</span>
+                    <span>Konfirmasi Pembayaran Selesai (Sandbox Test)</span>
                   </>
                 )}
               </button>
