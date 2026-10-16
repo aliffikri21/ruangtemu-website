@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateEventPaymentByInvoice } from "@/lib/db";
+import { markInvoiceAsPaid } from "@/lib/doku";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,9 @@ export async function POST(req: NextRequest) {
 
     if (invoiceNumber) {
       const isPaid = transactionStatus === "SUCCESS";
+      if (isPaid) {
+        markInvoiceAsPaid(invoiceNumber);
+      }
       await updateEventPaymentByInvoice(
         invoiceNumber,
         isPaid ? "PAID" : "FAILED",

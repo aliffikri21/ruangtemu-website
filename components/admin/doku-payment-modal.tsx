@@ -40,10 +40,17 @@ export function DokuPaymentModal({
   const [countdown, setCountdown] = useState(899); // 14:59
   const [liveCheckoutUrl, setLiveCheckoutUrl] = useState<string | null>(null);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
+  const [realVaMap, setRealVaMap] = useState<Record<string, { vaNumber: string; howToPayUrl?: string }>>({});
+  const [isLoadingVa, setIsLoadingVa] = useState(false);
+  const [vaError, setVaError] = useState<string | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
       setLiveCheckoutUrl(null);
+      setRealVaMap({});
+      setStatusFeedback(null);
       return;
     }
     const interval = setInterval(() => {
@@ -81,6 +88,111 @@ export function DokuPaymentModal({
     return () => clearInterval(interval);
   }, [isOpen, invoiceId, amount, eventName, hostName, packageName]);
 
+  // Fetch real DOKU Sandbox Virtual Account Number for the selected bank
+  useEffect(() => {
+    if (!isOpen) return;
+    if (realVaMap[selectedBank]) return;
+
+    let active = true;
+    setIsLoadingVa(true);
+    setVaError(null);
+
+    fetch("/api/payment/doku/va", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        invoiceNumber: `${invoiceId}-${selectedBank.toUpperCase()}`,
+        amount,
+        bank: selectedBank,
+        customerName: hostName || "Admin RUANGTEMU",
+        customerEmail: "admin@ruangtemu.id",
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active) return;
+        if (data.success && data.vaNumber) {
+          setRealVaMap((prev) => ({
+            ...prev,
+            [selectedBank]: {
+              vaNumber: data.vaNumber,
+              howToPayUrl: data.howToPayUrl,
+            },
+          }));
+        } else {
+          setVaError(data.error || "Gagal menerbitkan nomor VA resmi dari DOKU");
+        }
+      })
+      .catch((err) => {
+        if (!active) return;
+        setVaError(err?.message || "Koneksi ke API DOKU terputus");
+      })
+      .finally(() => {
+        if (active) setIsLoadingVa(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, selectedBank, invoiceId, amount, hostName, realVaMap]);
+
+  // Realtime Polling & Window Focus Listener for Payment Confirmation from DOKU Simulator
+  const checkPaymentStatus = async (isManual = false) => {
+    if (paymentSuccess || isProcessing) return;
+    if (isManual) {
+      setIsCheckingStatus(true);
+      setStatusFeedback("Memeriksa status pembayaran di server DOKU...");
+    }
+
+    try {
+      const res = await fetch(
+        `/api/payment/doku/status?invoiceId=${encodeURIComponent(invoiceId)}&bank=${selectedBank}`
+      );
+      const data = await res.json();
+
+      if (data.paid) {
+        setStatusFeedback("✓ Pembayaran DOKU Lunas Terdeteksi!");
+        const channelName =
+          activeChannel === "qris"
+            ? "DOKU_QRIS"
+            : activeChannel === "va"
+            ? `DOKU_VA_${selectedBank.toUpperCase()}`
+            : "DOKU_CC";
+        onSuccess(channelName);
+      } else if (isManual) {
+        setStatusFeedback("Belum ada pembayaran masuk di simulator DOKU.");
+        setTimeout(() => setStatusFeedback(null), 3000);
+      }
+    } catch {
+      if (isManual) {
+        setStatusFeedback("Gagal memeriksa status. Coba lagi.");
+        setTimeout(() => setStatusFeedback(null), 3000);
+      }
+    } finally {
+      if (isManual) setIsCheckingStatus(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || paymentSuccess || isProcessing) return;
+
+    // 1. Polling setiap 2.5 detik
+    const interval = setInterval(() => {
+      checkPaymentStatus(false);
+    }, 2500);
+
+    // 2. Langsung cek ketika tab RUANGTEMU dibuka kembali setelah dari tab Simulator DOKU
+    const handleFocus = () => {
+      checkPaymentStatus(false);
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [isOpen, paymentSuccess, isProcessing, invoiceId, selectedBank, activeChannel]);
 
   if (!isOpen) return null;
 
@@ -105,6 +217,15 @@ export function DokuPaymentModal({
         return `8921 0822 ${rawNumber.slice(0, 6)}`;
     }
   };
+
+  const formatVaDisplay = (va: string) => {
+    const cleaned = va.replace(/\s+/g, "");
+    return cleaned.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
+
+  const activeRealVa = realVaMap[selectedBank]?.vaNumber;
+  const currentVaRaw = activeRealVa || getVaNumber(selectedBank).replace(/\s/g, "");
+  const currentVaDisplay = activeRealVa ? formatVaDisplay(activeRealVa) : getVaNumber(selectedBank);
 
   const handleCopyVa = (va: string) => {
     navigator.clipboard.writeText(va.replace(/\s/g, ""));
@@ -136,20 +257,32 @@ export function DokuPaymentModal({
 
         {/* Success Overlay if Payment Complete */}
         {paymentSuccess ? (
-          <div className="p-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-[#E9FAF4] text-[#01B574] rounded-full flex items-center justify-center mx-auto shadow-inner">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+          <div className="p-8 text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative w-20 h-20 mx-auto">
+              <div className="w-20 h-20 bg-[#E9FAF4] text-[#01B574] rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <div className="absolute inset-0 rounded-full border-4 border-[#01B574] animate-ping opacity-25" />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#1B2559]">Pembayaran DOKU Berhasil!</h3>
-              <p className="text-xs text-[#8F9BBA] mt-1">
+              <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200 mb-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Pembayaran Sukses Dikonfirmasi DOKU</span>
+              </div>
+              <h3 className="text-2xl font-black text-[#1B2559]">Pembayaran Berhasil!</h3>
+              <p className="text-xs text-[#8F9BBA] mt-1 max-w-sm mx-auto leading-relaxed">
                 Paket <strong>{packageName}</strong> telah aktif untuk acara <strong>{eventName}</strong>.
               </p>
             </div>
-            <div className="p-3 bg-[#F4F7FE] rounded-xl text-xs text-[#1B2559] font-mono">
-              Invoice: {invoiceId} &bull; Lunas via Sandbox
+            <div className="p-3 bg-[#F4F7FE] rounded-xl text-xs text-[#1B2559] font-mono space-y-1">
+              <div>Invoice: <strong>{invoiceId}</strong> &bull; Lunas via DOKU Sandbox</div>
+              <div className="text-[11px] text-[#8F9BBA]">Status aktivasi photobooth otomatis diperbarui</div>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-xs font-medium text-[#8F9BBA] pt-2">
+              <span className="w-3.5 h-3.5 border-2 border-stone-300 border-t-[#01B574] rounded-full animate-spin" />
+              <span>Mengalihkan kembali ke dashboard admin...</span>
             </div>
           </div>
         ) : (
@@ -319,28 +452,74 @@ export function DokuPaymentModal({
                   ))}
                 </div>
 
-                <div className="p-3.5 bg-[#F4F7FE] rounded-xl flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[10px] text-[#8F9BBA] uppercase font-bold">
-                      Nomor Virtual Account {selectedBank.toUpperCase()}
-                    </div>
-                    <div className="text-base font-extrabold text-[#1B2559] font-mono tracking-wider mt-0.5">
-                      {getVaNumber(selectedBank)}
-                    </div>
+                {isLoadingVa ? (
+                  <div className="p-4 bg-[#F4F7FE] rounded-xl flex items-center justify-center gap-2 text-xs text-[#8F9BBA]">
+                    <span className="w-4 h-4 border-2 border-stone-300 border-t-[#D9222A] rounded-full animate-spin" />
+                    <span>Menerbitkan nomor VA {selectedBank.toUpperCase()} dari DOKU Sandbox...</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyVa(getVaNumber(selectedBank))}
-                    className="h-8 px-3 bg-white border border-[#E0E5F2] hover:border-[#D9222A] text-xs font-semibold text-[#1B2559] rounded-lg transition-colors inline-flex items-center gap-1 shadow-sm"
-                  >
-                    {copied ? "✓ Disalin" : "Salin VA"}
-                  </button>
+                ) : (
+                  <div className="p-3.5 bg-[#F4F7FE] border border-emerald-200/60 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-[10px] text-[#8F9BBA] uppercase font-bold">
+                            Nomor Virtual Account {selectedBank.toUpperCase()}
+                          </div>
+                          {activeRealVa ? (
+                            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                              Terdaftar di DOKU Sandbox
+                            </span>
+                          ) : (
+                            <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                              Simulasi Lokal
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-lg font-black text-[#1B2559] font-mono tracking-wider mt-0.5">
+                          {currentVaDisplay}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyVa(currentVaRaw)}
+                        className="h-9 px-3.5 bg-white border border-[#E0E5F2] hover:border-[#D9222A] text-xs font-bold text-[#1B2559] rounded-xl transition-all inline-flex items-center gap-1.5 shadow-sm active:scale-95"
+                      >
+                        {copied ? "✓ Disalin" : "Salin VA"}
+                      </button>
+                    </div>
+
+                    {activeRealVa && (
+                      <div className="text-[11px] text-emerald-700 flex items-center gap-1.5 bg-emerald-50/80 px-2.5 py-1.5 rounded-lg border border-emerald-100">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Nomor VA ini resmi &amp; dikenali oleh <strong>DOKU {selectedBank.toUpperCase()} VA Simulator</strong>.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {vaError && (
+                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-700">
+                    <strong>Catatan API DOKU:</strong> {vaError}
+                  </div>
+                )}
+
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 space-y-1.5">
+                  <div className="font-bold flex items-center gap-1.5 text-blue-950">
+                    <span>💡</span> Cara Bayar di DOKU Payment Simulator:
+                  </div>
+                  <ol className="text-[11px] text-blue-800 space-y-1 pl-4 list-decimal leading-relaxed">
+                    <li>Klik <strong>Salin VA</strong> di atas ({currentVaRaw}).</li>
+                    <li>Buka menu <strong>DOKU Simulator &gt; {selectedBank.toUpperCase()} VA Simulator</strong>.</li>
+                    <li>Tempelkan nomor VA di kolom <em>Virtual Account Number</em> lalu klik <strong>INQUIRY</strong>.</li>
+                    <li>Tagihan <strong>{formatRupiah(amount)}</strong> akan muncul, lalu klik <strong>PAY</strong> untuk menyelesaikan transaksi.</li>
+                  </ol>
                 </div>
 
                 <ol className="text-[11px] text-[#8F9BBA] space-y-1 pl-4 list-decimal">
                   <li>Buka aplikasi m-Banking atau ATM {selectedBank.toUpperCase()}.</li>
                   <li>Pilih menu <strong>Transfer &gt; Virtual Account</strong>.</li>
-                  <li>Masukkan nomor VA di atas dan konfirmasi nominal {formatRupiah(amount)}.</li>
+                  <li>Masukkan nomor VA dan konfirmasi nominal {formatRupiah(amount)}.</li>
                   <li>Status aktivasi photobooth otomatis terupdate setelah transfer.</li>
                 </ol>
               </div>
@@ -386,13 +565,57 @@ export function DokuPaymentModal({
               </div>
             )}
 
-            {/* Test Simulation Button in Sandbox */}
-            <div className="pt-2 space-y-2">
+            {/* Realtime Detection Banner & Buttons */}
+            <div className="pt-2 space-y-2.5">
+              <div className="p-3 bg-[#F4F7FE] rounded-xl flex items-center justify-between text-xs border border-[#E0E5F2]">
+                <div className="flex items-center gap-2 text-[#8F9BBA]">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-[11px] font-medium">Mendeteksi pembayaran dari Simulator...</span>
+                </div>
+                <button
+                  type="button"
+                  disabled={isCheckingStatus || isProcessing}
+                  onClick={() => checkPaymentStatus(true)}
+                  className="text-[#D9222A] hover:text-[#C01B22] text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer hover:underline disabled:opacity-50"
+                >
+                  {isCheckingStatus ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-[#D9222A] border-t-transparent rounded-full animate-spin" />
+                      <span>Memeriksa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🔄 Cek Status Pembayaran</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {statusFeedback && (
+                <div className="text-center text-[11px] font-semibold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-100 animate-in fade-in">
+                  {statusFeedback}
+                </div>
+              )}
+
               <button
                 type="button"
                 disabled={isProcessing}
-                onClick={() => onSuccess(activeChannel === "qris" ? "DOKU_QRIS" : activeChannel === "va" ? `DOKU_VA_${selectedBank.toUpperCase()}` : "DOKU_CC")}
-                className="w-full h-12 bg-[#01B574] hover:bg-[#00965F] disabled:bg-[#8F9BBA] text-white text-sm font-extrabold rounded-2xl transition-all shadow-[0_4px_16px_rgba(1,181,116,0.35)] flex items-center justify-center gap-2 cursor-pointer"
+                onClick={() => {
+                  fetch("/api/payment/doku/status", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ invoiceId, bank: selectedBank }),
+                  }).catch(() => {});
+
+                  onSuccess(
+                    activeChannel === "qris"
+                      ? "DOKU_QRIS"
+                      : activeChannel === "va"
+                      ? `DOKU_VA_${selectedBank.toUpperCase()}`
+                      : "DOKU_CC"
+                  );
+                }}
+                className="w-full h-12 bg-[#01B574] hover:bg-[#00965F] disabled:bg-[#8F9BBA] text-white text-sm font-extrabold rounded-2xl transition-all shadow-[0_4px_16px_rgba(1,181,116,0.35)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
               >
                 {isProcessing ? (
                   <>
@@ -401,7 +624,7 @@ export function DokuPaymentModal({
                   </>
                 ) : (
                   <>
-                    <span>✓ Simulasi Pembayaran Sukses (Sandbox Test)</span>
+                    <span>✓ Konfirmasi Pembayaran Selesai (Sandbox Test)</span>
                   </>
                 )}
               </button>

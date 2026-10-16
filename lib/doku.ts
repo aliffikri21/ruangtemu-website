@@ -115,11 +115,17 @@ export function generateDokuSignature(params: {
   requestId: string;
   requestTimestamp: string;
   requestTarget: string;
-  bodyString: string;
+  bodyString?: string;
   secretKey: string;
 }) {
-  const digest = crypto.createHash("sha256").update(params.bodyString).digest("base64");
-  const componentString = `Client-Id:${params.clientId}\nRequest-Id:${params.requestId}\nRequest-Timestamp:${params.requestTimestamp}\nRequest-Target:${params.requestTarget}\nDigest:${digest}`;
+  let componentString = `Client-Id:${params.clientId}\nRequest-Id:${params.requestId}\nRequest-Timestamp:${params.requestTimestamp}\nRequest-Target:${params.requestTarget}`;
+  let digest = "";
+
+  if (params.bodyString !== undefined) {
+    digest = crypto.createHash("sha256").update(params.bodyString).digest("base64");
+    componentString += `\nDigest:${digest}`;
+  }
+
   const hmac = crypto.createHmac("sha256", params.secretKey).update(componentString).digest("base64");
   return {
     digest,
@@ -214,4 +220,188 @@ export async function createDokuCheckoutSession(params: DokuPaymentSessionReques
     };
   }
 }
+
+export interface DokuVaRequest {
+  invoiceNumber: string;
+  amount: number;
+  bank: "bca" | "mandiri" | "bri" | "bni";
+  customerName?: string;
+  customerEmail?: string;
+}
+
+/**
+ * Generate Real DOKU Virtual Account Number directly from DOKU API
+ */
+export async function createDokuVirtualAccount(params: DokuVaRequest) {
+  if (!DOKU_CONFIG.clientId || !DOKU_CONFIG.sharedKey) {
+    return {
+      success: false,
+      vaNumber: null,
+      error: "Kredensial DOKU belum terpasang",
+    };
+  }
+
+  const bankEndpointMap: Record<string, string> = {
+    bca: "/bca-virtual-account/v2/payment-code",
+    mandiri: "/mandiri-virtual-account/v2/payment-code",
+    bri: "/bri-virtual-account/v2/payment-code",
+    bni: "/bni-virtual-account/v2/payment-code",
+  };
+
+  const targetPath = bankEndpointMap[params.bank] || bankEndpointMap.bca;
+  const targetUrl = `${DOKU_CONFIG.isSandbox ? DOKU_CONFIG.sandboxUrl : DOKU_CONFIG.productionUrl}${targetPath}`;
+  const requestId = `REQ-${Date.now()}`;
+  const requestTimestamp = new Date().toISOString().slice(0, 19) + "Z";
+
+  try {
+    const payload = {
+      order: {
+        invoice_number: params.invoiceNumber,
+        amount: params.amount,
+      },
+      virtual_account_info: {
+        expired_time: 60,
+        reusable_status: false,
+        info1: "RUANGTEMU",
+      },
+      customer: {
+        name: params.customerName || "Admin RUANGTEMU",
+        email: params.customerEmail || "admin@ruangtemu.id",
+      },
+    };
+
+    const bodyString = JSON.stringify(payload);
+    const { digest, signature } = generateDokuSignature({
+      clientId: DOKU_CONFIG.clientId,
+      requestId,
+      requestTimestamp,
+      requestTarget: targetPath,
+      bodyString,
+      secretKey: DOKU_CONFIG.sharedKey,
+    });
+
+    const res = await fetch(targetUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Client-Id": DOKU_CONFIG.clientId,
+        "Request-Id": requestId,
+        "Request-Timestamp": requestTimestamp,
+        Digest: digest,
+        Signature: signature,
+      },
+      body: bodyString,
+    });
+
+    const data = await res.json();
+    const vaNumber = data?.virtual_account_info?.virtual_account_number || null;
+
+    return {
+      success: res.ok && Boolean(vaNumber),
+      vaNumber,
+      howToPayUrl: data?.virtual_account_info?.how_to_pay_page || null,
+      data,
+    };
+  } catch (err: any) {
+    console.error("[DOKU VA Error]:", err);
+    return {
+      success: false,
+      vaNumber: null,
+      error: err?.message || "Gagal membuat VA DOKU",
+    };
+  }
+}
+
+/**
+ * Global in-memory set to track paid invoices (e.g. from Webhook, Simulator, or Direct Status API)
+ */
+const paidInvoicesSet = new Set<string>();
+
+export function markInvoiceAsPaid(invoiceNumber: string) {
+  if (!invoiceNumber) return;
+  paidInvoicesSet.add(invoiceNumber);
+  // Also add prefix/base without suffix (e.g. INV-DOKU-908729 from INV-DOKU-908729-BCA)
+  const base = invoiceNumber.split("-").slice(0, 3).join("-");
+  if (base && base !== invoiceNumber) {
+    paidInvoicesSet.add(base);
+  }
+}
+
+export function isInvoicePaidLocally(invoiceNumber: string): boolean {
+  if (!invoiceNumber) return false;
+  if (paidInvoicesSet.has(invoiceNumber)) return true;
+  const base = invoiceNumber.split("-").slice(0, 3).join("-");
+  return paidInvoicesSet.has(base);
+}
+
+/**
+ * Check transaction status from DOKU Check Status API
+ */
+export async function checkDokuOrderStatus(invoiceNumber: string) {
+  if (!invoiceNumber) {
+    return { success: false, paid: false, status: "INVALID_INVOICE" };
+  }
+
+  if (isInvoicePaidLocally(invoiceNumber)) {
+    return { success: true, paid: true, status: "SUCCESS", source: "local_cache" };
+  }
+
+  if (!DOKU_CONFIG.clientId || !DOKU_CONFIG.sharedKey) {
+    return { success: false, paid: false, error: "Kredensial DOKU belum terpasang" };
+  }
+
+  const targetPath = `/orders/v1/status/${invoiceNumber}`;
+  const targetUrl = `${DOKU_CONFIG.isSandbox ? DOKU_CONFIG.sandboxUrl : DOKU_CONFIG.productionUrl}${targetPath}`;
+  const requestId = `REQ-${Date.now()}`;
+  const requestTimestamp = new Date().toISOString().slice(0, 19) + "Z";
+
+  try {
+    const { signature } = generateDokuSignature({
+      clientId: DOKU_CONFIG.clientId,
+      requestId,
+      requestTimestamp,
+      requestTarget: targetPath,
+      secretKey: DOKU_CONFIG.sharedKey,
+    });
+
+    const res = await fetch(targetUrl, {
+      method: "GET",
+      headers: {
+        "Client-Id": DOKU_CONFIG.clientId,
+        "Request-Id": requestId,
+        "Request-Timestamp": requestTimestamp,
+        Signature: signature,
+      },
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+    const transactionStatus =
+      data?.transaction?.status ||
+      data?.order?.status ||
+      (data?.status === "SUCCESS" ? "SUCCESS" : null);
+
+    const isPaid = transactionStatus === "SUCCESS" || transactionStatus === "PAID";
+
+    if (isPaid) {
+      markInvoiceAsPaid(invoiceNumber);
+    }
+
+    return {
+      success: res.ok,
+      paid: isPaid,
+      status: transactionStatus || "PENDING",
+      data,
+    };
+  } catch (err: any) {
+    console.error("[DOKU Check Status Error]:", err);
+    return {
+      success: false,
+      paid: false,
+      error: err?.message || "Gagal memeriksa status",
+    };
+  }
+}
+
+
 

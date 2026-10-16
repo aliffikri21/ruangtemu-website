@@ -283,6 +283,7 @@ export function AdminView({
   const [dokuInvoiceId, setDokuInvoiceId] = useState<string>("");
   const [isProcessingDoku, setIsProcessingDoku] = useState<boolean>(false);
   const [dokuPaymentSuccess, setDokuPaymentSuccess] = useState<boolean>(false);
+  const [paymentSuccessToast, setPaymentSuccessToast] = useState<{ title: string; subtitle: string } | null>(null);
 
   const currentPackage = VIRTUAL_BOOTH_PACKAGES[selectedPackage];
   const packagePrice = currentPackage.price;
@@ -938,6 +939,11 @@ export function AdminView({
           setIsProcessingDoku(false);
           setDokuPaymentSuccess(false);
           setIsCreatingEvent(false);
+          setPaymentSuccessToast({
+            title: `Pembayaran Berhasil! Acara "${newEvent.title}" Resmi Aktif`,
+            subtitle: `Paket ${currentPackage.name} (${durationDays} Hari Lisensi) lunas terverifikasi via DOKU Sandbox.`,
+          });
+          setTimeout(() => setPaymentSuccessToast(null), 6000);
           setFrameSlots(INITIAL_FRAME_SLOTS);
           setNewEvent({
             title: "",
@@ -950,7 +956,7 @@ export function AdminView({
           });
           setAddonQrCards(0);
           setAddonCustomDesign(false);
-        }, 1200);
+        }, 2200);
       } else {
         alert(data.error || "Gagal menyimpan event. Coba lagi.");
         setIsProcessingDoku(false);
@@ -1342,6 +1348,34 @@ export function AdminView({
             </div>
           </div>
         </header>
+
+        {/* PAYMENT SUCCESS FLOATING TOAST ALERT */}
+        {paymentSuccessToast && (
+          <div className="fixed top-24 right-8 z-50 max-w-md bg-emerald-600 text-white p-4 rounded-2xl shadow-2xl flex items-start gap-3.5 animate-in slide-in-from-top-4 duration-300 border border-emerald-400">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-full">
+                  DOKU Sandbox
+                </span>
+                <span className="text-[10px] text-emerald-200">Baru Saja</span>
+              </div>
+              <h4 className="text-sm font-bold leading-snug">{paymentSuccessToast.title}</h4>
+              <p className="text-xs text-emerald-100 mt-1 leading-relaxed">{paymentSuccessToast.subtitle}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPaymentSuccessToast(null)}
+              className="text-white/70 hover:text-white text-base font-bold px-1.5 py-0.5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* MAIN BODY CONTENT */}
         <main className="flex-1 p-6 md:p-8 overflow-y-auto space-y-6">
