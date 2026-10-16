@@ -847,7 +847,7 @@ export async function deleteEvent(id: string): Promise<boolean> {
 
 export async function updateEventPaymentByInvoice(
   invoiceNumber: string,
-  paymentStatus: "PAID" | "PENDING" | "FAILED",
+  paymentStatus: "PAID" | "PENDING" | "UNPAID" | "FAILED",
   paymentMethod?: string
 ): Promise<boolean> {
   const client = getDbClient();

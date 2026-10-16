@@ -119,7 +119,7 @@ export interface EventItem {
   updated_at?: string;
   package_tier?: "bronze" | "silver" | "gold";
   package_name?: string;
-  payment_status?: "PENDING" | "PAID" | "UNPAID";
+  payment_status?: "PENDING" | "PAID" | "UNPAID" | "FAILED";
   payment_amount?: number;
   payment_method?: string;
   payment_invoice?: string;
