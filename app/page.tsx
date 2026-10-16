@@ -175,44 +175,71 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-stone-200 border border-stone-200 rounded-md overflow-hidden">
-              {packages.map((pkg) => (
-                <div
-                  key={pkg.id}
-                  className="bg-white p-6 flex flex-col justify-between"
-                >
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-950">{pkg.name}</h3>
-                    <p className="mt-1 text-xs text-stone-400 line-clamp-2">{pkg.tagline}</p>
-
-                    <div className="mt-4 mb-5 pb-4 border-b border-stone-100">
-                      <span className="text-xl font-bold text-zinc-950 tracking-tight">
-                        {formatRupiah(pkg.price)}
-                      </span>
-                      <span className="text-xs text-stone-400 ml-1">/ event</span>
-                      <div className="mt-1 text-xs text-stone-500">
-                        Durasi: {pkg.duration_hours} Jam
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {packages.map((pkg) => {
+                const durationDays = Math.round(pkg.duration_hours / 24);
+                return (
+                  <div
+                    key={pkg.id}
+                    className={`p-7 flex flex-col justify-between rounded-2xl transition-all relative ${
+                      pkg.popular
+                        ? "bg-white border-2 border-zinc-950 shadow-xl shadow-stone-200/50"
+                        : "bg-white border border-stone-200 shadow-sm hover:border-stone-300"
+                    }`}
+                  >
+                    {pkg.popular && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-zinc-950 text-white text-[10px] font-bold tracking-wider uppercase rounded-full shadow-md flex items-center gap-1">
+                        <span>⭐</span> RECOMMENDED
                       </div>
+                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-base font-bold text-zinc-950">{pkg.name}</h3>
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-stone-100 text-stone-600">
+                          {durationDays} Hari
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-500 leading-relaxed">{pkg.tagline}</p>
+
+                      <div className="mt-5 mb-5 pb-5 border-b border-stone-100">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-bold text-zinc-950 tracking-tight">
+                            {formatRupiah(pkg.price)}
+                          </span>
+                          <span className="text-xs text-stone-400">/ event</span>
+                        </div>
+                        <div className="mt-1.5 text-xs text-stone-500 font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span>{durationDays} Hari Akses Foto ({pkg.duration_hours} Jam)</span>
+                        </div>
+                      </div>
+
+                      <ul className="space-y-2.5 text-xs text-stone-600 mb-8">
+                        {pkg.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5">
+                            <span className="w-4 h-4 rounded-full bg-stone-100 text-zinc-900 flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">
+                              ✓
+                            </span>
+                            <span className="leading-snug">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
 
-                    <ul className="space-y-2 text-xs text-stone-500 mb-6">
-                      {pkg.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-zinc-950 mt-0.5 shrink-0">&bull;</span>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <Link
+                      href={`/booking?package=${pkg.slug}`}
+                      className={`w-full min-h-[44px] flex items-center justify-center py-2.5 text-xs font-semibold text-center rounded-xl transition-colors ${
+                        pkg.popular
+                          ? "bg-zinc-950 hover:bg-zinc-800 text-white shadow-sm"
+                          : "bg-stone-100 hover:bg-stone-200 text-zinc-900"
+                      }`}
+                    >
+                      Pilih Paket Ini
+                    </Link>
                   </div>
-
-                  <Link
-                    href={`/booking?package=${pkg.slug}`}
-                    className="w-full min-h-[44px] flex items-center justify-center py-2.5 text-xs font-medium text-center rounded-md transition-colors bg-stone-100 hover:bg-stone-200 text-zinc-900"
-                  >
-                    Pilih Paket Ini
-                  </Link>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-8 text-center">

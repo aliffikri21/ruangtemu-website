@@ -7,6 +7,8 @@ import { formatRupiah, formatDate } from "@/lib/utils";
 import { detectTransparentRegions } from "@/lib/frame-detect";
 import { LandingUIEditor } from "./landing-ui-editor";
 import { getDefaultThemeConfigForEvent } from "@/lib/theme-config";
+import { VIRTUAL_BOOTH_PACKAGES, ADDON_PRICING } from "@/lib/doku";
+import { DokuPaymentModal } from "./doku-payment-modal";
 
 interface AdminViewProps {
   initialEvents: EventItem[];
@@ -185,6 +187,13 @@ function IconCheck({ size = 14 }: { size?: number }) {
     </svg>
   );
 }
+function IconRefresh({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+    </svg>
+  );
+}
 
 export function AdminView({
   initialEvents,
@@ -233,6 +242,27 @@ export function AdminView({
   );
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [entries, setEntries] = useState<GalleryEntry[]>(initialEntries);
+  const [galleryEventFilter, setGalleryEventFilter] = useState<string>("all");
+  const [isRefreshingGallery, setIsRefreshingGallery] = useState(false);
+
+  const getEventForEntry = (ent: GalleryEntry) => {
+    return events.find((e) => e.id === ent.event_id || (ent.event_slug && e.slug === ent.event_slug));
+  };
+
+  const refreshEntries = async () => {
+    setIsRefreshingGallery(true);
+    try {
+      const res = await fetch("/api/entries", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.entries)) {
+        setEntries(data.entries);
+      }
+    } catch (err) {
+      console.error("Gagal memperbarui galeri foto:", err);
+    } finally {
+      setIsRefreshingGallery(false);
+    }
+  };
 
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -244,6 +274,27 @@ export function AdminView({
     city: "Palopo",
     description: "",
   });
+
+  // Virtual Booth Package & DOKU Payment States
+  const [selectedPackage, setSelectedPackage] = useState<"bronze" | "silver" | "gold">("silver");
+  const [addonQrCards, setAddonQrCards] = useState<number>(0);
+  const [addonCustomDesign, setAddonCustomDesign] = useState<boolean>(false);
+  const [showDokuModal, setShowDokuModal] = useState<boolean>(false);
+  const [dokuInvoiceId, setDokuInvoiceId] = useState<string>("");
+  const [isProcessingDoku, setIsProcessingDoku] = useState<boolean>(false);
+  const [dokuPaymentSuccess, setDokuPaymentSuccess] = useState<boolean>(false);
+
+  const currentPackage = VIRTUAL_BOOTH_PACKAGES[selectedPackage];
+  const packagePrice = currentPackage.price;
+  const qrCardsPrice = (addonQrCards / 100) * ADDON_PRICING.qrCardsPer100;
+  const customDesignPrice = addonCustomDesign ? ADDON_PRICING.customFrameDesign : 0;
+  const totalPayment = packagePrice + qrCardsPrice + customDesignPrice;
+
+  const startDateStr = newEvent.date || new Date().toISOString().split("T")[0];
+  const startDateObj = new Date(startDateStr);
+  const durationDays = currentPackage.durationDays;
+  const endDateObj = new Date(startDateObj.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  const endDateStr = endDateObj.toISOString().split("T")[0];
 
   const [frameSlots, setFrameSlots] = useState<FrameUploadSlot[]>(INITIAL_FRAME_SLOTS);
 
@@ -282,26 +333,26 @@ export function AdminView({
 
     const slots: FrameUploadSlot[] = (evt.assigned_frames && evt.assigned_frames.length > 0)
       ? evt.assigned_frames.map((fr, idx) => ({
-          id: fr.id || `slot-edit-${idx}`,
-          name: fr.name || `Frame ${idx + 1}`,
-          template_type: fr.template_type || "strip_3",
-          previewUrl: fr.preview_url || fr.config_json?.customOverlayUrl || "",
-          fileName: fr.name,
-          photoSlots: fr.config_json?.photoSlots,
-          detectedCount: fr.config_json?.photoCount || fr.config_json?.photoSlots?.length,
-          frameImageWidth: fr.config_json?.frameImageWidth,
-          frameImageHeight: fr.config_json?.frameImageHeight,
-        }))
+        id: fr.id || `slot-edit-${idx}`,
+        name: fr.name || `Frame ${idx + 1}`,
+        template_type: fr.template_type || "strip_3",
+        previewUrl: fr.preview_url || fr.config_json?.customOverlayUrl || "",
+        fileName: fr.name,
+        photoSlots: fr.config_json?.photoSlots,
+        detectedCount: fr.config_json?.photoCount || fr.config_json?.photoSlots?.length,
+        frameImageWidth: fr.config_json?.frameImageWidth,
+        frameImageHeight: fr.config_json?.frameImageHeight,
+      }))
       : [
-          {
-            id: `slot-edit-0`,
-            name: "Classic Floral Strip",
-            template_type: "strip_3",
-            previewUrl: "/frames/frame-strip-floral.png",
-            fileName: "frame-strip-floral.png (Preset)",
-            fileSize: "14 KB",
-          },
-        ];
+        {
+          id: `slot-edit-0`,
+          name: "Classic Floral Strip",
+          template_type: "strip_3",
+          previewUrl: "/frames/frame-strip-floral.png",
+          fileName: "frame-strip-floral.png (Preset)",
+          fileSize: "14 KB",
+        },
+      ];
 
     setEditFrames(slots);
     setEditSuccessMsg("");
@@ -357,20 +408,20 @@ export function AdminView({
           prev.map((slot, i) =>
             i === index
               ? {
-                  ...slot,
-                  previewUrl: serverUrl,
-                  fileName: file.name,
-                  fileSize: `${Math.round(file.size / 1024)} KB`,
-                  error: detection.photoCount === 0
-                    ? "Tidak ditemukan area transparan pada frame ini."
-                    : undefined,
-                  template_type: detectedType,
-                  photoSlots: detection.slots,
-                  detectedCount: detection.photoCount,
-                  isAnalyzing: false,
-                  frameImageWidth: detection.imageWidth,
-                  frameImageHeight: detection.imageHeight,
-                }
+                ...slot,
+                previewUrl: serverUrl,
+                fileName: file.name,
+                fileSize: `${Math.round(file.size / 1024)} KB`,
+                error: detection.photoCount === 0
+                  ? "Tidak ditemukan area transparan pada frame ini."
+                  : undefined,
+                template_type: detectedType,
+                photoSlots: detection.slots,
+                detectedCount: detection.photoCount,
+                isAnalyzing: false,
+                frameImageWidth: detection.imageWidth,
+                frameImageHeight: detection.imageHeight,
+              }
               : slot
           )
         );
@@ -379,13 +430,13 @@ export function AdminView({
           prev.map((slot, i) =>
             i === index
               ? {
-                  ...slot,
-                  previewUrl: dataUrl,
-                  fileName: file.name,
-                  fileSize: `${Math.round(file.size / 1024)} KB`,
-                  isAnalyzing: false,
-                  error: "Gagal menganalisis frame. Pastikan file PNG valid.",
-                }
+                ...slot,
+                previewUrl: dataUrl,
+                fileName: file.name,
+                fileSize: `${Math.round(file.size / 1024)} KB`,
+                isAnalyzing: false,
+                error: "Gagal menganalisis frame. Pastikan file PNG valid.",
+              }
               : slot
           )
         );
@@ -586,20 +637,20 @@ export function AdminView({
           prev.map((slot, i) =>
             i === index
               ? {
-                  ...slot,
-                  previewUrl: serverUrl,
-                  fileName: file.name,
-                  fileSize: `${Math.round(file.size / 1024)} KB`,
-                  error: detection.photoCount === 0
-                    ? "Tidak ditemukan area transparan pada frame ini."
-                    : undefined,
-                  template_type: detectedType,
-                  photoSlots: detection.slots,
-                  detectedCount: detection.photoCount,
-                  isAnalyzing: false,
-                  frameImageWidth: detection.imageWidth,
-                  frameImageHeight: detection.imageHeight,
-                }
+                ...slot,
+                previewUrl: serverUrl,
+                fileName: file.name,
+                fileSize: `${Math.round(file.size / 1024)} KB`,
+                error: detection.photoCount === 0
+                  ? "Tidak ditemukan area transparan pada frame ini."
+                  : undefined,
+                template_type: detectedType,
+                photoSlots: detection.slots,
+                detectedCount: detection.photoCount,
+                isAnalyzing: false,
+                frameImageWidth: detection.imageWidth,
+                frameImageHeight: detection.imageHeight,
+              }
               : slot
           )
         );
@@ -608,13 +659,13 @@ export function AdminView({
           prev.map((slot, i) =>
             i === index
               ? {
-                  ...slot,
-                  previewUrl: dataUrl,
-                  fileName: file.name,
-                  fileSize: `${Math.round(file.size / 1024)} KB`,
-                  isAnalyzing: false,
-                  error: "Gagal menganalisis frame. Pastikan file PNG valid.",
-                }
+                ...slot,
+                previewUrl: dataUrl,
+                fileName: file.name,
+                fileSize: `${Math.round(file.size / 1024)} KB`,
+                isAnalyzing: false,
+                error: "Gagal menganalisis frame. Pastikan file PNG valid.",
+              }
               : slot
           )
         );
@@ -703,9 +754,25 @@ export function AdminView({
     );
   };
 
-  const handleDeleteEntry = (entryId: string) => {
+  const handleDeleteBooking = async (bookingId: string) => {
+    if (confirm("Hapus data reservasi ini?")) {
+      setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+      try {
+        await fetch(`/api/bookings?id=${bookingId}`, { method: "DELETE" });
+      } catch (err) {
+        console.error("Gagal menghapus reservasi:", err);
+      }
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
     if (confirm("Hapus foto ini dari galeri acara?")) {
       setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      try {
+        await fetch(`/api/entries/${entryId}`, { method: "DELETE" });
+      } catch (err) {
+        console.error("Gagal menghapus entri foto:", err);
+      }
     }
   };
 
@@ -771,8 +838,23 @@ export function AdminView({
     }
   };
 
-  const handleCreateEventSubmit = async (e: React.FormEvent) => {
+  const handleOpenDokuPayment = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newEvent.title.trim()) {
+      alert("Silakan masukkan Judul Acara terlebih dahulu.");
+      return;
+    }
+    if (!newEvent.host_name.trim()) {
+      alert("Silakan masukkan Nama Tuan Rumah / Klien terlebih dahulu.");
+      return;
+    }
+    const inv = `INV-DOKU-${Date.now().toString().slice(-6)}`;
+    setDokuInvoiceId(inv);
+    setShowDokuModal(true);
+  };
+
+  const handleExecutePaymentAndCreateEvent = async (methodUsed: string) => {
+    setIsProcessingDoku(true);
 
     const assigned_frames: FrameItem[] = frameSlots
       .filter((s) => s.previewUrl)
@@ -816,21 +898,29 @@ export function AdminView({
       allow_guestbook: true,
       allow_voice_note: true,
       allow_custom_frame: true,
+      package_tier: selectedPackage,
+      package_name: currentPackage.name,
+      payment_status: "PAID" as const,
+      payment_amount: totalPayment,
+      payment_method: methodUsed,
+      payment_invoice: dokuInvoiceId,
+      license_start_date: startDateStr,
+      license_end_date: endDateStr,
       assigned_frames,
       default_frame_config: assigned_frames.length > 0
         ? assigned_frames[0].config_json
         : {
-            type: "strip_3" as const,
-            backgroundColor: "#18181b",
-            borderColor: "#e7e5e4",
-            textContent: newEvent.host_name,
-            subTextContent: `${newEvent.date} • ${newEvent.venue}, ${newEvent.city}`,
-            fontFamily: "sans-serif",
-            textColor: "#ffffff",
-            padding: 16,
-            borderRadius: 0,
-            sticker: "✦",
-          },
+          type: "strip_3" as const,
+          backgroundColor: "#18181b",
+          borderColor: "#e7e5e4",
+          textContent: newEvent.host_name,
+          subTextContent: `${newEvent.date} • ${newEvent.venue}, ${newEvent.city}`,
+          fontFamily: "sans-serif",
+          textColor: "#ffffff",
+          padding: 16,
+          borderRadius: 0,
+          sticker: "✦",
+        },
     };
 
     try {
@@ -842,37 +932,41 @@ export function AdminView({
       const data = await res.json();
       if (data.success && data.event) {
         setEvents((prev) => [data.event, ...prev]);
+        setDokuPaymentSuccess(true);
+        setTimeout(() => {
+          setShowDokuModal(false);
+          setIsProcessingDoku(false);
+          setDokuPaymentSuccess(false);
+          setIsCreatingEvent(false);
+          setFrameSlots(INITIAL_FRAME_SLOTS);
+          setNewEvent({
+            title: "",
+            host_name: "",
+            slug: "",
+            date: "",
+            venue: "",
+            city: "Palopo",
+            description: "",
+          });
+          setAddonQrCards(0);
+          setAddonCustomDesign(false);
+        }, 1200);
       } else {
         alert(data.error || "Gagal menyimpan event. Coba lagi.");
-        setIsCreatingEvent(false);
-        return;
+        setIsProcessingDoku(false);
       }
     } catch (err) {
-      console.error("Error creating event:", err);
+      console.error("Error creating event with payment:", err);
       alert("Koneksi ke server gagal. Pastikan server berjalan dan coba lagi.");
-      setIsCreatingEvent(false);
-      return;
+      setIsProcessingDoku(false);
     }
-
-    setIsCreatingEvent(false);
-    setFrameSlots(INITIAL_FRAME_SLOTS);
-    setNewEvent({
-      title: "",
-      host_name: "",
-      slug: "",
-      date: "",
-      venue: "",
-      city: "Palopo",
-      description: "",
-    });
   };
 
   // Login Screen
   if (!isAuthenticated) {
     return (
-      <div className={`min-h-screen flex items-center justify-center p-6 transition-colors ${
-        isDarkMode ? "admin-dark bg-[#0E0E10] text-[#F8F9FA]" : "bg-[#f0f1f3] text-[#1B2559]"
-      }`}>
+      <div className={`min-h-screen flex items-center justify-center p-6 transition-colors ${isDarkMode ? "admin-dark bg-[#0E0E10] text-[#F8F9FA]" : "bg-[#f0f1f3] text-[#1B2559]"
+        }`}>
         <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-sm p-8 space-y-6">
           <div className="flex items-center gap-3 mb-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -967,14 +1061,12 @@ export function AdminView({
   }[activeTab];
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-200 ${
-      isDarkMode ? "admin-dark bg-[#121214] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
-    }`}>
+    <div className={`min-h-screen flex transition-colors duration-200 ${isDarkMode ? "admin-dark bg-[#121214] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
+      }`}>
       {/* ──────── SIDEBAR (RUANGTEMU PHOTOBOOTH) ──────── */}
       <aside
-        className={`${
-          sidebarCollapsed ? "w-[76px]" : "w-[260px]"
-        } bg-white border-r border-[#E0E5F2] flex flex-col fixed inset-y-0 left-0 z-40 transition-all duration-200 select-none`}
+        className={`${sidebarCollapsed ? "w-[76px]" : "w-[260px]"
+          } bg-white border-r border-[#E0E5F2] flex flex-col fixed inset-y-0 left-0 z-40 transition-all duration-200 select-none`}
       >
         {/* Brand */}
         <div className="h-[76px] flex items-center justify-between px-5 border-b border-[#E0E5F2] shrink-0">
@@ -1012,13 +1104,11 @@ export function AdminView({
           <button
             type="button"
             onClick={() => setActiveTab("overview")}
-            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3.5"
-            } ${
-              activeTab === "overview"
+            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${sidebarCollapsed ? "justify-center px-0" : "px-3.5"
+              } ${activeTab === "overview"
                 ? "bg-[#F4F7FE] text-[#4318FF] font-bold"
                 : "text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] font-medium"
-            }`}
+              }`}
           >
             {activeTab === "overview" && (
               <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#4318FF] rounded-r-full" />
@@ -1031,13 +1121,11 @@ export function AdminView({
           <button
             type="button"
             onClick={() => setActiveTab("events")}
-            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3.5"
-            } ${
-              activeTab === "events"
+            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${sidebarCollapsed ? "justify-center px-0" : "px-3.5"
+              } ${activeTab === "events"
                 ? "bg-[#F4F7FE] text-[#4318FF] font-bold"
                 : "text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] font-medium"
-            }`}
+              }`}
           >
             {activeTab === "events" && (
               <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#4318FF] rounded-r-full" />
@@ -1059,13 +1147,11 @@ export function AdminView({
           <button
             type="button"
             onClick={() => setActiveTab("edit")}
-            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3.5"
-            } ${
-              activeTab === "edit"
+            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${sidebarCollapsed ? "justify-center px-0" : "px-3.5"
+              } ${activeTab === "edit"
                 ? "bg-[#F4F7FE] text-[#4318FF] font-bold"
                 : "text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] font-medium"
-            }`}
+              }`}
           >
             {activeTab === "edit" && (
               <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#4318FF] rounded-r-full" />
@@ -1078,13 +1164,11 @@ export function AdminView({
           <button
             type="button"
             onClick={() => setActiveTab("bookings")}
-            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3.5"
-            } ${
-              activeTab === "bookings"
+            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${sidebarCollapsed ? "justify-center px-0" : "px-3.5"
+              } ${activeTab === "bookings"
                 ? "bg-[#F4F7FE] text-[#4318FF] font-bold"
                 : "text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] font-medium"
-            }`}
+              }`}
           >
             {activeTab === "bookings" && (
               <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#4318FF] rounded-r-full" />
@@ -1106,13 +1190,11 @@ export function AdminView({
           <button
             type="button"
             onClick={() => setActiveTab("gallery")}
-            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3.5"
-            } ${
-              activeTab === "gallery"
+            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${sidebarCollapsed ? "justify-center px-0" : "px-3.5"
+              } ${activeTab === "gallery"
                 ? "bg-[#F4F7FE] text-[#4318FF] font-bold"
                 : "text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] font-medium"
-            }`}
+              }`}
           >
             {activeTab === "gallery" && (
               <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#4318FF] rounded-r-full" />
@@ -1134,13 +1216,11 @@ export function AdminView({
           <button
             type="button"
             onClick={() => setActiveTab("packages")}
-            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3.5"
-            } ${
-              activeTab === "packages"
+            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${sidebarCollapsed ? "justify-center px-0" : "px-3.5"
+              } ${activeTab === "packages"
                 ? "bg-[#F4F7FE] text-[#4318FF] font-bold"
                 : "text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] font-medium"
-            }`}
+              }`}
           >
             {activeTab === "packages" && (
               <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#4318FF] rounded-r-full" />
@@ -1155,9 +1235,8 @@ export function AdminView({
           <button
             type="button"
             onClick={toggleDarkMode}
-            className={`w-full flex items-center gap-3 h-10 rounded-xl text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] transition-all ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3"
-            }`}
+            className={`w-full flex items-center gap-3 h-10 rounded-xl text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] transition-all ${sidebarCollapsed ? "justify-center px-0" : "px-3"
+              }`}
             title={isDarkMode ? "Beralih ke Mode Terang (Light Mode)" : "Beralih ke Mode Gelap (Dark Mode)"}
           >
             {isDarkMode ? <IconSun size={16} /> : <IconMoon size={16} />}
@@ -1170,9 +1249,8 @@ export function AdminView({
           <Link
             href="/"
             target="_blank"
-            className={`flex items-center gap-3 h-10 rounded-xl text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] transition-all ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3"
-            }`}
+            className={`flex items-center gap-3 h-10 rounded-xl text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] transition-all ${sidebarCollapsed ? "justify-center px-0" : "px-3"
+              }`}
             title="Buka Beranda Publik"
           >
             <IconExternalLink size={16} />
@@ -1181,9 +1259,8 @@ export function AdminView({
           <button
             type="button"
             onClick={() => setIsAuthenticated(false)}
-            className={`w-full flex items-center gap-3 h-10 rounded-xl text-[#8F9BBA] hover:text-[#EE5D50] hover:bg-red-50 transition-colors ${
-              sidebarCollapsed ? "justify-center px-0" : "px-3"
-            }`}
+            className={`w-full flex items-center gap-3 h-10 rounded-xl text-[#8F9BBA] hover:text-[#EE5D50] hover:bg-red-50 transition-colors ${sidebarCollapsed ? "justify-center px-0" : "px-3"
+              }`}
             title="Keluar / Logout"
           >
             <IconLogout size={16} />
@@ -1194,9 +1271,8 @@ export function AdminView({
 
       {/* ──────── MAIN AREA ──────── */}
       <div
-        className={`flex-1 ${
-          sidebarCollapsed ? "ml-[76px]" : "ml-[260px]"
-        } flex flex-col min-h-screen transition-all duration-200`}
+        className={`flex-1 ${sidebarCollapsed ? "ml-[76px]" : "ml-[260px]"
+          } flex flex-col min-h-screen transition-all duration-200`}
       >
         {/* TOP HEADER */}
         <header className="h-[76px] bg-white border-b border-[#E0E5F2] flex items-center justify-between px-6 sticky top-0 z-30 shrink-0">
@@ -1218,11 +1294,10 @@ export function AdminView({
             <button
               type="button"
               onClick={toggleDarkMode}
-              className={`flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-semibold transition-all border ${
-                isDarkMode
+              className={`flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-semibold transition-all border ${isDarkMode
                   ? "bg-[#25262B] text-amber-300 border-amber-300/30 hover:bg-[#2C2E33]"
                   : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-[#F4F7FE] border-transparent hover:border-[#E0E5F2]"
-              }`}
+                }`}
               title={isDarkMode ? "Klik untuk Mode Terang (Light Mode)" : "Klik untuk Mode Gelap (Dark Mode)"}
             >
               {isDarkMode ? (
@@ -1280,6 +1355,20 @@ export function AdminView({
                 Panel kendali photobooth tamu, layar videotron proyektor, dan moderasi foto real-time
               </p>
             </div>
+
+            {activeTab === "overview" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("events");
+                  setIsCreatingEvent(true);
+                }}
+                className="h-10 px-4 rounded-xl text-sm font-semibold bg-[#4318FF] hover:bg-[#3311DB] text-white transition-all shadow-[0_4px_12px_rgba(67,24,255,0.2)] hover:shadow-[0_6px_16px_rgba(67,24,255,0.3)] inline-flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
+              >
+                <IconPlus size={16} />
+                <span>Tambahkan Event Baru</span>
+              </button>
+            )}
           </div>
 
           {/* ═════════════ TAB: OVERVIEW (PHOTOBOOTH OPERATIONS) ═════════════ */}
@@ -1381,33 +1470,30 @@ export function AdminView({
                         <button
                           type="button"
                           onClick={() => setOverviewFilter("all")}
-                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                            overviewFilter === "all"
+                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${overviewFilter === "all"
                               ? "bg-white text-[#4318FF] shadow-xs"
                               : "text-[#8F9BBA] hover:text-[#1B2559]"
-                          }`}
+                            }`}
                         >
                           Semua ({events.length})
                         </button>
                         <button
                           type="button"
                           onClick={() => setOverviewFilter("active")}
-                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                            overviewFilter === "active"
+                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${overviewFilter === "active"
                               ? "bg-white text-[#4318FF] shadow-xs"
                               : "text-[#8F9BBA] hover:text-[#1B2559]"
-                          }`}
+                            }`}
                         >
                           Aktif ({activeEvents})
                         </button>
                         <button
                           type="button"
                           onClick={() => setOverviewFilter("completed")}
-                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                            overviewFilter === "completed"
+                          className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${overviewFilter === "completed"
                               ? "bg-white text-[#4318FF] shadow-xs"
                               : "text-[#8F9BBA] hover:text-[#1B2559]"
-                          }`}
+                            }`}
                         >
                           Selesai ({events.length - activeEvents})
                         </button>
@@ -1437,11 +1523,10 @@ export function AdminView({
                                     {evt.title}
                                   </span>
                                   <span
-                                    className={`inline-flex items-center h-5 px-2 rounded-full text-[10px] font-bold ${
-                                      active
+                                    className={`inline-flex items-center h-5 px-2 rounded-full text-[10px] font-bold ${active
                                         ? "bg-[#E9FAF4] text-[#01B574]"
                                         : "bg-[#FFF6E9] text-[#FFB547]"
-                                    }`}
+                                      }`}
                                   >
                                     {active ? "Aktif" : "Selesai"}
                                   </span>
@@ -1596,40 +1681,50 @@ export function AdminView({
                     </div>
 
                     <div className="space-y-3.5">
-                      {entries.slice(0, 4).map((ent) => (
-                        <div
-                          key={ent.id}
-                          className="flex items-center gap-3 p-2.5 rounded-xl bg-[#F4F7FE] hover:bg-[#EAEFFA] transition-colors"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={ent.photo_url}
-                            alt={ent.guest_name}
-                            className="w-14 h-14 rounded-lg object-cover bg-stone-200 shrink-0"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-bold text-[#1B2559] truncate">
-                              {ent.guest_name}
-                            </div>
-                            {ent.message && (
-                              <p className="text-[11px] text-[#8F9BBA] italic truncate mt-0.5">
-                                &ldquo;{ent.message}&rdquo;
-                              </p>
-                            )}
-                            <div className="text-[10px] text-[#A3AED0] mt-1">
-                              {formatDate(ent.created_at)}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteEntry(ent.id)}
-                            className="text-[#A3AED0] hover:text-[#EE5D50] p-1.5 transition-colors"
-                            title="Hapus foto ini"
+                      {entries.slice(0, 4).map((ent) => {
+                        const evt = getEventForEntry(ent);
+                        return (
+                          <div
+                            key={ent.id}
+                            className="flex items-center gap-3 p-2.5 rounded-xl bg-[#F4F7FE] hover:bg-[#EAEFFA] transition-colors"
                           >
-                            <IconTrash size={14} />
-                          </button>
-                        </div>
-                      ))}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={ent.photo_url}
+                              alt={ent.guest_name}
+                              className="w-14 h-14 rounded-lg object-cover bg-stone-200 shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-bold text-[#1B2559] truncate">
+                                  {ent.guest_name}
+                                </span>
+                                {evt && (
+                                  <span className="text-[10px] font-semibold text-[#4318FF] bg-[#EAEFFA] px-1.5 py-0.5 rounded-md truncate max-w-[130px]" title={evt.title}>
+                                    {evt.title}
+                                  </span>
+                                )}
+                              </div>
+                              {ent.message && (
+                                <p className="text-[11px] text-[#8F9BBA] italic truncate mt-0.5">
+                                  &ldquo;{ent.message}&rdquo;
+                                </p>
+                              )}
+                              <div className="text-[10px] text-[#A3AED0] mt-1">
+                                {formatDate(ent.created_at)}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEntry(ent.id)}
+                              className="text-[#A3AED0] hover:text-[#EE5D50] p-1.5 transition-colors"
+                              title="Hapus foto ini"
+                            >
+                              <IconTrash size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
 
                       {entries.length === 0 && (
                         <div className="py-8 text-center space-y-2">
@@ -1667,7 +1762,14 @@ export function AdminView({
                           className="p-3.5 bg-[#F4F7FE] rounded-xl flex items-center justify-between gap-3"
                         >
                           <div>
-                            <div className="text-xs font-bold text-[#1B2559]">{pkg.name}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-[#1B2559]">{pkg.name}</span>
+                              {pkg.popular && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#4318FF] text-white">
+                                  POPULER
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[11px] text-[#8F9BBA]">{pkg.tagline}</div>
                           </div>
                           <div className="text-xs font-extrabold text-[#4318FF] shrink-0 font-mono">
@@ -1692,11 +1794,10 @@ export function AdminView({
                 <button
                   type="button"
                   onClick={() => setIsCreatingEvent(!isCreatingEvent)}
-                  className={`h-10 px-4 rounded-xl text-sm font-medium transition-colors inline-flex items-center gap-2 ${
-                    isCreatingEvent
+                  className={`h-10 px-4 rounded-xl text-sm font-medium transition-colors inline-flex items-center gap-2 ${isCreatingEvent
                       ? "bg-[#f4f7fe] text-[#1B2559] border border-[#e0e5f2]"
                       : "bg-[#4318FF] hover:bg-[#3311DB] text-white"
-                  }`}
+                    }`}
                 >
                   {isCreatingEvent ? "Batal" : <><IconPlus size={16} /> Event Baru</>}
                 </button>
@@ -1704,35 +1805,361 @@ export function AdminView({
 
               {isCreatingEvent && (
                 <form
-                  onSubmit={handleCreateEventSubmit}
-                  className="bg-white rounded-2xl p-6 space-y-5"
+                  onSubmit={handleOpenDokuPayment}
+                  className="bg-white rounded-2xl p-6 space-y-6"
                 >
                   <h3 className="text-base font-semibold text-[#1B2559] pb-3 border-b border-[#e0e5f2]">
                     Informasi Acara Baru
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Judul Acara</label>
+                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Judul Acara *</label>
                       <input type="text" required placeholder="The Wedding of Andi & Sarah" value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] placeholder:text-[#a3aed0] outline-none focus:border-[#4318FF] transition-colors" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Nama Tuan Rumah</label>
+                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Nama Tuan Rumah / Klien *</label>
                       <input type="text" required placeholder="Andi & Sarah" value={newEvent.host_name} onChange={(e) => setNewEvent({ ...newEvent, host_name: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] placeholder:text-[#a3aed0] outline-none focus:border-[#4318FF] transition-colors" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Slug URL</label>
+                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Slug URL (Tautan Tamu)</label>
                       <input type="text" required placeholder="wedding-andi-sarah" value={newEvent.slug} onChange={(e) => setNewEvent({ ...newEvent, slug: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] placeholder:text-[#a3aed0] outline-none focus:border-[#4318FF] transition-colors" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Tanggal</label>
+                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Tanggal Acara *</label>
                       <input type="date" required value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Lokasi / Gedung</label>
+                      <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Lokasi / Gedung *</label>
                       <input type="text" required placeholder="Gedung Saokotae" value={newEvent.venue} onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] placeholder:text-[#a3aed0] outline-none focus:border-[#4318FF] transition-colors" />
+                    </div>
+                  </div>
+
+                  {/* ═══════════ FORM PAKET & PEMBAYARAN PENGAKTIFAN VIRTUAL PHOTOBOOTH (DOKU) ═══════════ */}
+                  <div className="pt-5 border-t border-[#e0e5f2] space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-base font-bold text-[#1B2559]">
+                            Pilih Paket Virtual Photobooth &amp; Aktivasi Lisensi
+                          </h4>
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#E52534] text-white">
+                            DOKU Sandbox
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#a3aed0] mt-0.5">
+                          Sewa lisensi untuk booth yang dipakai selama event. Pilih paket durasi &amp; benefit sesuai kebutuhan.
+                        </p>
+                      </div>
+
+                      {/* Project Type Switcher (Inspired by Image 2) */}
+                      <div className="flex items-center gap-1.5 p-1 bg-[#f4f7fe] rounded-xl self-start sm:self-auto border border-[#e0e5f2]">
+                        <span className="px-3 py-1 bg-white text-[#4318FF] font-bold text-xs rounded-lg shadow-sm">
+                          Durasi Lisensi
+                        </span>
+                        <span className="px-3 py-1 text-[#8F9BBA] text-xs font-medium">
+                          Jumlah Sesi
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3 Package Cards (Inspired by Image 1 & 2) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* 1. BRONZE CARD */}
+                      <div
+                        onClick={() => setSelectedPackage("bronze")}
+                        className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between ${
+                          selectedPackage === "bronze"
+                            ? "bg-white border-[#4318FF] ring-4 ring-[#4318FF]/10 shadow-lg"
+                            : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-lg font-black tracking-wider text-[#8C4A4A]">BRONZE</h5>
+                            <span className="px-2.5 py-1 bg-[#617344] text-white text-xs font-black rounded-md shadow-sm">
+                              250K
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-[#8F9BBA] font-semibold">
+                            Durasi Sewa: <span className="text-[#1B2559] font-bold">7 Hari Akses Foto</span>
+                          </div>
+
+                          <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo Only)</strong></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Free <strong className="text-[#8C4A4A] font-semibold">1 desain</strong> template frame (Strip/4R/Polaroid)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">100 pcs</strong> kartu QR code</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">7 hari</strong></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Unlimited foto</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="mt-5 pt-3 border-t border-[#E0E5F2]">
+                          <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
+                            selectedPackage === "bronze"
+                              ? "bg-[#01B574] text-white shadow-sm"
+                              : "bg-[#F4F7FE] text-[#1B2559]"
+                          }`}>
+                            TOTAL: Rp 250.000
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. SILVER CARD (RECOMMENDED) */}
+                      <div
+                        onClick={() => setSelectedPackage("silver")}
+                        className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between overflow-hidden ${
+                          selectedPackage === "silver"
+                            ? "bg-white border-[#E52534] ring-4 ring-[#E52534]/15 shadow-xl"
+                            : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
+                        }`}
+                      >
+                        {/* Recommended Ribbon (From Image 1) */}
+                        <div className="absolute top-0 right-0 overflow-hidden w-28 h-28 pointer-events-none">
+                          <div className="bg-[#E52534] text-white text-[9px] font-black uppercase tracking-widest text-center py-1 absolute top-5 -right-7 w-32 rotate-45 shadow-md flex items-center justify-center gap-0.5">
+                            <span>★</span> RECOMMENDED
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-lg font-black tracking-wider text-[#735656]">SILVER</h5>
+                            <span className="px-2.5 py-1 bg-[#617344] text-white text-xs font-black rounded-md shadow-sm">
+                              350K
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-[#8F9BBA] font-semibold">
+                            Durasi Sewa: <span className="text-[#1B2559] font-bold">10 Hari Akses Foto</span>
+                          </div>
+
+                          <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo &amp; Voice Message)</strong></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Free <strong className="text-[#8C4A4A] font-semibold">2 desain</strong> template frame (Strip/4R/Polaroid)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">200 pcs</strong> kartu QR code</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Unlimited Akses QR Code</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">10 hari</strong></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Unlimited foto</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="mt-5 pt-3 border-t border-[#E0E5F2]">
+                          <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
+                            selectedPackage === "silver"
+                              ? "bg-[#01B574] text-white shadow-sm"
+                              : "bg-[#F4F7FE] text-[#1B2559]"
+                          }`}>
+                            TOTAL: Rp 350.000
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. GOLD CARD */}
+                      <div
+                        onClick={() => setSelectedPackage("gold")}
+                        className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between ${
+                          selectedPackage === "gold"
+                            ? "bg-white border-[#4318FF] ring-4 ring-[#4318FF]/10 shadow-lg"
+                            : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-lg font-black tracking-wider text-[#995C3D]">GOLD</h5>
+                            <span className="px-2.5 py-1 bg-[#617344] text-white text-xs font-black rounded-md shadow-sm">
+                              450K
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-[#8F9BBA] font-semibold">
+                            Durasi Sewa: <span className="text-[#1B2559] font-bold">14 Hari Akses Foto</span>
+                          </div>
+
+                          <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo &amp; Voice Message)</strong></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Free <strong className="text-[#8C4A4A] font-semibold">3 desain</strong> template frame (Strip/4R/Polaroid)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">300 pcs</strong> kartu QR code</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Unlimited Akses QR Code</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">14 hari</strong></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-[#01B574] font-bold">✔</span>
+                              <span>Unlimited foto</span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="mt-5 pt-3 border-t border-[#E0E5F2]">
+                          <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
+                            selectedPackage === "gold"
+                              ? "bg-[#01B574] text-white shadow-sm"
+                              : "bg-[#F4F7FE] text-[#1B2559]"
+                          }`}>
+                            TOTAL: Rp 450.000
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notes & Add-Ons (From Image 1) */}
+                    <div className="p-4 bg-white border border-[#E0E5F2] rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-[#E0E5F2]">
+                        <span className="text-xs font-bold text-[#1B2559]">Add-On Tambahan &amp; Catatan Khusus:</span>
+                        <span className="text-[11px] font-semibold text-[#01B574] bg-[#E9FAF4] px-2.5 py-0.5 rounded-full">
+                          Available in 2 Languages (Indonesia / English) 🇮🇩 🇬🇧
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        {/* Add-on 1: Extra QR Cards */}
+                        <div className="p-3 bg-[#F4F7FE] rounded-xl space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#1B2559]">Add-on Cetak Kartu QR</span>
+                            <span className="text-xs font-mono font-bold text-[#4318FF]">+50K/100pcs</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {[0, 100, 200, 300, 500].map((qty) => (
+                              <button
+                                key={qty}
+                                type="button"
+                                onClick={() => setAddonQrCards(qty)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                                  addonQrCards === qty
+                                    ? "bg-[#4318FF] text-white shadow-sm"
+                                    : "bg-white text-[#1B2559] border border-[#E0E5F2] hover:bg-[#EAEFFA]"
+                                }`}
+                              >
+                                {qty === 0 ? "0 pcs" : `+${qty} pcs`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Add-on 2: Custom Frame Design */}
+                        <div className="p-3 bg-[#F4F7FE] rounded-xl flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-bold text-[#1B2559]">Add-on Custom Personal Frame</div>
+                            <div className="text-[11px] text-[#8F9BBA] leading-tight mt-0.5">
+                              Desain eksklusif oleh desainer RUANGTEMU disesuaikan tema acara (+Rp 25.000)
+                            </div>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={addonCustomDesign}
+                            onChange={(e) => setAddonCustomDesign(e.target.checked)}
+                            className="w-5 h-5 rounded text-[#4318FF] accent-[#4318FF] cursor-pointer shrink-0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Features included in all packages (Inspired by Image 2) */}
+                    <div className="p-4 bg-[#E9FAF4]/70 border border-[#b5f5e0] rounded-2xl space-y-3">
+                      <div className="text-xs font-bold text-[#01B574] uppercase tracking-wider flex items-center gap-1.5">
+                        <IconCheck size={14} /> Sudah termasuk di semua paket event:
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-[#1B2559]">
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">📖</span>
+                          <div>
+                            <div className="font-bold">Buku ucapan tamu</div>
+                            <p className="text-[11px] text-[#8F9BBA] leading-tight">Tamu berfoto dan merekam pesan ucapan lewat QR di meja</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">💌</span>
+                          <div>
+                            <div className="font-bold">Undangan online</div>
+                            <p className="text-[11px] text-[#8F9BBA] leading-tight">Sebar tautan undangan ke tamu sebelum atau saat acara</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">📸</span>
+                          <div>
+                            <div className="font-bold">Photobooth virtual</div>
+                            <p className="text-[11px] text-[#8F9BBA] leading-tight">Tamu berfoto sendiri dari ponselnya, berbingkai frame acara</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-base">🖼️</span>
+                          <div>
+                            <div className="font-bold">Album foto online</div>
+                            <p className="text-[11px] text-[#8F9BBA] leading-tight">Klien melihat, unduh foto semua sesi &amp; live videotron panggung</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* License validity & Pricing breakdown summary (Inspired by Image 2) */}
+                    <div className="p-4 bg-[#F4F7FE] border border-[#E0E5F2] rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="text-xs text-[#8F9BBA] flex items-center gap-1.5 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-[#01B574]" />
+                          <span>Masa Berlaku Lisensi Acara:</span>
+                        </div>
+                        <div className="text-sm font-bold text-[#1B2559]">
+                          Lisensi berlaku {startDateStr} sampai {endDateStr} pukul 23:59 WITA ({durationDays} Hari)
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-[#E0E5F2] pt-3 md:pt-0 md:pl-5">
+                        <div className="text-right">
+                          <div className="text-[11px] text-[#8F9BBA]">Total Biaya Pengaktifan:</div>
+                          <div className="text-xl font-black font-mono text-[#D9222A]">
+                            {formatRupiah(totalPayment)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1811,11 +2238,45 @@ export function AdminView({
                     </div>
                   </div>
 
-                  <button type="submit" className="h-11 px-6 bg-[#4318FF] hover:bg-[#3311DB] text-white text-sm font-medium rounded-xl transition-colors">
-                    Simpan Acara & Frame
-                  </button>
+                  <div className="pt-4 border-t border-[#e0e5f2] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="text-xs text-[#8F9BBA]">
+                      Metode Pembayaran: <strong className="text-[#D9222A]">DOKU Sandbox</strong> (QRIS, Virtual Account, Kartu Kredit)
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsCreatingEvent(false)}
+                        className="h-11 px-5 border border-[#e0e5f2] hover:bg-[#f4f7fe] text-[#8F9BBA] hover:text-[#1B2559] text-xs font-semibold rounded-xl transition-colors"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="h-11 px-6 bg-[#D9222A] hover:bg-[#C01B22] text-white text-sm font-bold rounded-xl transition-all shadow-[0_4px_14px_rgba(217,34,42,0.3)] inline-flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span>Lanjut Pembayaran DOKU ({formatRupiah(totalPayment)})</span>
+                      </button>
+                    </div>
+                  </div>
                 </form>
               )}
+
+              <DokuPaymentModal
+                isOpen={showDokuModal}
+                onClose={() => setShowDokuModal(false)}
+                onSuccess={(method) => handleExecutePaymentAndCreateEvent(method)}
+                isProcessing={isProcessingDoku}
+                paymentSuccess={dokuPaymentSuccess}
+                invoiceId={dokuInvoiceId}
+                amount={totalPayment}
+                eventName={newEvent.title || "Acara Baru"}
+                hostName={newEvent.host_name || "Klien"}
+                packageName={currentPackage.name}
+                durationDays={durationDays}
+                startDate={startDateStr}
+                endDate={endDateStr}
+              />
 
               {/* Events table */}
               <div className="bg-white rounded-2xl overflow-hidden">
@@ -1837,6 +2298,13 @@ export function AdminView({
                           <td className="px-6 py-4">
                             <div className="font-semibold text-[#1B2559]">{evt.title}</div>
                             <div className="text-xs text-[#a3aed0] mt-0.5">{evt.host_name}</div>
+                            {evt.package_tier && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E52534]/10 text-[#E52534]">
+                                  ★ Paket {evt.package_name || evt.package_tier.toUpperCase()} &bull; DOKU Lunas
+                                </span>
+                              </div>
+                            )}
                             {evt.assigned_frames && evt.assigned_frames.length > 0 && (
                               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                 {evt.assigned_frames.map((fr, fIdx) => (
@@ -1852,9 +2320,8 @@ export function AdminView({
                             <div className="text-xs text-[#a3aed0] mt-0.5">{evt.venue}, {evt.city}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${
-                              active ? "bg-[#e9faf4] text-[#01B574]" : evt.status === "ARCHIVED" ? "bg-[#f4f7fe] text-[#8F9BBA]" : "bg-[#fff6e9] text-[#FFB547]"
-                            }`}>
+                            <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${active ? "bg-[#e9faf4] text-[#01B574]" : evt.status === "ARCHIVED" ? "bg-[#f4f7fe] text-[#8F9BBA]" : "bg-[#fff6e9] text-[#FFB547]"
+                              }`}>
                               {active ? "Aktif" : evt.status === "ARCHIVED" ? "Diarsipkan" : "Selesai"}
                             </span>
                           </td>
@@ -1875,11 +2342,10 @@ export function AdminView({
                                 type="button"
                                 disabled={togglingEventId === evt.id}
                                 onClick={() => handleToggleEventStatus(evt)}
-                                className={`h-8 px-3 rounded-lg text-xs font-medium transition-colors ${
-                                  active
+                                className={`h-8 px-3 rounded-lg text-xs font-medium transition-colors ${active
                                     ? "bg-[#fff6e9] text-[#FFB547] hover:bg-[#FFB547] hover:text-white"
                                     : "bg-[#e9faf4] text-[#01B574] hover:bg-[#01B574] hover:text-white"
-                                } ${togglingEventId === evt.id ? "opacity-50 cursor-wait" : ""}`}
+                                  } ${togglingEventId === evt.id ? "opacity-50 cursor-wait" : ""}`}
                               >
                                 {togglingEventId === evt.id ? (
                                   <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
@@ -1889,9 +2355,8 @@ export function AdminView({
                                 type="button"
                                 disabled={deletingEventId === evt.id}
                                 onClick={() => handleDeleteEvent(evt)}
-                                className={`h-8 px-3 rounded-lg bg-[#feefee] text-[#EE5D50] text-xs font-medium hover:bg-[#EE5D50] hover:text-white transition-colors ${
-                                  deletingEventId === evt.id ? "opacity-50 cursor-wait" : ""
-                                }`}
+                                className={`h-8 px-3 rounded-lg bg-[#feefee] text-[#EE5D50] text-xs font-medium hover:bg-[#EE5D50] hover:text-white transition-colors ${deletingEventId === evt.id ? "opacity-50 cursor-wait" : ""
+                                  }`}
                               >
                                 {deletingEventId === evt.id ? (
                                   <span className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
@@ -1954,11 +2419,10 @@ export function AdminView({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e0e5f2]">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${
-                          editingEvent.is_active !== false && editingEvent.status !== "COMPLETED" && editingEvent.status !== "ARCHIVED"
+                        <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${editingEvent.is_active !== false && editingEvent.status !== "COMPLETED" && editingEvent.status !== "ARCHIVED"
                             ? "bg-[#e9faf4] text-[#01B574]"
                             : "bg-[#fff6e9] text-[#FFB547]"
-                        }`}>
+                          }`}>
                           {editingEvent.is_active !== false && editingEvent.status !== "COMPLETED" && editingEvent.status !== "ARCHIVED" ? "Aktif" : "Selesai"}
                         </span>
                       </div>
@@ -2182,149 +2646,329 @@ export function AdminView({
           {/* ═══════ TAB: BOOKINGS ═══════ */}
           {activeTab === "bookings" && (
             <div className="space-y-6">
-              <p className="text-sm text-[#a3aed0]">
-                Data calon pelanggan dari formulir pemesanan online
-              </p>
-
-              <div className="bg-white rounded-2xl overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-[#e0e5f2]">
-                    <tr>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Pemesan</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Acara & Tanggal</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Paket & Biaya</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e0e5f2]">
-                    {bookings.map((b) => (
-                      <tr key={b.id} className="hover:bg-[#f4f7fe]/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-[#1B2559]">{b.customer_name}</div>
-                          <a
-                            href={`https://wa.me/${b.customer_phone.replace(/[^0-9]/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-[#4318FF] hover:underline block mt-0.5"
-                          >
-                            {b.customer_phone}
-                          </a>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-[#1B2559]">{b.event_name}</div>
-                          <div className="text-xs text-[#a3aed0] mt-0.5">{b.event_date} ({b.event_time} WITA)</div>
-                          <div className="text-xs text-[#a3aed0]">{b.location}, {b.city}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-[#1B2559]">{b.package_name}</div>
-                          <div className="text-sm font-semibold text-[#1B2559] mt-0.5">{formatRupiah(b.total_price)}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${
-                            b.status === "confirmed"
-                              ? "bg-[#e9faf4] text-[#01B574]"
-                              : b.status === "pending"
-                              ? "bg-[#fff6e9] text-[#FFB547]"
-                              : "bg-[#f4f7fe] text-[#8F9BBA]"
-                          }`}>
-                            {b.status === "confirmed" ? "Dikonfirmasi" : b.status === "pending" ? "Menunggu" : "Dibatalkan"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleStatusChange(b.id, "confirmed")}
-                              className="h-8 px-3 rounded-lg bg-[#e9faf4] text-[#01B574] text-xs font-medium hover:bg-[#01B574] hover:text-white transition-colors"
-                            >
-                              Setujui
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleStatusChange(b.id, "cancelled")}
-                              className="h-8 px-3 rounded-lg bg-[#f4f7fe] text-[#8F9BBA] text-xs font-medium hover:bg-[#8F9BBA] hover:text-white transition-colors"
-                            >
-                              Batal
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E0E5F2]">
+                <div>
+                  <h2 className="text-lg font-bold text-[#1B2559]">Data Reservasi Klien</h2>
+                  <p className="text-xs text-[#A3AED0] mt-0.5">
+                    Data calon pelanggan dari formulir pemesanan online ({bookings.length} reservasi)
+                  </p>
+                </div>
               </div>
+
+              {bookings.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <div className="w-12 h-12 rounded-full bg-[#FFF6E9] flex items-center justify-center text-[#FFB547] mx-auto">
+                    <IconBooking size={22} />
+                  </div>
+                  <div className="text-sm font-semibold text-[#1B2559]">
+                    Belum Ada Data Reservasi
+                  </div>
+                  <p className="text-xs text-[#A3AED0] max-w-sm mx-auto">
+                    Data formulir pemesanan yang diajukan oleh calon klien secara online akan otomatis tampil pada panel ini.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b border-[#e0e5f2] bg-[#F4F7FE]">
+                      <tr>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Pemesan</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Acara & Tanggal</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Paket & Biaya</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e0e5f2]">
+                      {bookings.map((b) => (
+                        <tr key={b.id} className="hover:bg-[#f4f7fe]/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-semibold text-[#1B2559]">{b.customer_name}</div>
+                            <a
+                              href={`https://wa.me/${b.customer_phone.replace(/[^0-9]/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#4318FF] hover:underline block mt-0.5"
+                            >
+                              {b.customer_phone}
+                            </a>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-[#1B2559]">{b.event_name}</div>
+                            <div className="text-xs text-[#a3aed0] mt-0.5">{b.event_date} ({b.event_time} WITA)</div>
+                            <div className="text-xs text-[#a3aed0]">{b.location}, {b.city}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-[#1B2559]">{b.package_name}</div>
+                            <div className="text-sm font-semibold text-[#1B2559] mt-0.5">{formatRupiah(b.total_price)}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${b.status === "confirmed"
+                                ? "bg-[#e9faf4] text-[#01B574]"
+                                : b.status === "pending"
+                                  ? "bg-[#fff6e9] text-[#FFB547]"
+                                  : "bg-[#f4f7fe] text-[#8F9BBA]"
+                              }`}>
+                              {b.status === "confirmed" ? "Dikonfirmasi" : b.status === "pending" ? "Menunggu" : "Dibatalkan"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {b.status !== "confirmed" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(b.id, "confirmed")}
+                                  className="h-8 px-3 rounded-lg bg-[#e9faf4] text-[#01B574] text-xs font-medium hover:bg-[#01B574] hover:text-white transition-colors"
+                                >
+                                  Setujui
+                                </button>
+                              )}
+                              {b.status !== "cancelled" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(b.id, "cancelled")}
+                                  className="h-8 px-3 rounded-lg bg-[#f4f7fe] text-[#8F9BBA] text-xs font-medium hover:bg-[#8F9BBA] hover:text-white transition-colors"
+                                >
+                                  Batal
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBooking(b.id)}
+                                className="h-8 px-2.5 rounded-lg text-xs font-medium text-[#A3AED0] hover:text-[#EE5D50] hover:bg-red-50 transition-colors"
+                                title="Hapus Data Reservasi"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {/* ═══════ TAB: GALLERY ═══════ */}
           {activeTab === "gallery" && (
             <div className="space-y-6">
-              <p className="text-sm text-[#a3aed0]">
-                Review dan hapus foto kiriman tamu secara live
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E0E5F2]">
+                <div>
+                  <h2 className="text-lg font-bold text-[#1B2559]">Galeri Foto Tamu Seluruh Acara</h2>
+                  <p className="text-xs text-[#A3AED0] mt-0.5">
+                    Menampilkan {galleryEventFilter === "all" ? entries.length : entries.filter((e) => e.event_id === galleryEventFilter || e.event_slug === galleryEventFilter).length} foto dari {galleryEventFilter === "all" ? "semua event" : "event terpilih"} secara real-time.
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {entries.map((ent) => (
-                  <div key={ent.id} className="bg-white rounded-2xl overflow-hidden flex flex-col">
-                    <div className="p-3 bg-[#f4f7fe] flex justify-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={ent.photo_url} alt={ent.guest_name} className="max-h-56 object-contain rounded-lg" />
-                    </div>
-                    <div className="p-4 space-y-2 flex-1">
-                      <div className="text-sm font-semibold text-[#1B2559]">{ent.guest_name}</div>
-                      {ent.message && (
-                        <p className="text-sm text-[#8F9BBA] italic leading-relaxed">&ldquo;{ent.message}&rdquo;</p>
-                      )}
-                      <div className="pt-2 flex items-center justify-between border-t border-[#e0e5f2]">
-                        <span className="text-xs text-[#a3aed0]">{formatDate(ent.created_at)}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteEntry(ent.id)}
-                          className="text-xs text-[#a3aed0] hover:text-[#EE5D50] font-medium transition-colors"
-                        >
-                          Hapus
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {/* Event Filter Dropdown */}
+                  <select
+                    value={galleryEventFilter}
+                    onChange={(e) => setGalleryEventFilter(e.target.value)}
+                    className="h-9 px-3 bg-white border border-[#E0E5F2] rounded-xl text-xs font-semibold text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors"
+                  >
+                    <option value="all">Semua Event ({entries.length} Foto)</option>
+                    {events.map((evt) => {
+                      const count = entries.filter((e) => e.event_id === evt.id || e.event_slug === evt.slug).length;
+                      return (
+                        <option key={evt.id} value={evt.id}>
+                          {evt.title} ({count})
+                        </option>
+                      );
+                    })}
+                  </select>
+
+                  {/* Refresh Button */}
+                  <button
+                    type="button"
+                    onClick={refreshEntries}
+                    disabled={isRefreshingGallery}
+                    className="h-9 px-3.5 rounded-xl border border-[#E0E5F2] bg-white hover:bg-[#F4F7FE] text-xs font-semibold text-[#1B2559] transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    title="Segarkan Foto Terbaru"
+                  >
+                    <IconRefresh size={14} className={isRefreshingGallery ? "animate-spin" : ""} />
+                    <span>{isRefreshingGallery ? "Memuat..." : "Segarkan"}</span>
+                  </button>
+                </div>
               </div>
+
+              {(() => {
+                const displayedEntries = galleryEventFilter === "all"
+                  ? entries
+                  : entries.filter((e) => e.event_id === galleryEventFilter || e.event_slug === galleryEventFilter);
+
+                if (displayedEntries.length === 0) {
+                  return (
+                    <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
+                      <div className="w-12 h-12 rounded-full bg-[#F4F7FE] flex items-center justify-center text-[#A3AED0] mx-auto">
+                        <IconImage size={22} />
+                      </div>
+                      <div className="text-sm font-semibold text-[#1B2559]">
+                        Belum Ada Foto Tamu
+                      </div>
+                      <p className="text-xs text-[#A3AED0] max-w-sm mx-auto">
+                        {galleryEventFilter === "all"
+                          ? "Foto dari seluruh acara yang diambil tamu melalui virtual photobooth akan otomatis tampil di panel galeri ini."
+                          : "Belum ada foto yang diunggah tamu untuk acara ini."}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {displayedEntries.map((ent) => {
+                      const evt = getEventForEntry(ent);
+                      return (
+                        <div key={ent.id} className="bg-white rounded-2xl overflow-hidden flex flex-col shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                          <div className="p-3 bg-[#F4F7FE] flex justify-center relative group min-h-[200px] items-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={ent.photo_url} alt={ent.guest_name} className="max-h-56 object-contain rounded-lg" />
+                            <a
+                              href={ent.photo_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1.5"
+                            >
+                              <IconExternalLink size={14} /> Lihat Foto Penuh
+                            </a>
+                          </div>
+                          <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                            <div className="space-y-1.5">
+                              {evt && (
+                                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#EAEFFA] text-[#4318FF] text-[10px] font-semibold truncate max-w-full" title={evt.title}>
+                                  <IconCalendar size={11} />
+                                  <span className="truncate">{evt.title}</span>
+                                </div>
+                              )}
+                              <div className="text-sm font-bold text-[#1B2559]">{ent.guest_name}</div>
+                              {ent.message && (
+                                <p className="text-xs text-[#8F9BBA] italic leading-relaxed">&ldquo;{ent.message}&rdquo;</p>
+                              )}
+                              {ent.voice_note_url && (
+                                <div className="pt-1">
+                                  <audio src={ent.voice_note_url} controls className="w-full h-8" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="pt-3 flex items-center justify-between border-t border-[#E0E5F2] mt-2">
+                              <span className="text-[11px] text-[#A3AED0]">{formatDate(ent.created_at)}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteEntry(ent.id)}
+                                className="text-xs text-[#A3AED0] hover:text-[#EE5D50] font-medium transition-colors"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {/* ═══════ TAB: PACKAGES ═══════ */}
           {activeTab === "packages" && (
             <div className="space-y-6">
-              <p className="text-sm text-[#a3aed0]">
-                Daftar paket dan spesifikasi teknis operasional Palopo
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E0E5F2]">
+                <div>
+                  <h2 className="text-lg font-bold text-[#1B2559]">Katalog Paket Layanan Virtual Photobooth</h2>
+                  <p className="text-xs text-[#A3AED0] mt-0.5">
+                    Price list resmi RUANGTEMU Virtual Photobooth Palopo (Aktif untuk aktivasi event & checkout DOKU)
+                  </p>
+                </div>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {initialPackages.map((pkg) => (
-                  <div key={pkg.id} className="bg-white rounded-2xl p-6 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-base font-semibold text-[#1B2559]">{pkg.name}</h3>
-                        <p className="text-sm text-[#a3aed0] mt-0.5">{pkg.tagline}</p>
-                      </div>
-                      <span className="text-lg font-bold text-[#1B2559] shrink-0">
-                        {formatRupiah(pkg.price)}
-                      </span>
-                    </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {initialPackages.map((pkg) => {
+                  const durationDays = Math.round(pkg.duration_hours / 24);
+                  return (
+                    <div
+                      key={pkg.id}
+                      className={`bg-white rounded-2xl p-6 space-y-5 relative flex flex-col justify-between transition-all ${
+                        pkg.popular
+                          ? "border-2 border-[#4318FF] shadow-[0_20px_50px_0_rgba(67,24,255,0.12)]"
+                          : "border border-[#E0E5F2] shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]"
+                      }`}
+                    >
+                      {pkg.popular && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#4318FF] text-white text-[10px] font-extrabold tracking-wider uppercase rounded-full shadow-md flex items-center gap-1">
+                          <span>⭐</span> RECOMMENDED
+                        </div>
+                      )}
 
-                    <ul className="space-y-2 border-t border-[#e0e5f2] pt-4">
-                      {pkg.features.map((f, i) => (
-                        <li key={i} className="flex items-center gap-2.5 text-sm text-[#8F9BBA]">
-                          <div className="w-5 h-5 rounded-full bg-[#e9faf4] flex items-center justify-center shrink-0">
-                            <IconCheck size={12} />
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-bold text-[#1B2559]">{pkg.name}</h3>
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#F4F7FE] text-[#4318FF]">
+                                {durationDays} Hari
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#A3AED0] mt-1 leading-relaxed">{pkg.tagline}</p>
                           </div>
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                        </div>
+
+                        <div className="py-3 px-4 rounded-xl bg-[#F4F7FE] flex items-baseline justify-between">
+                          <span className="text-xs text-[#8F9BBA] font-medium">Investasi Paket:</span>
+                          <span className="text-xl font-black text-[#1B2559] font-mono">
+                            {formatRupiah(pkg.price)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1 text-xs text-[#8F9BBA]">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#01B574]" />
+                            <span>Durasi Akses: <strong>{durationDays} Hari ({pkg.duration_hours} Jam)</strong></span>
+                          </div>
+                          {pkg.prints_included && (
+                            <div className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#4318FF]" />
+                              <span>Kartu QR: <strong>{pkg.prints_included}</strong></span>
+                            </div>
+                          )}
+                        </div>
+
+                        <ul className="space-y-2.5 border-t border-[#E0E5F2] pt-4">
+                          {pkg.features.map((f, i) => (
+                            <li key={i} className="flex items-start gap-2.5 text-xs text-[#8F9BBA]">
+                              <div className="w-4 h-4 rounded-full bg-[#E9FAF4] text-[#01B574] flex items-center justify-center shrink-0 mt-0.5">
+                                <IconCheck size={11} />
+                              </div>
+                              <span className="leading-snug text-[#1B2559] font-medium">{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="pt-3 border-t border-[#E0E5F2]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCreatingEvent(true);
+                            setActiveTab("events");
+                            const matchingKey = pkg.slug.includes("bronze") ? "bronze" : pkg.slug.includes("gold") ? "gold" : "silver";
+                            setSelectedPackage(matchingKey);
+                          }}
+                          className={`w-full h-10 rounded-xl text-xs font-bold transition-colors ${
+                            pkg.popular
+                              ? "bg-[#4318FF] hover:bg-[#3311DB] text-white shadow-sm"
+                              : "bg-[#F4F7FE] hover:bg-[#EAEFFA] text-[#1B2559]"
+                          }`}
+                        >
+                          Pilih Paket untuk Event Baru
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

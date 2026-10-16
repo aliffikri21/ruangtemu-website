@@ -17,32 +17,25 @@ interface PackageOption {
 
 const packageOptions: PackageOption[] = [
   {
-    id: "pkg-1",
-    slug: "paket-basic",
-    name: "Paket Basic Photobooth (2 Jam)",
-    price: 1800000,
-    duration: 2,
+    id: "pkg-bronze",
+    slug: "paket-bronze",
+    name: "Paket Bronze — 7 Hari Akses (Photo Only)",
+    price: 250000,
+    duration: 168,
   },
   {
-    id: "pkg-2",
-    slug: "paket-standard-deluxe",
-    name: "Paket Standard Deluxe (3 Jam : Populer)",
-    price: 2500000,
-    duration: 3,
+    id: "pkg-silver",
+    slug: "paket-silver",
+    name: "Paket Silver — 10 Hari Akses (Photo & Voice : Terfavorit)",
+    price: 350000,
+    duration: 240,
   },
   {
-    id: "pkg-3",
-    slug: "paket-virtual-photobooth",
-    name: "Paket Virtual & Web Photobooth (12 Jam)",
-    price: 2200000,
-    duration: 12,
-  },
-  {
-    id: "pkg-4",
-    slug: "paket-platinum-hybrid",
-    name: "Paket Platinum All-in Hybrid (4 Jam + Virtual)",
-    price: 3800000,
-    duration: 4,
+    id: "pkg-gold",
+    slug: "paket-gold",
+    name: "Paket Gold — 14 Hari Akses (Photo & Voice + 3 Frame)",
+    price: 450000,
+    duration: 336,
   },
 ];
 
@@ -61,7 +54,7 @@ function BookingForm() {
     event_time: "18:30",
     location: "",
     city: "Palopo",
-    package_id: "pkg-2",
+    package_id: "pkg-silver",
     notes: "",
   });
 

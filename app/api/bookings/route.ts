@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createBooking } from "@/lib/db";
+import { createBooking, deleteBooking } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
       event_time: body.event_time || "18:30",
       location: body.location,
       city: body.city || "Palopo",
-      package_id: body.package_id || "pkg-2",
-      package_name: body.package_name || "Paket Standard Deluxe",
+      package_id: body.package_id || "pkg-silver",
+      package_name: body.package_name || "Paket Silver",
       notes: body.notes || "",
-      total_price: body.total_price || 2500000,
+      total_price: body.total_price || 350000,
     });
 
     return NextResponse.json({ success: true, booking });
@@ -33,3 +33,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Booking ID diperlukan" }, { status: 400 });
+    }
+
+    await deleteBooking(id);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 });
+  }
+}
+

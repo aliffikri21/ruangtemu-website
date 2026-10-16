@@ -117,6 +117,14 @@ export interface EventItem {
   theme_config?: LandingThemeConfig;
   created_at: string;
   updated_at?: string;
+  package_tier?: "bronze" | "silver" | "gold";
+  package_name?: string;
+  payment_status?: "PENDING" | "PAID" | "UNPAID";
+  payment_amount?: number;
+  payment_method?: string;
+  payment_invoice?: string;
+  license_start_date?: string;
+  license_end_date?: string;
   stats?: {
     total_photos: number;
     total_wishes: number;

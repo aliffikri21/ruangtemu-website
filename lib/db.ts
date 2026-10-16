@@ -18,86 +18,65 @@ function parseJsonField<T>(val: any, fallback: T): T {
 let mockPackages: Package[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
-    name: "Paket Basic Photobooth",
-    slug: "paket-basic",
-    tagline: "Pilihan hemat untuk perayaan intim dan ulang tahun di Palopo",
-    price: 1800000,
-    duration_hours: 2,
+    name: "Paket Bronze",
+    slug: "paket-bronze",
+    tagline: "Virtual Photobooth (Photo Only) dengan 7 hari akses foto",
+    price: 250000,
+    duration_hours: 168,
     features: [
-      "2 Jam Layanan Aktif",
-      "Unlimited Print 4R / 2-Strip",
-      "Custom Template Frame Sesuai Tema",
-      "Standard Fun Props & Aksesoris",
-      "Download Semua Foto via Cloud Storage",
-      "1 Operator & 1 Asisten Standby",
-    ],
-    popular: false,
-    category: "physical",
-    prints_included: "Unlimited High Speed DNP Print",
-    backdrop: "Standard Sequin / Fabric",
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222222",
-    name: "Paket Standard Deluxe",
-    slug: "paket-standard-deluxe",
-    tagline: "Paket terfavorit untuk resepsi pernikahan & wisuda di Palopo",
-    price: 2500000,
-    duration_hours: 3,
-    features: [
-      "3 Jam Layanan Penuh",
-      "Unlimited Strip / 4R Glossy Prints",
-      "Custom Frame Eksklusif dengan Logo Event",
-      "Premium Props & Kacamata Unik",
-      "Live Digital Gallery & QR Download",
-      "2 Kru Profesional RUANGTEMU",
-      "Free 1 Album Foto Kenangan",
-    ],
-    popular: true,
-    category: "physical",
-    prints_included: "Unlimited Thermal Photo Print",
-    backdrop: "Pilihan 5+ Premium Backdrop",
-  },
-  {
-    id: "33333333-3333-3333-3333-333333333333",
-    name: "Paket Virtual & Web Photobooth",
-    slug: "paket-virtual-photobooth",
-    tagline: "Photobooth digital interaktif langsung dari smartphone tamu",
-    price: 2200000,
-    duration_hours: 12,
-    features: [
-      "Akses Web Photobooth Tanpa Install Aplikasi",
-      "Frame Custom Digital (Strip, Grid, Polaroid)",
-      "Guestbook Digital + Rekam Voice Note Audio Ucapan",
-      "Live Projection Mode untuk LED Videotron Venue",
-      "QR Code Table Standee Siap Cetak",
-      "Dashboard Moderasi & Analytics Event",
+      "Virtual Photobooth (Photo Only)",
+      "Free 1 desain template frame (Strip/4R/Polaroid)",
+      "Free cetak 100 pcs kartu QR code",
+      "Akses foto 7 hari",
+      "Unlimited foto",
     ],
     popular: false,
     category: "virtual",
-    prints_included: "Digital Ultra HD Download + Cloud Archive",
-    backdrop: "Virtual Digital Frame",
+    prints_included: "Free cetak 100 pcs kartu QR code",
+    backdrop: "1 Desain Template Frame (Strip/4R/Polaroid)",
   },
   {
-    id: "44444444-4444-4444-4444-444444444444",
-    name: "Paket Platinum All-in Hybrid",
-    slug: "paket-platinum-hybrid",
-    tagline: "Solusi photobooth terlengkap: cetak fisik + platform digital interaktif",
-    price: 3800000,
-    duration_hours: 4,
+    id: "22222222-2222-2222-2222-222222222222",
+    name: "Paket Silver",
+    slug: "paket-silver",
+    tagline: "Virtual Photobooth (Photo & Voice Message) terfavorit dengan 10 hari akses",
+    price: 350000,
+    duration_hours: 240,
     features: [
-      "4 Jam Fisik Photobooth + 24 Jam Virtual Web Photobooth",
-      "Unlimited Cetak Fisik + Live Projection Screen di Panggung",
-      "Custom Wooden/Acrylic Table Standees",
-      "Rekaman Voice Notes & Foto Ucapan Tamu",
-      "Exclusive Guestbook Album Hardcover",
-      "VIP Customer Support & Tim Khusus RUANGTEMU",
+      "Virtual Photobooth (Photo & Voice Message)",
+      "Free 2 desain template frame (Strip/4R/Polaroid)",
+      "Free cetak 200 pcs kartu QR code",
+      "Unlimited Akses QR Code",
+      "Akses foto 10 hari",
+      "Unlimited foto",
     ],
     popular: true,
-    category: "hybrid",
-    prints_included: "Unlimited Cetak Fisik + Digital Cloud",
-    backdrop: "Custom Printed or Luxury Backdrop",
+    category: "virtual",
+    prints_included: "Free cetak 200 pcs kartu QR code",
+    backdrop: "2 Desain Template Frame (Strip/4R/Polaroid)",
+  },
+  {
+    id: "33333333-3333-3333-3333-333333333333",
+    name: "Paket Gold",
+    slug: "paket-gold",
+    tagline: "Paket virtual terlengkap 14 hari akses dengan 3 template frame & 300 QR",
+    price: 450000,
+    duration_hours: 336,
+    features: [
+      "Virtual Photobooth (Photo & Voice Message)",
+      "Free 3 desain template frame (Strip/4R/Polaroid)",
+      "Free cetak 300 pcs kartu QR code",
+      "Unlimited Akses QR Code",
+      "Akses foto 14 hari",
+      "Unlimited foto",
+    ],
+    popular: false,
+    category: "virtual",
+    prints_included: "Free cetak 300 pcs kartu QR code",
+    backdrop: "3 Desain Template Frame (Strip/4R/Polaroid)",
   },
 ];
+
 
 const defaultDemoFrames: FrameItem[] = [
   {
@@ -415,26 +394,7 @@ let mockEvents: EventItem[] = [
   },
 ];
 
-let mockBookings: Booking[] = [
-  {
-    id: "bkg-00000000-0001",
-    customer_name: "Andi Pratama",
-    customer_email: "andi.pratama@example.com",
-    customer_phone: "081234567890",
-    event_type: "wedding",
-    event_name: "Resepsi Pernikahan Andi & Sarah",
-    event_date: "2026-10-15",
-    event_time: "18:30",
-    location: "Banua Subur Convention Hall, Palopo",
-    city: "Palopo",
-    package_id: "44444444-4444-4444-4444-444444444444",
-    package_name: "Paket Platinum All-in Hybrid",
-    status: "confirmed",
-    notes: "Mohon backdrop nuansa Navy & Gold",
-    total_price: 3800000,
-    created_at: "2026-10-02T14:46:55.000Z",
-  },
-];
+let mockBookings: Booking[] = [];
 
 let mockEntries: GalleryEntry[] = [];
 
@@ -488,6 +448,14 @@ function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { t
       borderRadius: 12,
     }),
     assigned_frames: assignedFrames && assignedFrames.length > 0 ? assignedFrames : defaultDemoFrames,
+    package_tier: row.package_tier || undefined,
+    package_name: row.package_name || undefined,
+    payment_status: row.payment_status || undefined,
+    payment_amount: row.payment_amount ? Number(row.payment_amount) : undefined,
+    payment_method: row.payment_method || undefined,
+    payment_invoice: row.payment_invoice || undefined,
+    license_start_date: row.license_start_date || undefined,
+    license_end_date: row.license_end_date || undefined,
     theme_config: row.theme_config ? parseJsonField(row.theme_config, undefined) : undefined,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
     stats: computedStats || {
@@ -877,6 +845,44 @@ export async function deleteEvent(id: string): Promise<boolean> {
   return true;
 }
 
+export async function updateEventPaymentByInvoice(
+  invoiceNumber: string,
+  paymentStatus: "PAID" | "PENDING" | "FAILED",
+  paymentMethod?: string
+): Promise<boolean> {
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client
+        .from("events")
+        .update({
+          payment_status: paymentStatus,
+          payment_method: paymentMethod,
+          is_active: paymentStatus === "PAID",
+        })
+        .eq("payment_invoice", invoiceNumber);
+
+      if (error) {
+        console.warn("[Supabase] updateEventPaymentByInvoice error:", error.message);
+      } else {
+        return true;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] updateEventPaymentByInvoice exception:", err?.message);
+    }
+  }
+
+  const ev = mockEvents.find((e) => e.payment_invoice === invoiceNumber);
+  if (ev) {
+    ev.payment_status = paymentStatus;
+    if (paymentMethod) ev.payment_method = paymentMethod;
+    if (paymentStatus === "PAID") ev.is_active = true;
+    return true;
+  }
+  return false;
+}
+
+
 // ============================================================================
 // BOOKINGS API
 // ============================================================================
@@ -969,9 +975,56 @@ export async function updateBookingStatus(id: string, status: BookingStatus): Pr
   return false;
 }
 
+export async function deleteBooking(id: string): Promise<boolean> {
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { error } = await client.from("bookings").delete().eq("id", id);
+      if (error) {
+        console.warn("[Supabase] deleteBooking error:", error.message);
+      } else {
+        return true;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] deleteBooking exception:", err?.message);
+    }
+  }
+
+  const idx = mockBookings.findIndex((item) => item.id === id);
+  if (idx !== -1) {
+    mockBookings.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
 // ============================================================================
 // ENTRIES API (Guest Photobooth & Gallery)
 // ============================================================================
+export async function getAllEntries(): Promise<GalleryEntry[]> {
+  const client = getDbClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from("entries")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.warn("[Supabase] getAllEntries error:", error.message);
+      } else if (data) {
+        return data.map(mapEntryRow);
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] getAllEntries exception:", err?.message);
+    }
+  }
+
+  return [...mockEntries].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
 export async function getEventEntries(eventId: string): Promise<GalleryEntry[]> {
   const client = getDbClient();
   if (client) {

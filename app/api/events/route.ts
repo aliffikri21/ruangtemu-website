@@ -80,6 +80,14 @@ export async function POST(req: NextRequest) {
       allow_guestbook: body.allow_guestbook ?? true,
       allow_voice_note: body.allow_voice_note ?? true,
       allow_custom_frame: body.allow_custom_frame ?? true,
+      package_tier: body.package_tier || undefined,
+      package_name: body.package_name || undefined,
+      payment_status: body.payment_status || "PAID",
+      payment_amount: body.payment_amount ? Number(body.payment_amount) : undefined,
+      payment_method: body.payment_method || "DOKU",
+      payment_invoice: body.payment_invoice || undefined,
+      license_start_date: body.license_start_date || undefined,
+      license_end_date: body.license_end_date || undefined,
       assigned_frames: assigned_frames.length > 0 ? assigned_frames : undefined,
       default_frame_config: assigned_frames.length > 0
         ? assigned_frames[0].config_json
