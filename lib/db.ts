@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { EventItem, Package, Booking, GalleryEntry, BookingStatus, FrameItem } from "@/types";
+import { EventItem, Package, Booking, GalleryEntry, BookingStatus, FrameItem, FrameConfig } from "@/types";
 import { getDbClient, isSupabaseConfigured } from "./supabase";
 
 function parseJsonField<T>(val: any, fallback: T): T {
@@ -418,6 +418,17 @@ function mapPackageRow(row: any): Package {
 }
 
 function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { total_photos: number; total_wishes: number; total_voice_notes: number }): EventItem {
+  const parsedFrameConfig: FrameConfig = parseJsonField<FrameConfig>(row.default_frame_config, {
+    type: "strip_3",
+    backgroundColor: "#0f172a",
+    borderColor: "#38bdf8",
+    fontFamily: "serif",
+    textColor: "#ffffff",
+    padding: 16,
+    borderRadius: 12,
+  });
+  const pkgMeta = (parsedFrameConfig as any)?._package_info || {};
+
   return {
     id: String(row.id),
     slug: String(row.slug),
@@ -438,24 +449,16 @@ function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { t
     allow_voice_note: Boolean(row.allow_voice_note),
     allow_custom_frame: Boolean(row.allow_custom_frame),
     gallery_visibility: row.gallery_visibility || "PUBLIC",
-    default_frame_config: parseJsonField(row.default_frame_config, {
-      type: "strip_3",
-      backgroundColor: "#0f172a",
-      borderColor: "#38bdf8",
-      fontFamily: "serif",
-      textColor: "#ffffff",
-      padding: 16,
-      borderRadius: 12,
-    }),
+    default_frame_config: parsedFrameConfig,
     assigned_frames: assignedFrames && assignedFrames.length > 0 ? assignedFrames : defaultDemoFrames,
-    package_tier: row.package_tier || undefined,
-    package_name: row.package_name || undefined,
-    payment_status: row.payment_status || undefined,
-    payment_amount: row.payment_amount ? Number(row.payment_amount) : undefined,
-    payment_method: row.payment_method || undefined,
-    payment_invoice: row.payment_invoice || undefined,
-    license_start_date: row.license_start_date || undefined,
-    license_end_date: row.license_end_date || undefined,
+    package_tier: row.package_tier || pkgMeta.package_tier || undefined,
+    package_name: row.package_name || pkgMeta.package_name || undefined,
+    payment_status: row.payment_status || pkgMeta.payment_status || undefined,
+    payment_amount: row.payment_amount ? Number(row.payment_amount) : (pkgMeta.payment_amount ? Number(pkgMeta.payment_amount) : undefined),
+    payment_method: row.payment_method || pkgMeta.payment_method || undefined,
+    payment_invoice: row.payment_invoice || pkgMeta.payment_invoice || undefined,
+    license_start_date: row.license_start_date || pkgMeta.license_start_date || undefined,
+    license_end_date: row.license_end_date || pkgMeta.license_end_date || undefined,
     theme_config: row.theme_config ? parseJsonField(row.theme_config, undefined) : undefined,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
     stats: computedStats || {
@@ -638,7 +641,7 @@ export async function getEventBySlug(slug: string): Promise<EventItem | null> {
             message
           )
         `)
-        .eq("slug", slug)
+        .or(`slug.eq.${slug},id.eq.${slug}`)
         .maybeSingle();
 
       if (error) {
@@ -708,7 +711,19 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
         allow_voice_note: newEvent.allow_voice_note ?? true,
         allow_custom_frame: newEvent.allow_custom_frame ?? true,
         gallery_visibility: newEvent.gallery_visibility || "PUBLIC",
-        default_frame_config: newEvent.default_frame_config || {},
+        default_frame_config: {
+          ...(newEvent.default_frame_config || {}),
+          _package_info: {
+            package_tier: newEvent.package_tier,
+            package_name: newEvent.package_name,
+            payment_status: newEvent.payment_status,
+            payment_amount: newEvent.payment_amount,
+            payment_method: newEvent.payment_method,
+            payment_invoice: newEvent.payment_invoice,
+            license_start_date: newEvent.license_start_date,
+            license_end_date: newEvent.license_end_date,
+          },
+        },
       });
 
       if (evErr) {
@@ -781,6 +796,38 @@ export async function updateEvent(
       if (updates.default_frame_config !== undefined) updatePayload.default_frame_config = updates.default_frame_config;
       if (updates.theme_config !== undefined) updatePayload.theme_config = updates.theme_config;
 
+      if (
+        updates.package_tier !== undefined ||
+        updates.package_name !== undefined ||
+        updates.payment_status !== undefined ||
+        updates.payment_amount !== undefined ||
+        updates.payment_method !== undefined ||
+        updates.payment_invoice !== undefined ||
+        updates.license_start_date !== undefined ||
+        updates.license_end_date !== undefined
+      ) {
+        let baseConfig: any = updates.default_frame_config;
+        if (!baseConfig) {
+          const { data: currentEv } = await client.from("events").select("default_frame_config").eq("id", id).maybeSingle();
+          baseConfig = parseJsonField(currentEv?.default_frame_config, {});
+        }
+        const existingMeta = (baseConfig as any)?._package_info || {};
+        updatePayload.default_frame_config = {
+          ...(typeof baseConfig === "object" ? baseConfig : {}),
+          _package_info: {
+            ...existingMeta,
+            ...(updates.package_tier !== undefined ? { package_tier: updates.package_tier } : {}),
+            ...(updates.package_name !== undefined ? { package_name: updates.package_name } : {}),
+            ...(updates.payment_status !== undefined ? { payment_status: updates.payment_status } : {}),
+            ...(updates.payment_amount !== undefined ? { payment_amount: updates.payment_amount } : {}),
+            ...(updates.payment_method !== undefined ? { payment_method: updates.payment_method } : {}),
+            ...(updates.payment_invoice !== undefined ? { payment_invoice: updates.payment_invoice } : {}),
+            ...(updates.license_start_date !== undefined ? { license_start_date: updates.license_start_date } : {}),
+            ...(updates.license_end_date !== undefined ? { license_end_date: updates.license_end_date } : {}),
+          },
+        };
+      }
+
       if (Object.keys(updatePayload).length > 0) {
         const { error: updErr } = await client.from("events").update(updatePayload).eq("id", id);
         if (updErr) console.warn("[Supabase] updateEvent error:", updErr.message);
@@ -812,7 +859,11 @@ export async function updateEvent(
 
       // Fetch the updated event
       const updated = await getEventBySlug(updates.slug || id);
-      if (updated) return updated;
+      if (updated) {
+        const mockIdx = mockEvents.findIndex((e) => e.id === id || e.slug === id);
+        if (mockIdx !== -1) mockEvents[mockIdx] = updated;
+        return updated;
+      }
     } catch (err: any) {
       console.warn("[Supabase] updateEvent fallback to memory:", err?.message);
     }

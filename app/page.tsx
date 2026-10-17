@@ -1,390 +1,1126 @@
-import Link from "next/link";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { getPackages } from "@/lib/db";
-import { formatRupiah } from "@/lib/utils";
+"use client";
 
-export default async function HomePage() {
-  const packages = await getPackages();
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import * as THREE from "three";
+import { CurvedLoop } from "@/components/reactbits/CurvedLoop";
+import "./landing.css";
+
+export default function HomePage() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [curvedFontSize, setCurvedFontSize] = useState(42);
+
+  useEffect(() => {
+    const updateFontSize = () => {
+      if (window.innerWidth < 640) {
+        setCurvedFontSize(64);
+      } else if (window.innerWidth < 1024) {
+        setCurvedFontSize(50);
+      } else {
+        setCurvedFontSize(40);
+      }
+    };
+    updateFontSize();
+    window.addEventListener("resize", updateFontSize);
+    return () => window.removeEventListener("resize", updateFontSize);
+  }, []);
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const $ = (s: string, r?: Element | Document) => (r || document).querySelector(s);
+    const $$ = (s: string, r?: Element | Document) => Array.prototype.slice.call((r || document).querySelectorAll(s));
+
+    /* ---------- toast + salin ---------- */
+    const toastEl = $("#toast");
+    let toastT: ReturnType<typeof setTimeout>;
+    function toast(msg: string) {
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.classList.add("on");
+      clearTimeout(toastT);
+      toastT = setTimeout(() => {
+        toastEl.classList.remove("on");
+      }, 1700);
+    }
+
+    const copyButtons = $$(".cp");
+    const copyCleanups: Array<() => void> = [];
+    copyButtons.forEach((b: HTMLElement) => {
+      const handler = () => {
+        const txt = b.getAttribute("data-copy") || "";
+        const ok = () => {
+          toast("Disalin: " + txt);
+        };
+        const fallback = () => {
+          const parent = b.parentNode as HTMLElement;
+          const span = parent ? parent.querySelector("span") : null;
+          if (span) {
+            const r = document.createRange();
+            r.selectNodeContents(span);
+            const s = getSelection();
+            if (s) {
+              s.removeAllRanges();
+              s.addRange(r);
+            }
+          }
+          toast("Teks terpilih, tekan salin");
+        };
+        try {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(txt).then(ok, fallback);
+          } else {
+            fallback();
+          }
+        } catch {
+          fallback();
+        }
+      };
+      b.addEventListener("click", handler);
+      copyCleanups.push(() => b.removeEventListener("click", handler));
+    });
+
+    /* ---------- nav ---------- */
+    const burger = $("#burger") as HTMLButtonElement | null;
+    const menu = $("#menu") as HTMLElement | null;
+    let burgerHandler: (() => void) | undefined;
+    if (burger && menu) {
+      burgerHandler = () => {
+        const open = menu.hidden;
+        menu.hidden = !open;
+        burger.setAttribute("aria-expanded", String(open));
+      };
+      burger.addEventListener("click", burgerHandler);
+    }
+
+    const clickOutsideHandler = (e: MouseEvent) => {
+      if (menu && !menu.hidden && !menu.contains(e.target as Node) && !burger?.contains(e.target as Node)) {
+        menu.hidden = true;
+        burger?.setAttribute("aria-expanded", "false");
+      }
+    };
+    document.addEventListener("click", clickOutsideHandler);
+
+    const anchorLinks = $$('a[href^="#"]');
+    const anchorCleanups: Array<() => void> = [];
+    anchorLinks.forEach((a: HTMLAnchorElement) => {
+      const handler = (e: MouseEvent) => {
+        const href = a.getAttribute("href") || "";
+        const id = href.slice(1);
+        const t = id === "top" ? document.body : document.getElementById(id);
+        if (!t) return;
+        e.preventDefault();
+        if (menu && burger) {
+          menu.hidden = true;
+          burger.setAttribute("aria-expanded", "false");
+        }
+        if (id === "top") {
+          window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+        } else {
+          t.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+        }
+      };
+      a.addEventListener("click", handler);
+      anchorCleanups.push(() => a.removeEventListener("click", handler));
+    });
+
+    /* ---------- muncul saat masuk layar ---------- */
+    let io: IntersectionObserver | null = null;
+    if (!reduce && "IntersectionObserver" in window && typeof Element.prototype.animate === "function") {
+      io = new IntersectionObserver(
+        (es) => {
+          es.forEach((e) => {
+            if (!e.isIntersecting) return;
+            io?.unobserve(e.target);
+            const i = +(e.target.getAttribute("data-i") || 0);
+            e.target.animate(
+              [
+                { opacity: 0, translate: "0 28px" },
+                { opacity: 1, translate: "0 0" },
+              ],
+              {
+                duration: 760,
+                delay: i * 80,
+                easing: "cubic-bezier(.2,.7,.2,1)",
+                fill: "backwards",
+              }
+            );
+          });
+        },
+        { threshold: 0.12, rootMargin: "0px 0px -5% 0px" }
+      );
+
+      $$("[data-rv]").forEach((el: HTMLElement) => {
+        const parent = el.parentElement;
+        const sibs = parent ? $$("[data-rv]", parent).filter((x: HTMLElement) => x.parentElement === parent) : [];
+        el.setAttribute("data-i", String(Math.min(sibs.indexOf(el), 4)));
+        io?.observe(el);
+      });
+    }
+
+    /* ---------- tilt 3D kartu (mouse saja) ---------- */
+    const tiltElements = $$(".tilt");
+    const tiltCleanups: Array<() => void> = [];
+    tiltElements.forEach((el: HTMLElement) => {
+      const moveHandler = (e: PointerEvent) => {
+        if (e.pointerType !== "mouse" || reduce) return;
+        const r = el.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width;
+        const py = (e.clientY - r.top) / r.height;
+        el.style.setProperty("--ry", ((px - 0.5) * 9).toFixed(2) + "deg");
+        el.style.setProperty("--rx", ((0.5 - py) * 9).toFixed(2) + "deg");
+        el.style.setProperty("--mx", (px * 100).toFixed(1) + "%");
+        el.style.setProperty("--my", (py * 100).toFixed(1) + "%");
+      };
+      const leaveHandler = () => {
+        el.style.setProperty("--rx", "0deg");
+        el.style.setProperty("--ry", "0deg");
+      };
+      el.addEventListener("pointermove", moveHandler as EventListener);
+      el.addEventListener("pointerleave", leaveHandler);
+      tiltCleanups.push(() => {
+        el.removeEventListener("pointermove", moveHandler as EventListener);
+        el.removeEventListener("pointerleave", leaveHandler);
+      });
+    });
+
+    /* ---------- carousel frame ---------- */
+    const rail = $("#rail") as HTMLElement | null;
+    const prevBtn = $("#prev");
+    const nextBtn = $("#next");
+    function stepW() {
+      const c = rail ? $(".fcard", rail) : null;
+      return c ? c.getBoundingClientRect().width + 18 : 320;
+    }
+    const prevHandler = () => {
+      rail?.scrollBy({ left: -stepW(), behavior: reduce ? "auto" : "smooth" });
+    };
+    const nextHandler = () => {
+      rail?.scrollBy({ left: stepW(), behavior: reduce ? "auto" : "smooth" });
+    };
+    prevBtn?.addEventListener("click", prevHandler);
+    nextBtn?.addEventListener("click", nextHandler);
+
+    const railKeyHandler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        nextHandler();
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prevHandler();
+      }
+    };
+    rail?.addEventListener("keydown", railKeyHandler);
+
+    let drag: { x: number; s: number; moved: boolean } | null = null;
+    const railDownHandler = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || !rail) return;
+      drag = { x: e.clientX, s: rail.scrollLeft, moved: false };
+    };
+    const winMoveHandler = (e: PointerEvent) => {
+      if (!drag || !rail) return;
+      const dx = e.clientX - drag.x;
+      if (Math.abs(dx) > 4) {
+        drag.moved = true;
+        rail.classList.add("drag");
+      }
+      if (drag.moved) rail.scrollLeft = drag.s - dx;
+    };
+    const winUpHandler = () => {
+      if (!drag || !rail) return;
+      drag = null;
+      rail.classList.remove("drag");
+    };
+    rail?.addEventListener("pointerdown", railDownHandler as EventListener);
+    window.addEventListener("pointermove", winMoveHandler as EventListener);
+    window.addEventListener("pointerup", winUpHandler);
+
+    const swatches = $$(".sw");
+    const swatchCleanups: Array<() => void> = [];
+    swatches.forEach((b: HTMLElement) => {
+      const handler = () => {
+        swatches.forEach((x: HTMLElement) => {
+          x.setAttribute("aria-pressed", String(x === b));
+        });
+        if (rail) {
+          rail.style.setProperty("--fbg", b.getAttribute("data-bg") || "#ffffff");
+          rail.style.setProperty("--ffg", b.getAttribute("data-fg") || "#2563eb");
+        }
+      };
+      b.addEventListener("click", handler);
+      swatchCleanups.push(() => b.removeEventListener("click", handler));
+    });
+
+    /* =====================================================================
+       SCENE 3D — satu objek kontur yang mengikuti section aktif
+    ===================================================================== */
+    const canvas = canvasRef.current || ($("#gl") as HTMLCanvasElement | null);
+    if (!canvas) return;
+
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        alpha: true,
+        premultipliedAlpha: false,
+        powerPreference: "high-performance",
+      });
+    } catch {
+      document.documentElement.classList.add("no-gl");
+      return;
+    }
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
+    camera.position.z = 6;
+    let halfH = Math.tan(THREE.MathUtils.degToRad(20)) * 6;
+    let halfW = halfH;
+
+    const anchor = new THREE.Object3D();
+
+    const strips = new THREE.Group();
+    scene.add(strips);
+
+    const texLoader = new THREE.TextureLoader();
+    const defs = [
+      {
+        w: 1.35,
+        h: 2.025,
+        url: "/frames/frame1-composite.webp",
+        pos: [0.75, 0.3, 0.3],
+        rot: [0.05, -0.2, -0.14],
+      },
+      {
+        w: 0.92,
+        h: 2.774,
+        url: "/frames/frame2-composite.webp",
+        pos: [-0.15, -0.05, 0.55],
+        rot: [-0.04, 0.18, 0.1],
+      },
+      {
+        w: 1.25,
+        h: 1.875,
+        url: "/frames/frame3-composite.webp",
+        pos: [-0.9, -0.8, 0.9],
+        rot: [0.04, 0.25, 0.12],
+      },
+    ];
+
+    const stripMats: THREE.MeshBasicMaterial[] = [];
+
+    defs.forEach((d) => {
+      const tex = texLoader.load(d.url, () => {
+        renderer.render(scene, camera);
+      });
+      tex.anisotropy = 8;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        side: THREE.DoubleSide,
+        opacity: 1,
+      });
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(d.w, d.h), mat);
+      m.position.set(d.pos[0], d.pos[1], d.pos[2]);
+      m.rotation.set(d.rot[0], d.rot[1], d.rot[2]);
+      m.userData = { base: d.pos.slice(), rot: d.rot.slice(), ph: Math.random() * 6.28 };
+      strips.add(m);
+      stripMats.push(mat);
+    });
+
+    interface SectionData {
+      el: HTMLElement;
+      d: { x: number; y: number; s: number; tone: number; strips: number; a: number };
+      m: { x: number; y: number; s: number; tone: number; strips: number; a: number };
+      top: number;
+      h: number;
+    }
+
+    const secs: SectionData[] = $$("[data-obj]").map((el: HTMLElement) => {
+      const parse = (s: string) => {
+        const a = s.split(",").map(Number);
+        return { x: a[0], y: a[1], s: a[2], tone: a[3], strips: a[4], a: a[5] };
+      };
+      return {
+        el,
+        d: parse(el.getAttribute("data-obj") || "0,0,1,0,1,1"),
+        m: parse(el.getAttribute("data-objm") || el.getAttribute("data-obj") || "0,0,1,0,1,1"),
+        top: 0,
+        h: 0,
+      };
+    });
+
+    function measure() {
+      const sy = window.pageYOffset;
+      secs.forEach((s) => {
+        const r = s.el.getBoundingClientRect();
+        s.top = r.top + sy;
+        s.h = r.height;
+      });
+    }
+
+    const S = { x: 0.42, y: 0.02, s: 1, tone: 0, strips: 1, a: 1 };
+    const T = { x: 0.42, y: 0.02, s: 1, tone: 0, strips: 1, a: 1 };
+    const ease = (t: number) => t * t * (3 - 2 * t);
+
+    function target() {
+      const narrow = window.innerWidth < 820;
+      const vc = window.pageYOffset + window.innerHeight * 0.5;
+      let i = 0;
+      const n = secs.length;
+      while (i < n && secs[i].top + secs[i].h * 0.5 < vc) i++;
+      const a = secs[Math.max(0, i - 1)];
+      const b = secs[Math.min(n - 1, i)];
+      let t = 0;
+      if (a !== b) {
+        const ca = a.top + a.h * 0.5;
+        const cb = b.top + b.h * 0.5;
+        t = ease(Math.min(1, Math.max(0, (vc - ca) / (cb - ca))));
+      }
+      const A = narrow ? a.m : a.d;
+      const B = narrow ? b.m : b.d;
+      (["x", "y", "s", "tone", "strips", "a"] as const).forEach((k) => {
+        T[k] = A[k] + (B[k] - A[k]) * t;
+      });
+    }
+
+    const mouse = { x: 0, y: 0, sx: 0, sy: 0, on: false };
+    const mouseMoveHandler = (e: MouseEvent) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -((e.clientY / window.innerHeight) * 2 - 1);
+      mouse.on = true;
+    };
+    const mouseLeaveHandler = () => {
+      mouse.on = false;
+    };
+
+    window.addEventListener("pointermove", mouseMoveHandler, { passive: true });
+    document.documentElement.addEventListener("mouseleave", mouseLeaveHandler);
+
+    function resize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      halfW = halfH * camera.aspect;
+      measure();
+    }
+
+    window.addEventListener("resize", resize);
+    let resizeObserver: ResizeObserver | null = null;
+    if (window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(measure);
+      resizeObserver.observe(document.body);
+    }
+    resize();
+
+    const clock = new THREE.Clock();
+    let time = 0;
+    let animId: number;
+
+    function frame() {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      if (!reduce) time += dt;
+      target();
+      const k = reduce ? 1 : 1 - Math.pow(0.0015, dt);
+      (["x", "y", "s", "tone", "strips", "a"] as const).forEach((key) => {
+        S[key] += (T[key] - S[key]) * k;
+      });
+      mouse.sx += (mouse.x - mouse.sx) * (reduce ? 0 : Math.min(1, dt * 4));
+      mouse.sy += (mouse.y - mouse.sy) * (reduce ? 0 : Math.min(1, dt * 4));
+
+      const w = window.innerWidth;
+      const isMobile = w < 640;
+      const isTablet = w >= 640 && w < 1024;
+      const scale = S.s * halfH * (isMobile ? 0.25 : isTablet ? 0.38 : 0.54);
+      anchor.position.set(S.x * halfW, S.y * halfH, 0);
+
+      strips.visible = S.strips > 0.02;
+      if (strips.visible) {
+        strips.position.copy(anchor.position);
+        strips.scale.setScalar(scale);
+        strips.rotation.y = mouse.sx * 0.22;
+        strips.rotation.x = -mouse.sy * 0.14;
+        strips.children.forEach((child, i) => {
+          const m = child as THREE.Mesh;
+          const u = m.userData;
+          const bob = reduce ? 0 : Math.sin(time * 0.7 + u.ph) * 0.08;
+          m.position.set(u.base[0] + mouse.sx * 0.04 * (i + 1), u.base[1] + bob, u.base[2]);
+          m.rotation.set(u.rot[0] + (reduce ? 0 : Math.sin(time * 0.5 + u.ph) * 0.05), u.rot[1], u.rot[2]);
+          if (stripMats[i]) {
+            stripMats[i].opacity = Math.min(1, S.strips) * S.a;
+          }
+        });
+      }
+      renderer.render(scene, camera);
+      animId = requestAnimationFrame(frame);
+    }
+
+    frame();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      clearTimeout(toastT);
+      copyCleanups.forEach((c) => c());
+      anchorCleanups.forEach((c) => c());
+      tiltCleanups.forEach((c) => c());
+      swatchCleanups.forEach((c) => c());
+      if (burger && burgerHandler) burger.removeEventListener("click", burgerHandler);
+      document.removeEventListener("click", clickOutsideHandler);
+      prevBtn?.removeEventListener("click", prevHandler);
+      nextBtn?.removeEventListener("click", nextHandler);
+      rail?.removeEventListener("keydown", railKeyHandler);
+      rail?.removeEventListener("pointerdown", railDownHandler as EventListener);
+      window.removeEventListener("pointermove", winMoveHandler as EventListener);
+      window.removeEventListener("pointerup", winUpHandler);
+      window.removeEventListener("pointermove", mouseMoveHandler);
+      document.documentElement.removeEventListener("mouseleave", mouseLeaveHandler);
+      window.removeEventListener("resize", resize);
+      resizeObserver?.disconnect();
+      io?.disconnect();
+      renderer?.dispose();
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafaf9] text-zinc-900">
-      <Navbar />
+    <div className="landing-root">
+      <canvas id="gl" ref={canvasRef} aria-hidden="true"></canvas>
 
-      <main className="flex-1">
-        {/* HERO */}
-        <section className="pt-16 pb-20 md:pt-24 md:pb-32 bg-white border-b border-stone-200">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
-            <div className="max-w-2xl">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-zinc-950 leading-[1.15]">
-                Abadikan momen
-                <br />
-                paling berkesan
-              </h1>
+      <header className="nav" id="top">
+        <div className="nav-in">
+          <a className="logo" href="#top" aria-label="RUANGTEMU, ke atas">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-ruangtemu.jpg"
+              alt="RUANGTEMU"
+              className="w-7 h-7 rounded-full object-cover shadow-sm shrink-0"
+              style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }}
+            />
+            RUANGTEMU
+          </a>
+          <nav className="links" aria-label="Menu utama">
+            <a href="#layanan">Layanan</a>
+            <a href="#frame">Frame</a>
+            <a href="#paket">Paket</a>
+            <a href="#cara">Cara order</a>
+            <a href="#ulasan">Ulasan</a>
+          </nav>
+          <a
+            className="btn btn-ink btn-sm"
+            href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20mau%20reservasi%20photobooth%20untuk%20acara%20saya."
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Reservasi{" "}
+            <span className="btn-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 17L17 7M8 7h9v9" />
+              </svg>
+            </span>
+          </a>
+          <button className="burger" id="burger" aria-expanded="false" aria-controls="menu">
+            Menu
+          </button>
+        </div>
+        <div className="menu" id="menu" hidden>
+          <a href="#layanan">Layanan</a>
+          <a href="#frame">Frame</a>
+          <a href="#paket">Paket</a>
+          <a href="#cara">Cara order</a>
+          <a href="#ulasan">Ulasan</a>
+        </div>
+      </header>
 
-              <p className="mt-5 text-stone-500 text-[15px] sm:text-base leading-relaxed max-w-lg">
-                Photobooth modern dengan cetak instan 12 detik dan Virtual Web Photobooth yang
-                bisa diakses langsung dari browser smartphone tamu. Tanpa install aplikasi.
+      <main>
+        {/* ===================== HERO ===================== */}
+        <section className="sec hero" data-obj="0.42,0.06,0.58,0,1,1" data-objm="0.6,-0.16,0.38,0,1,0.85">
+          <div className="wrap">
+            <div className="hero-top">
+              <p className="eyebrow" data-rv="">
+                Photobooth modern · Palopo &amp; Luwu Raya
               </p>
-
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                <Link
-                  href="/booking"
-                  className="min-h-[44px] px-6 py-3 bg-[#c47a5a] hover:bg-[#b06a4a] text-white text-sm font-medium rounded-md transition-colors text-center"
+              <h1 data-rv="">
+                Abadikan momen <em>paling berkesan</em>
+              </h1>
+              <p className="lead" data-rv="">
+                Cetak instan dan Virtual Web Photobooth yang dibuka langsung dari browser tamu. Tanpa instal aplikasi, tanpa antre lama.
+              </p>
+              <div className="cta-row" data-rv="">
+                <a
+                  className="btn btn-ink"
+                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20mau%20reservasi%20jadwal%20acara."
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Reservasi Jadwal Acara
-                </Link>
-                <Link
-                  href="/event/wedding-andi-sarah"
-                  className="min-h-[44px] px-6 py-3 border border-stone-300 hover:border-stone-400 text-zinc-900 text-sm font-medium rounded-md transition-colors text-center"
-                >
-                  Coba Demo Virtual Booth
-                </Link>
+                  Reservasi Jadwal Acara{" "}
+                  <span className="btn-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17L17 7M8 7h9v9" />
+                    </svg>
+                  </span>
+                </a>
+                <a className="btn btn-ghost" href="#frame">
+                  Coba pilih frame{" "}
+                  <span className="btn-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M6 13l6 6 6-6" />
+                    </svg>
+                  </span>
+                </a>
               </div>
+              <p className="hint">Gerakkan kursor: foto 3D ikut bereaksi</p>
             </div>
-
-            {/* Photo strip preview */}
-            <div className="mt-16 grid grid-cols-3 gap-3 max-w-xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <div className="aspect-[3/4] rounded-md overflow-hidden bg-stone-100">
-                <img
-                  src="https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=600&auto=format&fit=crop"
-                  alt="Wedding couple in Palopo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <div className="aspect-[3/4] rounded-md overflow-hidden bg-stone-100">
-                <img
-                  src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=600&auto=format&fit=crop"
-                  alt="Wedding guests celebrating"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <div className="aspect-[3/4] rounded-md overflow-hidden bg-stone-100">
-                <img
-                  src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=600&auto=format&fit=crop"
-                  alt="Couple happy moments"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="col-span-3 text-center mt-1">
-                <span className="text-[11px] text-stone-400 tracking-wide">
-                  Andi &amp; Sarah &middot; 15 Oktober 2026 &middot; Banua Subur, Palopo
-                </span>
+            <div className="hero-foot">
+              <div className="booth glass tilt" data-rv="">
+                <div className="booth-top">
+                  <span className="dot"></span>Virtual Booth · tanpa aplikasi
+                </div>
+                <ol className="booth-steps">
+                  <li>
+                    <b>Scan</b>QR di meja
+                  </li>
+                  <li>
+                    <b>Pilih</b>frame event
+                  </li>
+                  <li>
+                    <b>Foto</b>unduh HD
+                  </li>
+                </ol>
               </div>
             </div>
           </div>
         </section>
 
-        {/* LAYANAN */}
-        <section id="fitur" className="py-20 md:py-28 bg-[#fafaf9]">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
-            <div className="max-w-md">
-              <p className="text-xs tracking-widest uppercase text-stone-400 font-medium">
+        {/* ===================== LAYANAN ===================== */}
+        <section
+          className="sec dark"
+          id="layanan"
+          data-obj="-0.82,0.62,0.5,1,0,0.95"
+          data-objm="0.8,0.74,0.4,1,0,0.7"
+        >
+          <div className="wrap">
+            <div className="sec-head">
+              <p className="eyebrow" data-rv="">
                 Layanan
               </p>
-              <h2 className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-950 tracking-tight">
-                Apa yang kami sediakan
+              <h2 data-rv="">
+                Layanan utama <em>RUANGTEMU</em>
               </h2>
+              <p className="lead" data-rv="">
+                Dari kartu cetak di tangan tamu sampai galeri realtime di layar acara. Semuanya terhubung lewat satu QR Code.
+              </p>
             </div>
-
-            <div className="mt-12 space-y-0 divide-y divide-stone-200">
-              <div className="py-6 sm:py-8 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-8">
-                <div className="sm:col-span-4">
-                  <h3 className="text-sm font-semibold text-zinc-950">Cetak Sublimasi Cepat</h3>
+            <div className="svc-grid">
+              <article className="svc tilt" data-rv="">
+                <div className="svc-ic">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 9V4h10v5M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2" />
+                    <rect x="7" y="14" width="10" height="6" rx="1" />
+                  </svg>
                 </div>
-                <div className="sm:col-span-8">
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    Printer foto DNP berkecepatan tinggi, hanya 12 detik per cetakan. Kertas foto tahan air, anti pudar, dan tajam hingga puluhan tahun.
-                  </p>
+                <span className="tag">Cetak</span>
+                <h3>Cetak Sublimasi Cepat</h3>
+                <p>Printer DNP mencetak satu lembar dalam 12 detik, di atas kertas tahan air dan anti pudar.</p>
+              </article>
+              <article className="svc tilt" data-rv="">
+                <div className="svc-ic">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <path d="M14 14h3v3M21 14v.01M14 21h.01M17 21h4v-4" />
+                  </svg>
                 </div>
-              </div>
-
-              <div className="py-6 sm:py-8 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-8">
-                <div className="sm:col-span-4">
-                  <h3 className="text-sm font-semibold text-zinc-950">Virtual Photobooth</h3>
+                <span className="tag">Digital</span>
+                <h3>Virtual Photobooth</h3>
+                <p>Tamu memindai QR Code di meja, lalu berfoto dengan template frame event langsung dari browser.</p>
+              </article>
+              <article className="svc tilt" data-rv="">
+                <div className="svc-ic">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="12" rx="2" />
+                    <path d="M10 8.5v3.2l3-1.6zM8 20h8M12 16v4" />
+                  </svg>
                 </div>
-                <div className="sm:col-span-8">
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    Tamu cukup scan QR Code di meja dengan kamera smartphone mereka. Langsung foto dengan template frame event, tanpa install aplikasi.
-                  </p>
+                <span className="tag">Layar</span>
+                <h3>Live Videotron</h3>
+                <p>Slideshow otomatis untuk proyektor atau videotron. Foto dan doa dari tamu tampil bergantian.</p>
+              </article>
+              <article className="svc tilt" data-rv="">
+                <div className="svc-ic">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0014 0M12 18v3" />
+                  </svg>
                 </div>
-              </div>
-
-              <div className="py-6 sm:py-8 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-8">
-                <div className="sm:col-span-4">
-                  <h3 className="text-sm font-semibold text-zinc-950">Live Videotron</h3>
+                <span className="tag">Suara</span>
+                <h3>Voice Note Guestbook</h3>
+                <p>Tamu merekam pesan suara untuk pengantin atau penyelenggara, tersimpan rapi sebagai kenangan.</p>
+              </article>
+              <article className="svc tilt" data-rv="">
+                <div className="svc-ic">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="4" y="3" width="16" height="18" rx="2" />
+                    <rect x="7.5" y="6.5" width="9" height="7" rx="1" />
+                    <path d="M8 17.5h8" />
+                  </svg>
                 </div>
-                <div className="sm:col-span-8">
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    Mode slideshow otomatis untuk proyektor atau videotron panggung. Foto dan doa restu tamu muncul seketika di layar venue.
-                  </p>
+                <span className="tag">Desain</span>
+                <h3>Frame Kustom</h3>
+                <p>Strip 3-Foto, 4-Grid, Polaroid, dan Deluxe, dengan font, warna, dan logo yang disesuaikan acara.</p>
+              </article>
+              <article className="svc tilt" data-rv="">
+                <div className="svc-ic">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="12" rx="2" />
+                    <circle cx="8.5" cy="9" r="1.5" />
+                    <path d="M21 13l-4-4-6 6M12 19v3m0 0l-2-2m2 2l2-2" />
+                  </svg>
                 </div>
-              </div>
-
-              <div className="py-6 sm:py-8 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-8">
-                <div className="sm:col-span-4">
-                  <h3 className="text-sm font-semibold text-zinc-950">Voice Note Guestbook</h3>
-                </div>
-                <div className="sm:col-span-8">
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    Tamu dapat merekam pesan suara, doa restu, atau keceriaan mereka untuk pasangan pengantin. Bukan hanya ucapan teks biasa.
-                  </p>
-                </div>
-              </div>
-
-              <div className="py-6 sm:py-8 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-8">
-                <div className="sm:col-span-4">
-                  <h3 className="text-sm font-semibold text-zinc-950">Frame Kustom</h3>
-                </div>
-                <div className="sm:col-span-8">
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    Template Strip 3-Foto, 4-Grid, Polaroid, hingga Deluxe. Font, palet warna, dan logo acara disesuaikan untuk setiap event.
-                  </p>
-                </div>
-              </div>
-
-              <div className="py-6 sm:py-8 grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-8">
-                <div className="sm:col-span-4">
-                  <h3 className="text-sm font-semibold text-zinc-950">Live Gallery &amp; Unduhan HD</h3>
-                </div>
-                <div className="sm:col-span-8">
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    Semua tamu dapat menelusuri galeri foto secara realtime dan mengunduh hasil jepretan dalam resolusi penuh tanpa kompresi.
-                  </p>
-                </div>
-              </div>
+                <span className="tag">Arsip</span>
+                <h3>Live Gallery &amp; Unduhan HD</h3>
+                <p>Galeri realtime selama acara, dan foto beresolusi penuh siap diunduh oleh tamu dan penyelenggara.</p>
+              </article>
             </div>
           </div>
         </section>
 
-        {/* PAKET */}
-        <section id="paket" className="py-20 md:py-28 bg-white border-y border-stone-200">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
-            <div className="max-w-md">
-              <p className="text-xs tracking-widest uppercase text-stone-400 font-medium">
+        {/* ===================== FRAME ===================== */}
+        <section
+          className="sec"
+          id="frame"
+          data-obj="0.86,-0.5,0.55,0,0,0.9"
+          data-objm="0.9,-0.72,0.4,0,0,0.55"
+        >
+          <div className="wrap">
+            <div className="sec-head">
+              <p className="eyebrow" data-rv="">
+                Frame
+              </p>
+              <h2 data-rv="">
+                Satu acara, <em>satu frame</em> yang khas
+              </h2>
+              <p className="lead" data-rv="">
+                Tim desainer menyiapkan bingkai sesuai tema acara. Coba ganti warna frame di bawah dan geser untuk melihat empat format yang tersedia.
+              </p>
+            </div>
+            <div className="frame-bar" data-rv="">
+              <div className="swatches" role="group" aria-label="Warna frame">
+                <span>Warna frame</span>
+                <button className="sw" style={{ ["--c" as string]: "#ffffff" }} data-bg="#ffffff" data-fg="#2563eb" aria-pressed="true" aria-label="Putih"></button>
+                <button className="sw" style={{ ["--c" as string]: "#15101a" }} data-bg="#15101a" data-fg="#38bdf8" aria-pressed="false" aria-label="Hitam"></button>
+                <button className="sw" style={{ ["--c" as string]: "#38bdf8" }} data-bg="#0c1938" data-fg="#38bdf8" aria-pressed="false" aria-label="Biru elektrik"></button>
+                <button className="sw" style={{ ["--c" as string]: "#cfe3d3" }} data-bg="#cfe3d3" data-fg="#24503a" aria-pressed="false" aria-label="Hijau sage"></button>
+                <button className="sw" style={{ ["--c" as string]: "#dbeafe" }} data-bg="#dbeafe" data-fg="#1d4ed8" aria-pressed="false" aria-label="Biru muda"></button>
+              </div>
+              <div className="arrows">
+                <button className="arr" id="prev" aria-label="Frame sebelumnya">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 5l-7 7 7 7" />
+                  </svg>
+                </button>
+                <button className="arr" id="next" aria-label="Frame berikutnya">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="rail" id="rail" tabIndex={0} aria-label="Contoh format frame">
+            <article className="fcard">
+              <div className="fstage">
+                <div className="fm strip">
+                  <div className="ph p1"></div>
+                  <div className="ph p2"></div>
+                  <div className="ph p3"></div>
+                  <div className="cap">RUANGTEMU</div>
+                </div>
+              </div>
+              <div className="meta">
+                <span>3 foto</span>
+                <span>Vertikal</span>
+              </div>
+              <h3>Strip 3-Foto</h3>
+              <p>Tiga pose dalam satu strip. Klasik, cepat dicetak, mudah dibagikan.</p>
+            </article>
+            <article className="fcard">
+              <div className="fstage">
+                <div className="fm grid4">
+                  <div className="ph p4"></div>
+                  <div className="ph p1"></div>
+                  <div className="ph p3"></div>
+                  <div className="ph p2"></div>
+                  <div className="cap">RUANGTEMU · PALOPO</div>
+                </div>
+              </div>
+              <div className="meta">
+                <span>4 foto</span>
+                <span>Persegi</span>
+              </div>
+              <h3>4-Grid</h3>
+              <p>Empat foto dalam satu kartu. Cocok untuk rombongan dan pose bebas.</p>
+            </article>
+            <article className="fcard">
+              <div className="fstage">
+                <div className="fm pola">
+                  <div className="ph p1"></div>
+                  <div className="cap">RUANGTEMU · 2026</div>
+                </div>
+              </div>
+              <div className="meta">
+                <span>1 foto</span>
+                <span>Polaroid</span>
+              </div>
+              <h3>Polaroid</h3>
+              <p>Satu foto besar dengan ruang di bawah untuk nama dan tanggal acara.</p>
+            </article>
+            <article className="fcard">
+              <div className="fstage">
+                <div className="fm deluxe">
+                  <div className="ph p3"></div>
+                  <div className="ph p1"></div>
+                  <div className="ph p2"></div>
+                  <div className="cap">RUANGTEMU</div>
+                </div>
+              </div>
+              <div className="meta">
+                <span>3 foto</span>
+                <span>Berornamen</span>
+              </div>
+              <h3>Deluxe</h3>
+              <p>Bingkai berornamen untuk pernikahan dan acara resmi yang butuh kesan lebih.</p>
+            </article>
+          </div>
+        </section>
+
+        {/* ===================== PAKET ===================== */}
+        <section
+          className="sec dark"
+          id="paket"
+          data-obj="-0.86,-0.2,0.6,1,0,0.9"
+          data-objm="-0.9,0.7,0.4,1,0,0.6"
+        >
+          <div className="wrap">
+            <div className="sec-head">
+              <p className="eyebrow" data-rv="">
                 Paket
               </p>
-              <h2 className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-950 tracking-tight">
-                Pilih sesuai kebutuhan acara Anda
+              <h2 data-rv="">
+                Pilih paket yang <em>pas</em> untuk acara Anda
               </h2>
-              <p className="mt-3 text-sm text-stone-500">
-                Untuk resepsi pernikahan, ulang tahun, wisuda, atau gathering di Palopo dan sekitarnya.
+              <p className="lead" data-rv="">
+                Harga per event. Semua paket menyertakan foto tanpa batas.
               </p>
             </div>
+            <div className="pk-grid">
+              <article className="pk tilt" data-rv="">
+                <div className="pk-top">
+                  <span>Akses 7 hari</span>
+                </div>
+                <h3>Bronze</h3>
+                <div className="price">
+                  Rp 250.000<small>per event</small>
+                </div>
+                <ul>
+                  <li>Virtual Photobooth (foto saja)</li>
+                  <li>1 desain frame</li>
+                  <li>Cetak 100 kartu QR</li>
+                  <li>Foto tanpa batas</li>
+                  <li className="off">Voice message</li>
+                </ul>
+                <a
+                  className="btn btn-light"
+                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20tertarik%20paket%20Bronze."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Pilih Bronze{" "}
+                  <span className="btn-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17L17 7M8 7h9v9" />
+                    </svg>
+                  </span>
+                </a>
+              </article>
+              <article className="pk hot tilt" data-rv="">
+                <div className="pk-top">
+                  <span>Akses 10 hari</span>
+                  <span className="badge">Rekomendasi</span>
+                </div>
+                <h3>Silver</h3>
+                <div className="price">
+                  Rp 350.000<small>per event</small>
+                </div>
+                <ul>
+                  <li>Foto dan voice message</li>
+                  <li>2 desain frame</li>
+                  <li>Cetak 200 kartu QR</li>
+                  <li>QR tanpa batas</li>
+                  <li>Foto tanpa batas</li>
+                </ul>
+                <a
+                  className="btn btn-pink"
+                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20tertarik%20paket%20Silver."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Pilih Silver{" "}
+                  <span className="btn-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17L17 7M8 7h9v9" />
+                    </svg>
+                  </span>
+                </a>
+              </article>
+              <article className="pk tilt" data-rv="">
+                <div className="pk-top">
+                  <span>Akses 14 hari</span>
+                </div>
+                <h3>Gold</h3>
+                <div className="price">
+                  Rp 450.000<small>per event</small>
+                </div>
+                <ul>
+                  <li>Foto dan voice message</li>
+                  <li>3 desain frame</li>
+                  <li>Cetak 300 kartu QR</li>
+                  <li>QR tanpa batas</li>
+                  <li>Foto tanpa batas</li>
+                </ul>
+                <a
+                  className="btn btn-light"
+                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20tertarik%20paket%20Gold."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Pilih Gold{" "}
+                  <span className="btn-ic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17L17 7M8 7h9v9" />
+                    </svg>
+                  </span>
+                </a>
+              </article>
+            </div>
+            <p className="note" data-rv="">
+              Acara di luar Kota Palopo? Tersedia paket khusus lewat konsultasi WhatsApp.
+            </p>
+          </div>
+        </section>
 
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-              {packages.map((pkg) => {
-                const durationDays = Math.round(pkg.duration_hours / 24);
-                return (
-                  <div
-                    key={pkg.id}
-                    className={`p-7 flex flex-col justify-between rounded-2xl transition-all relative ${
-                      pkg.popular
-                        ? "bg-white border-2 border-zinc-950 shadow-xl shadow-stone-200/50"
-                        : "bg-white border border-stone-200 shadow-sm hover:border-stone-300"
-                    }`}
+        {/* ===================== CARA ORDER ===================== */}
+        <section
+          className="sec"
+          id="cara"
+          data-obj="0.86,0.35,0.5,0,0,0.9"
+          data-objm="0.9,0.75,0.38,0,0,0.5"
+        >
+          <div className="wrap">
+            <div className="sec-head">
+              <p className="eyebrow" data-rv="">
+                Cara order
+              </p>
+              <h2 data-rv="">
+                Dari reservasi sampai <em>arsip digital</em>
+              </h2>
+            </div>
+            <ol className="steps">
+              <li className="st" data-rv="">
+                <h3>Pilih paket dan tanggal</h3>
+                <p>Isi formulir reservasi online atau hubungi admin lewat WhatsApp.</p>
+              </li>
+              <li className="st" data-rv="">
+                <h3>Frame disiapkan</h3>
+                <p>Tim desainer membuat bingkai sesuai tema acara Anda.</p>
+              </li>
+              <li className="st" data-rv="">
+                <h3>Hari H</h3>
+                <p>Kru mendampingi booth. Tamu membuka Virtual Booth lewat QR di tiap meja.</p>
+              </li>
+              <li className="st" data-rv="">
+                <h3>Bawa pulang</h3>
+                <p>Tamu membawa cetakan fisik, penyelenggara menerima arsip digital.</p>
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        {/* ===================== ULASAN ===================== */}
+        <section
+          className="sec rv-sec"
+          id="ulasan"
+          data-obj="0,-0.12,1.05,0,0,1"
+          data-objm="0,-0.05,0.95,0,0,1"
+        >
+          {/* React Bits Curved Loop Animation - Full Width (Edge to Edge) */}
+          <div className="w-full overflow-hidden -mt-6 sm:-mt-10 mb-6 sm:mb-10" data-rv="">
+            <CurvedLoop
+              marqueeText="RUANGTEMU Photobooth ✦ Virtual Photobooth"
+              speed={2}
+              curveAmount={70}
+              direction="left"
+              interactive={true}
+              color="#2563eb"
+              separator="✦"
+              separatorColor="#38bdf8"
+              fontSize={curvedFontSize}
+              fontWeight={800}
+              shape="arc"
+              containerClassName="w-full flex items-center justify-center overflow-visible py-2"
+            />
+          </div>
+
+          <div className="wrap">
+            <div className="sec-head rv-head">
+              <p className="eyebrow" data-rv="">
+                Ulasan klien
+              </p>
+              <h2 data-rv="">
+                Kata klien <em>tentang kami</em>
+              </h2>
+            </div>
+            <div className="rv-grid">
+              <article className="rv" data-rv="">
+                <span className="q" aria-hidden="true">
+                  “
+                </span>
+                <p>Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.</p>
+                <footer>
+                  <b>Andi Pratama &amp; Sarah</b>
+                  <span>Banua Subur Hall</span>
+                  <i>Pernikahan</i>
+                </footer>
+              </article>
+              <article className="rv" data-rv="">
+                <span className="q" aria-hidden="true">
+                  “
+                </span>
+                <p>Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.</p>
+                <footer>
+                  <b>dr. Rian &amp; Nurul</b>
+                  <span>Merdeka Convention Hall</span>
+                  <i>Resepsi</i>
+                </footer>
+              </article>
+              <article className="rv" data-rv="">
+                <span className="q" aria-hidden="true">
+                  “
+                </span>
+                <p>Menilai layanan rapi, tepat waktu, dan interaktif berkat live projection di lokasi.</p>
+                <footer>
+                  <b>Komunitas Kreatif Luwu</b>
+                  <span>Palopo Youth Creative Festival</span>
+                  <i>Festival</i>
+                </footer>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* ===================== CTA + FOOTER ===================== */}
+        <section
+          className="sec dark cta-sec"
+          id="kontak"
+          data-obj="0.55,0,0.9,1,0,0.9"
+          data-objm="0,-0.45,0.7,1,0,0.75"
+        >
+          <div className="wrap">
+            <div className="cta-grid">
+              <div className="sec-head" style={{ marginBottom: 0 }}>
+                <p className="eyebrow" data-rv="">
+                  Reservasi
+                </p>
+                <h2 data-rv="">
+                  Amankan <em>tanggal acara</em> Anda
+                </h2>
+                <p className="lead" data-rv="">
+                  Ceritakan acaranya, kami bantu pilih paket dan siapkan frame-nya.
+                </p>
+                <div className="cta-row" data-rv="" style={{ marginTop: 8 }}>
+                  <a
+                    className="btn btn-pink"
+                    href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20mau%20reservasi%20jadwal%20acara."
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    {pkg.popular && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-zinc-950 text-white text-[10px] font-bold tracking-wider uppercase rounded-full shadow-md flex items-center gap-1">
-                        <span>⭐</span> RECOMMENDED
-                      </div>
-                    )}
-
-                    <div>
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-base font-bold text-zinc-950">{pkg.name}</h3>
-                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-stone-100 text-stone-600">
-                          {durationDays} Hari
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-xs text-stone-500 leading-relaxed">{pkg.tagline}</p>
-
-                      <div className="mt-5 mb-5 pb-5 border-b border-stone-100">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold text-zinc-950 tracking-tight">
-                            {formatRupiah(pkg.price)}
-                          </span>
-                          <span className="text-xs text-stone-400">/ event</span>
-                        </div>
-                        <div className="mt-1.5 text-xs text-stone-500 font-medium flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          <span>{durationDays} Hari Akses Foto ({pkg.duration_hours} Jam)</span>
-                        </div>
-                      </div>
-
-                      <ul className="space-y-2.5 text-xs text-stone-600 mb-8">
-                        {pkg.features.map((feature, idx) => (
-                          <li key={idx} className="flex items-start gap-2.5">
-                            <span className="w-4 h-4 rounded-full bg-stone-100 text-zinc-900 flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">
-                              ✓
-                            </span>
-                            <span className="leading-snug">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <Link
-                      href={`/booking?package=${pkg.slug}`}
-                      className={`w-full min-h-[44px] flex items-center justify-center py-2.5 text-xs font-semibold text-center rounded-xl transition-colors ${
-                        pkg.popular
-                          ? "bg-zinc-950 hover:bg-zinc-800 text-white shadow-sm"
-                          : "bg-stone-100 hover:bg-stone-200 text-zinc-900"
-                      }`}
-                    >
-                      Pilih Paket Ini
-                    </Link>
+                    Chat via WhatsApp{" "}
+                    <span className="btn-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M8 7h9v9" />
+                      </svg>
+                    </span>
+                  </a>
+                </div>
+              </div>
+              <div className="contacts" data-rv="">
+                <div className="ct">
+                  <div>
+                    <small>WhatsApp</small>
+                    <span>+62 822-9988-7766</span>
                   </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-xs text-stone-400">
-                Butuh paket khusus untuk luar kota Palopo?{" "}
-                <a
-                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU,%20saya%20ingin%20konsultasi%20paket%20custom"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-950 hover:underline font-medium"
-                >
-                  Hubungi via WhatsApp
-                </a>
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ALUR PEMESANAN */}
-        <section className="py-20 md:py-28 bg-[#fafaf9]">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
-            <div className="max-w-md">
-              <p className="text-xs tracking-widest uppercase text-stone-400 font-medium">
-                Cara Kerja
-              </p>
-              <h2 className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-950 tracking-tight">
-                Dari reservasi hingga kenangan
-              </h2>
-            </div>
-
-            <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div>
-                <span className="text-xs font-medium text-stone-400">01</span>
-                <h4 className="mt-1 text-sm font-semibold text-zinc-950">Pilih Paket &amp; Tanggal</h4>
-                <p className="mt-2 text-xs text-stone-500 leading-relaxed">
-                  Isi formulir reservasi online atau hubungi admin untuk mengamankan tanggal acara Anda.
-                </p>
-              </div>
-
-              <div>
-                <span className="text-xs font-medium text-stone-400">02</span>
-                <h4 className="mt-1 text-sm font-semibold text-zinc-950">Kustomisasi Bingkai</h4>
-                <p className="mt-2 text-xs text-stone-500 leading-relaxed">
-                  Tim desainer menyiapkan template frame eksklusif sesuai tema, font, dan warna dekorasi Anda.
-                </p>
-              </div>
-
-              <div>
-                <span className="text-xs font-medium text-stone-400">03</span>
-                <h4 className="mt-1 text-sm font-semibold text-zinc-950">Keseruan di Hari H</h4>
-                <p className="mt-2 text-xs text-stone-500 leading-relaxed">
-                  Kru mendampingi operasional booth cetak, tamu mengakses Virtual Booth via QR di setiap meja.
-                </p>
-              </div>
-
-              <div>
-                <span className="text-xs font-medium text-stone-400">04</span>
-                <h4 className="mt-1 text-sm font-semibold text-zinc-950">Kenangan Tersimpan</h4>
-                <p className="mt-2 text-xs text-stone-500 leading-relaxed">
-                  Tamu membawa pulang cetakan fisik, penyelenggara menerima arsip digital lengkap.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* TESTIMONI */}
-        <section className="py-20 md:py-28 bg-white border-t border-stone-200">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
-            <div className="max-w-md mb-12">
-              <p className="text-xs tracking-widest uppercase text-stone-400 font-medium">
-                Klien
-              </p>
-              <h2 className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-950 tracking-tight">
-                Cerita mereka bersama RUANGTEMU
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="space-y-4">
-                <p className="text-sm text-stone-600 leading-relaxed">
-                  &ldquo;Tamu resepsi di Banua Subur antusias sekali. Hasil cetak fotonya sangat jernih, krunya ramah dan sabar mengarahkan gaya. Fitur Virtual Booth juga bikin tamu yang duduk di meja bisa ikut seru-seruan.&rdquo;
-                </p>
-                <div>
-                  <div className="text-sm font-semibold text-zinc-950">Andi Pratama &amp; Sarah</div>
-                  <div className="text-xs text-stone-400">Pernikahan, Banua Subur Hall, Palopo</div>
+                  <button className="cp" data-copy="+62 822-9988-7766">
+                    Salin
+                  </button>
                 </div>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm text-stone-600 leading-relaxed">
-                  &ldquo;Fitur Voice Note Guestbook sangat berkesan. Setelah acara, kami mendengarkan kembali rekaman ucapan dari para sahabat. Ada yang mengharukan dan ada yang lucu sekali.&rdquo;
-                </p>
-                <div>
-                  <div className="text-sm font-semibold text-zinc-950">dr. Rian &amp; Nurul</div>
-                  <div className="text-xs text-stone-400">Resepsi, Merdeka Convention Hall, Palopo</div>
+                <div className="ct">
+                  <div>
+                    <small>Instagram</small>
+                    <span>@ruangtemu_photobooth</span>
+                  </div>
+                  <button className="cp" data-copy="@ruangtemu_photobooth">
+                    Salin
+                  </button>
                 </div>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm text-stone-600 leading-relaxed">
-                  &ldquo;Untuk acara gathering komunitas, RUANGTEMU sangat rapi dan tepat waktu. Tayangan live projection di videotron membuat suasana venue panggung jadi interaktif.&rdquo;
-                </p>
-                <div>
-                  <div className="text-sm font-semibold text-zinc-950">Komunitas Kreatif Luwu</div>
-                  <div className="text-xs text-stone-400">Palopo Youth Creative Festival</div>
+                <div className="ct">
+                  <div>
+                    <small>Email</small>
+                    <span>halo@ruangtemu.id</span>
+                  </div>
+                  <button className="cp" data-copy="halo@ruangtemu.id">
+                    Salin
+                  </button>
+                </div>
+                <div className="ct">
+                  <div>
+                    <small>Lokasi</small>
+                    <span>Kota Palopo, Sulawesi Selatan</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-16 md:py-20">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
-            <div className="py-12 px-8 sm:px-12 bg-zinc-950 rounded-md text-center">
-              <h2 className="text-xl sm:text-2xl font-bold text-white max-w-md mx-auto tracking-tight">
-                Jadikan momen perayaan Anda tak terlupakan
-              </h2>
-              <p className="mt-3 text-stone-400 text-sm max-w-sm mx-auto">
-                Jadwal akhir pekan cepat terisi. Hubungi kami sekarang untuk konsultasi dan kunci tanggal acara.
-              </p>
-
-              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link
-                  href="/booking"
-                  className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-6 py-2.5 bg-white text-zinc-950 hover:bg-stone-100 text-sm font-medium rounded-md transition-colors"
-                >
-                  Booking Jadwal
-                </Link>
-                <a
-                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%20Photobooth,%20saya%20ingin%20tanya%20ketersediaan%20jadwal"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-6 py-2.5 border border-stone-700 hover:border-stone-500 text-stone-300 text-sm font-medium rounded-md transition-colors"
-                >
-                  Chat WhatsApp
-                </a>
+            <div className="foot">
+              <div className="foot-left">
+                <span>© 2026 RUANGTEMU Digital</span>
+                <span className="foot-sep">•</span>
+                <span>Photobooth modern untuk Palopo &amp; Luwu Raya</span>
               </div>
+              <Link href="/admin" className="admin-login-btn" title="Dashboard Admin">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span>Login Admin</span>
+              </Link>
             </div>
           </div>
         </section>
       </main>
 
-      <Footer />
+      <div className="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
   );
 }

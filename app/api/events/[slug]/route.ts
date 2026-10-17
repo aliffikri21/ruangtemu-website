@@ -99,6 +99,22 @@ export async function PUT(
       updates.default_frame_config = body.default_frame_config;
     if (body.theme_config !== undefined)
       updates.theme_config = body.theme_config;
+    if (body.package_tier !== undefined)
+      updates.package_tier = body.package_tier;
+    if (body.package_name !== undefined)
+      updates.package_name = body.package_name;
+    if (body.payment_status !== undefined)
+      updates.payment_status = body.payment_status;
+    if (body.payment_amount !== undefined)
+      updates.payment_amount = body.payment_amount ? Number(body.payment_amount) : undefined;
+    if (body.payment_method !== undefined)
+      updates.payment_method = body.payment_method;
+    if (body.payment_invoice !== undefined)
+      updates.payment_invoice = body.payment_invoice;
+    if (body.license_start_date !== undefined)
+      updates.license_start_date = body.license_start_date;
+    if (body.license_end_date !== undefined)
+      updates.license_end_date = body.license_end_date;
     if (assigned_frames !== undefined)
       updates.assigned_frames = assigned_frames;
 

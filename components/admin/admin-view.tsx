@@ -238,6 +238,166 @@ function IconMapPin({ size = 13, className = "" }: { size?: number; className?: 
   );
 }
 
+function IconClock({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function IconShieldCheck({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
+    </svg>
+  );
+}
+
+function IconDesktopTablet({ size = 32, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="2" y="3" width="13" height="11" rx="2" />
+      <polygon points="5 14 5 17 12 17 12 14" />
+      <line x1="3" y1="17" x2="14" y2="17" />
+      <rect x="15" y="7" width="7" height="13" rx="1.5" />
+      <line x1="18.5" y1="17.5" x2="18.51" y2="17.5" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+function IconSmartphoneOff({ size = 20, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="5" y="2" width="14" height="20" rx="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="3" />
+      <line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function AdminMobileGuard() {
+  const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    const updateSize = () => {
+      setScreenSize({
+        width: typeof window !== "undefined" ? window.innerWidth : 0,
+        height: typeof window !== "undefined" ? window.innerHeight : 0,
+      });
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    window.addEventListener("orientationchange", updateSize);
+    return () => {
+      window.removeEventListener("resize", updateSize);
+      window.removeEventListener("orientationchange", updateSize);
+    };
+  }, []);
+
+  return (
+    <div
+      id="admin-mobile-guard"
+      className="admin-mobile-guard fixed inset-0 z-[999999] bg-[#0B1021] text-white flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto select-none"
+    >
+      <div className="w-full max-w-md bg-[#131B35]/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl backdrop-blur-xl relative my-auto">
+        {/* Glow accent */}
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#4318FF]/20 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold mb-5">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          Akses Smartphone Dibatasi
+        </div>
+
+        {/* Icon container */}
+        <div className="relative mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1E2958] to-[#121938] border border-white/10 flex items-center justify-center text-[#4318FF] shadow-inner mb-5">
+          <IconDesktopTablet size={40} className="text-white drop-shadow" />
+          <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center">
+            <IconSmartphoneOff size={14} />
+          </div>
+        </div>
+
+        {/* Title & Message */}
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug mb-2">
+          Silakan Gunakan Mode Desktop
+        </h2>
+        <p className="text-xs sm:text-sm text-[#A3AED0] leading-relaxed mb-5">
+          Dashboard Admin <strong className="text-white font-medium">RUANGTEMU</strong> hanya dapat diakses melalui perangkat tablet ke atas (lebar minimum 768px) atau komputer/laptop.
+        </p>
+
+        {/* Instructions Box */}
+        <div className="text-left bg-[#0E1428] border border-white/10 rounded-2xl p-4 mb-5 space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#E0E5F2] uppercase tracking-wider">
+            <IconShieldCheck size={14} className="text-[#01B574]" />
+            <span>Cara Buka di Smartphone:</span>
+          </div>
+          <ol className="text-xs text-[#8F9BBA] space-y-2 pl-4 list-decimal leading-relaxed">
+            <li>
+              Buka menu browser Anda (ikon <strong className="text-white">titik tiga ⋮</strong> di Chrome atau <strong className="text-white">aA</strong> di Safari).
+            </li>
+            <li>
+              Aktifkan opsi <strong className="text-[#4318FF] font-semibold bg-[#4318FF]/10 px-1.5 py-0.5 rounded">Situs Desktop</strong> atau <strong className="text-[#4318FF] font-semibold bg-[#4318FF]/10 px-1.5 py-0.5 rounded">Desktop Site</strong>.
+            </li>
+            <li>
+              Tekan tombol <strong className="text-white">Muat Ulang Halaman</strong> di bawah ini.
+            </li>
+          </ol>
+        </div>
+
+        {/* Buttons */}
+        <div className="space-y-2.5">
+          <button
+            type="button"
+            id="admin-reload-btn"
+            onClick={() => window.location.reload()}
+            className="w-full h-11 px-5 rounded-xl bg-[#4318FF] hover:bg-[#3311DB] text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#4318FF]/20 active:scale-95 cursor-pointer"
+          >
+            <IconRefresh size={16} />
+            <span>Muat Ulang Halaman</span>
+          </button>
+
+          <Link
+            href="/"
+            className="w-full h-10 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+          >
+            Kembali ke Beranda
+          </Link>
+        </div>
+
+        {/* Live resolution indicator */}
+        {screenSize && (
+          <p className="mt-4 text-[10px] text-[#707EAE]">
+            Ukuran Layar Anda: <span className="font-mono text-[#A3AED0]">{screenSize.width} × {screenSize.height} px</span> (Dibutuhkan min. 768px)
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function formatIndonesianDateTime(dateInput?: string | Date | number) {
+  if (!dateInput) return "-";
+  try {
+    const d = typeof dateInput === "number" || typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+    if (isNaN(d.getTime())) return String(dateInput);
+    return new Intl.DateTimeFormat("id-ID", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(d);
+  } catch {
+    return String(dateInput);
+  }
+}
+
 export function AdminView({
   initialEvents,
   initialBookings,
@@ -356,12 +516,31 @@ export function AdminView({
   const [editSuccessMsg, setEditSuccessMsg] = useState("");
   const [editErrorMsg, setEditErrorMsg] = useState("");
 
+  // Real-time Clock for Live Duration Countdown (ticking every 1000ms)
+  const [nowTime, setNowTime] = useState<number>(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNowTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Edit Event Payment & Extension States
+  const [editSelectedTier, setEditSelectedTier] = useState<"bronze" | "silver" | "gold">("bronze");
+  const [showEditDokuModal, setShowEditDokuModal] = useState<boolean>(false);
+  const [editDokuInvoiceId, setEditDokuInvoiceId] = useState<string>("");
+  const [isProcessingEditDoku, setIsProcessingEditDoku] = useState<boolean>(false);
+  const [editDokuPaymentSuccess, setEditDokuPaymentSuccess] = useState<boolean>(false);
+  const [showExtendModal, setShowExtendModal] = useState<boolean>(false);
+  const [extendTierChoice, setExtendTierChoice] = useState<"bronze" | "silver" | "gold">("bronze");
+  const [isExtendingDuration, setIsExtendingDuration] = useState<boolean>(false);
+
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [togglingEventId, setTogglingEventId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleStartEditEvent = (evt: EventItem) => {
     setEditingEvent(evt);
+    setEditSelectedTier((evt.package_tier as "bronze" | "silver" | "gold") || "bronze");
+    setExtendTierChoice((evt.package_tier as "bronze" | "silver" | "gold") || "bronze");
     setEditForm({
       title: evt.title || "",
       host_name: evt.host_name || "",
@@ -605,6 +784,14 @@ export function AdminView({
         ? assigned_frames[0].config_json
         : undefined,
       theme_config: editThemeConfig,
+      package_tier: editingEvent.package_tier,
+      package_name: editingEvent.package_name,
+      payment_status: editingEvent.payment_status,
+      payment_amount: editingEvent.payment_amount,
+      payment_method: editingEvent.payment_method,
+      payment_invoice: editingEvent.payment_invoice,
+      license_start_date: editingEvent.license_start_date,
+      license_end_date: editingEvent.license_end_date,
     };
 
     try {
@@ -869,10 +1056,23 @@ export function AdminView({
 
     setTogglingEventId(evt.id);
     try {
+      const payload: Record<string, any> = { status: newStatus, is_active: newIsActive };
+      if (newIsActive && (!evt.license_end_date || new Date(evt.license_end_date).getTime() <= Date.now())) {
+        const tier = (evt.package_tier as "bronze" | "silver" | "gold") || "bronze";
+        const days = VIRTUAL_BOOTH_PACKAGES[tier]?.durationDays || 7;
+        payload.license_start_date = new Date().toISOString();
+        payload.license_end_date = new Date(Date.now() + days * 86400000).toISOString();
+        if (!evt.package_tier) {
+          payload.package_tier = "bronze";
+          payload.package_name = "BRONZE";
+          payload.payment_status = "PAID";
+        }
+      }
+
       const res = await fetch(`/api/events/${evt.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, is_active: newIsActive }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success && data.event) {
@@ -889,6 +1089,122 @@ export function AdminView({
       alert("Koneksi ke server gagal. Coba lagi.");
     } finally {
       setTogglingEventId(null);
+    }
+  };
+
+  const handleOpenEditDokuPayment = () => {
+    if (!editingEvent) return;
+    const inv = `INV-DOKU-${Math.floor(100000 + Math.random() * 900000)}`;
+    setEditDokuInvoiceId(inv);
+    setEditDokuPaymentSuccess(false);
+    setShowEditDokuModal(true);
+  };
+
+  const handleExecutePaymentForEditingEvent = async (methodUsed: string) => {
+    if (!editingEvent) return;
+    setIsProcessingEditDoku(true);
+
+    const chosenPackage = VIRTUAL_BOOTH_PACKAGES[editSelectedTier];
+    const durationDays = chosenPackage.durationDays;
+    const startIso = new Date().toISOString();
+    const endIso = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const paymentUpdates = {
+      package_tier: editSelectedTier,
+      package_name: chosenPackage.name,
+      payment_status: "PAID" as const,
+      payment_amount: chosenPackage.price,
+      payment_method: methodUsed,
+      payment_invoice: editDokuInvoiceId,
+      license_start_date: startIso,
+      license_end_date: endIso,
+      is_active: true,
+      status: "ACTIVE" as const,
+    };
+
+    try {
+      const res = await fetch(`/api/events/${editingEvent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paymentUpdates),
+      });
+      const data = await res.json();
+      if (data.success && data.event) {
+        setEvents((prev) =>
+          prev.map((e) => (e.id === data.event.id ? data.event : e))
+        );
+        setEditingEvent(data.event);
+        setEditDokuPaymentSuccess(true);
+
+        setTimeout(() => {
+          setShowEditDokuModal(false);
+          setIsProcessingEditDoku(false);
+          setEditDokuPaymentSuccess(false);
+          setPaymentSuccessToast({
+            title: `Pembayaran Berhasil! Paket ${chosenPackage.name} Aktif`,
+            subtitle: `Sesi event diaktifkan dengan durasi ${durationDays} hari real-time via ${methodUsed}.`,
+          });
+          setTimeout(() => setPaymentSuccessToast(null), 6000);
+        }, 2000);
+      } else {
+        alert(data.error || "Gagal memperbarui status pembayaran event.");
+        setIsProcessingEditDoku(false);
+      }
+    } catch (err) {
+      console.error("Error updating event payment:", err);
+      alert("Koneksi gagal. Coba lagi.");
+      setIsProcessingEditDoku(false);
+    }
+  };
+
+  const handleExtendPackageDuration = async (tier: "bronze" | "silver" | "gold") => {
+    if (!editingEvent) return;
+    setIsExtendingDuration(true);
+
+    const chosenPkg = VIRTUAL_BOOTH_PACKAGES[tier];
+    const addMs = chosenPkg.durationDays * 24 * 60 * 60 * 1000;
+
+    const currentEndMs = editingEvent.license_end_date
+      ? new Date(editingEvent.license_end_date).getTime()
+      : Date.now();
+    const baseMs = Math.max(Date.now(), currentEndMs);
+    const newEndIso = new Date(baseMs + addMs).toISOString();
+
+    const updatePayload = {
+      package_tier: tier,
+      package_name: chosenPkg.name,
+      payment_status: "PAID" as const,
+      license_end_date: newEndIso,
+      is_active: true,
+      status: "ACTIVE" as const,
+    };
+
+    try {
+      const res = await fetch(`/api/events/${editingEvent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload),
+      });
+      const data = await res.json();
+      if (data.success && data.event) {
+        setEvents((prev) =>
+          prev.map((e) => (e.id === data.event.id ? data.event : e))
+        );
+        setEditingEvent(data.event);
+        setShowExtendModal(false);
+        setPaymentSuccessToast({
+          title: `Masa Aktif Berhasil Diperpanjang! (+${chosenPkg.durationDays} Hari)`,
+          subtitle: `Paket ${chosenPkg.name} aktif sampai ${formatIndonesianDateTime(newEndIso)}.`,
+        });
+        setTimeout(() => setPaymentSuccessToast(null), 6000);
+      } else {
+        alert(data.error || "Gagal memperpanjang masa aktif.");
+      }
+    } catch (err) {
+      console.error("Error extending duration:", err);
+      alert("Koneksi gagal. Coba lagi.");
+    } finally {
+      setIsExtendingDuration(false);
     }
   };
 
@@ -1025,6 +1341,9 @@ export function AdminView({
     return (
       <div className={`min-h-screen flex items-center justify-center p-6 transition-colors ${isDarkMode ? "admin-dark bg-[#0E0E10] text-[#F8F9FA]" : "bg-[#f0f1f3] text-[#1B2559]"
         }`}>
+        {/* Mobile Guard (< 768px) */}
+        <AdminMobileGuard />
+
         <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-sm p-8 space-y-6">
           <div className="flex items-center gap-3 mb-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1128,6 +1447,9 @@ export function AdminView({
   return (
     <div className={`min-h-screen flex transition-colors duration-200 ${isDarkMode ? "admin-dark bg-[#121214] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
       }`}>
+      {/* Mobile Guard (< 768px) */}
+      <AdminMobileGuard />
+
       {/* ──────── SIDEBAR (RUANGTEMU PHOTOBOOTH) ──────── */}
       <aside
         className={`${sidebarCollapsed ? "w-[76px]" : "w-[260px]"
@@ -2571,6 +2893,375 @@ export function AdminView({
                     </div>
                   )}
 
+                  {/* ═══════ STATUS PEMBAYARAN & DURASI REAL-TIME ═══════ */}
+                  {(() => {
+                    const activeTier = (editingEvent.package_tier as "bronze" | "silver" | "gold") || editSelectedTier || "bronze";
+                    const pkgInfo = VIRTUAL_BOOTH_PACKAGES[activeTier] || VIRTUAL_BOOTH_PACKAGES.bronze;
+                    const isPaid = editingEvent.payment_status === "PAID" || Boolean(editingEvent.package_tier);
+                    const isEventActive = editingEvent.is_active !== false && editingEvent.status !== "COMPLETED" && editingEvent.status !== "ARCHIVED";
+
+                    const startMs = editingEvent.license_start_date
+                      ? new Date(editingEvent.license_start_date).getTime()
+                      : new Date(editingEvent.created_at || editingEvent.date || Date.now()).getTime();
+
+                    const endMs = editingEvent.license_end_date
+                      ? new Date(editingEvent.license_end_date).getTime()
+                      : startMs + pkgInfo.durationDays * 24 * 60 * 60 * 1000;
+
+                    const totalDurationMs = Math.max(1000, endMs - startMs);
+                    const remainingMs = Math.max(0, endMs - nowTime);
+                    const isExpired = isPaid && endMs <= nowTime;
+
+                    const countDays = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+                    const countHours = Math.floor((remainingMs / (1000 * 60 * 60)) % 24);
+                    const countMinutes = Math.floor((remainingMs / (1000 * 60)) % 60);
+                    const countSeconds = Math.floor((remainingMs / 1000) % 60);
+
+                    const percentRemaining = Math.max(0, Math.min(100, Math.round((remainingMs / totalDurationMs) * 100)));
+
+                    return (
+                      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#e0e5f2] shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] space-y-6">
+                        {/* Header Section */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#e0e5f2]">
+                          <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-xl bg-[#f4f7fe] text-[#4318FF] flex items-center justify-center shrink-0">
+                              <IconClock size={22} />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-base font-bold text-[#1B2559]">
+                                  Status Pembayaran & Durasi Sesi
+                                </h3>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-[#4318FF]/10 text-[#4318FF]">
+                                  Real-Time
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#a3aed0] mt-0.5">
+                                Pantau durasi paket photobooth dan masa aktif sesi tamu secara langsung detik demi detik.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-semibold ${
+                                isPaid
+                                  ? "bg-[#e9faf4] text-[#01B574] border border-[#b5f5e0]"
+                                  : "bg-[#fff6e9] text-[#FFB547] border border-[#ffe0b2]"
+                              }`}
+                            >
+                              <IconCheck size={12} />
+                              {isPaid ? "Pembayaran Lunas (PAID)" : "Menunggu Pembayaran"}
+                            </span>
+
+                            <span
+                              className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-semibold ${
+                                isExpired
+                                  ? "bg-[#feefee] text-[#EE5D50] border border-[#f5c6c6]"
+                                  : isEventActive
+                                  ? "bg-[#e9faf4] text-[#01B574] border border-[#b5f5e0]"
+                                  : "bg-[#fff6e9] text-[#FFB547] border border-[#ffe0b2]"
+                              }`}
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  isExpired
+                                    ? "bg-[#EE5D50]"
+                                    : isEventActive
+                                    ? "bg-[#01B574] animate-ping"
+                                    : "bg-[#FFB547]"
+                                }`}
+                              />
+                              {isExpired
+                                ? "Masa Lisensi Berakhir"
+                                : isEventActive
+                                ? "Event Aktif (Masa Sewa Berjalan)"
+                                : "Event Dijeda (Nonaktif)"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Durasi Real-Time Section */}
+                        {isPaid ? (
+                          <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <span className="text-xs font-semibold uppercase tracking-wider text-[#8F9BBA]">
+                                  Sisa Waktu Durasi Akses Tamu
+                                </span>
+                                <h4 className="text-sm font-bold text-[#1B2559] mt-0.5">
+                                  {isExpired
+                                    ? "Masa aktif paket telah habis. Silakan perpanjang durasi untuk membuka booth kembali."
+                                    : isEventActive
+                                    ? "Waktu berjalan mundur secara real-time. Tamu dapat mengakses booth selama durasi ini."
+                                    : "Event sedang dinonaktifkan / dijeda. Aktifkan kembali agar tamu dapat berfoto."}
+                                </h4>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleEventStatus(editingEvent)}
+                                  className={`h-9 px-3.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                                    isEventActive
+                                      ? "bg-[#fff6e9] text-[#FFB547] hover:bg-[#FFB547] hover:text-white"
+                                      : "bg-[#e9faf4] text-[#01B574] hover:bg-[#01B574] hover:text-white"
+                                  }`}
+                                >
+                                  {isEventActive ? "Jeda / Selesaikan" : "Aktifkan Sesi Sekarang"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowExtendModal(true)}
+                                  className="h-9 px-3.5 bg-[#4318FF] hover:bg-[#3311DB] text-white text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1"
+                                >
+                                  + Perpanjang Durasi
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Countdown Tiles (Days, Hours, Minutes, Seconds) */}
+                            <div className="grid grid-cols-4 gap-2 sm:gap-3.5">
+                              <div className="bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl p-3 sm:p-4 text-center">
+                                <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1B2559] font-mono tracking-tight">
+                                  {String(countDays).padStart(2, "0")}
+                                </div>
+                                <div className="text-[10px] sm:text-xs font-bold text-[#8F9BBA] uppercase tracking-wider mt-1">
+                                  Hari
+                                </div>
+                              </div>
+                              <div className="bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl p-3 sm:p-4 text-center">
+                                <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1B2559] font-mono tracking-tight">
+                                  {String(countHours).padStart(2, "0")}
+                                </div>
+                                <div className="text-[10px] sm:text-xs font-bold text-[#8F9BBA] uppercase tracking-wider mt-1">
+                                  Jam
+                                </div>
+                              </div>
+                              <div className="bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl p-3 sm:p-4 text-center">
+                                <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1B2559] font-mono tracking-tight">
+                                  {String(countMinutes).padStart(2, "0")}
+                                </div>
+                                <div className="text-[10px] sm:text-xs font-bold text-[#8F9BBA] uppercase tracking-wider mt-1">
+                                  Menit
+                                </div>
+                              </div>
+                              <div className="bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl p-3 sm:p-4 text-center relative overflow-hidden ring-1 ring-[#4318FF]/20">
+                                <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#4318FF] font-mono tracking-tight animate-pulse">
+                                  {String(countSeconds).padStart(2, "0")}
+                                </div>
+                                <div className="text-[10px] sm:text-xs font-bold text-[#4318FF] uppercase tracking-wider mt-1">
+                                  Detik
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="space-y-1.5 pt-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-[#8F9BBA] font-medium">Sisa Masa Aktif Paket</span>
+                                <span
+                                  className={`font-bold ${
+                                    percentRemaining > 20 ? "text-[#01B574]" : "text-[#EE5D50]"
+                                  }`}
+                                >
+                                  {isExpired
+                                    ? "0% (Kedaluwarsa)"
+                                    : `${percentRemaining}% (${countDays} Hari ${countHours} Jam Tersisa)`}
+                                </span>
+                              </div>
+                              <div className="w-full h-2.5 bg-[#e0e5f2] rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    isExpired
+                                      ? "bg-[#EE5D50]"
+                                      : percentRemaining > 20
+                                      ? "bg-gradient-to-r from-[#01B574] to-[#4318FF]"
+                                      : "bg-[#EE5D50]"
+                                  }`}
+                                  style={{ width: `${percentRemaining}%` }}
+                                />
+                              </div>
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-[#a3aed0] pt-0.5 gap-1">
+                                <span>Diaktifkan: {formatIndonesianDateTime(startMs)}</span>
+                                <span>Batas Lisensi: {formatIndonesianDateTime(endMs)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Belum Bayar Card */
+                          <div className="p-5 bg-[#fff6e9] border border-[#ffe0b2] rounded-xl space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-6 h-6 rounded-full bg-[#FFB547] text-white flex items-center justify-center font-bold text-xs">
+                                    !
+                                  </span>
+                                  <h4 className="text-sm font-bold text-[#1B2559]">
+                                    Pembayaran Paket Belum Dilakukan
+                                  </h4>
+                                </div>
+                                <p className="text-xs text-[#8F9BBA] mt-1">
+                                  Pilih paket virtual photobooth dan selesaikan pembayaran untuk mengaktifkan sesi photobooth dan memulai hitung mundur real-time.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleOpenEditDokuPayment}
+                                className="h-10 px-5 bg-[#4318FF] hover:bg-[#3311DB] text-white text-xs font-bold rounded-xl transition-colors shadow-sm inline-flex items-center gap-1.5 shrink-0"
+                              >
+                                Bayar via DOKU ({formatRupiah(VIRTUAL_BOOTH_PACKAGES[editSelectedTier].price)})
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                              {(["bronze", "silver", "gold"] as const).map((tierKey) => {
+                                const pkg = VIRTUAL_BOOTH_PACKAGES[tierKey];
+                                const isSelected = editSelectedTier === tierKey;
+                                return (
+                                  <div
+                                    key={tierKey}
+                                    onClick={() => setEditSelectedTier(tierKey)}
+                                    className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                                      isSelected
+                                        ? "bg-white border-[#4318FF] shadow-sm ring-2 ring-[#4318FF]/20"
+                                        : "bg-white/70 border-[#e0e5f2] hover:border-[#4318FF]/50"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-xs font-bold text-[#1B2559] uppercase">
+                                        Paket {pkg.name}
+                                      </span>
+                                      <span className="text-[11px] font-bold text-[#4318FF]">
+                                        {pkg.durationDays} Hari
+                                      </span>
+                                    </div>
+                                    <div className="text-base font-extrabold text-[#1B2559] mb-2">
+                                      {formatRupiah(pkg.price)}
+                                    </div>
+                                    <ul className="text-[11px] text-[#8F9BBA] space-y-1">
+                                      <li>• {pkg.freeFrames} Desain Frame</li>
+                                      <li>• Free {pkg.freeQrCards} Kartu QR</li>
+                                      <li>• Durasi {pkg.durationDays} Hari Real-time</li>
+                                    </ul>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Keterangan Paket yang Diambil */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                          {/* Kolom 1: Spesifikasi & Fasilitas Paket */}
+                          <div className="p-4 bg-[#f4f7fe] rounded-xl border border-[#e0e5f2] space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-8 h-8 rounded-lg bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center font-bold text-xs">
+                                  ★
+                                </span>
+                                <div>
+                                  <div className="text-[10px] font-bold text-[#8F9BBA] uppercase tracking-wider">
+                                    Paket yang Diambil
+                                  </div>
+                                  <div className="text-sm font-bold text-[#1B2559]">
+                                    Paket {pkgInfo.name} ({pkgInfo.durationDays} Hari)
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="px-2.5 py-1 rounded-full bg-[#4318FF] text-white text-xs font-bold">
+                                {formatRupiah(pkgInfo.price)}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-[#8F9BBA] leading-relaxed">
+                              {pkgInfo.features[0]} — Akses photobooth online aktif selama {pkgInfo.durationDays} hari kalender.
+                            </p>
+
+                            <div className="border-t border-[#e0e5f2] pt-2.5 space-y-1.5">
+                              <div className="text-[11px] font-bold text-[#1B2559] mb-1">
+                                Fasilitas Paket Termasuk:
+                              </div>
+                              {pkgInfo.features.map((feat, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-xs text-[#1B2559]">
+                                  <span className="text-[#01B574] shrink-0 font-bold">✓</span>
+                                  <span>{feat}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Kolom 2: Rincian Pembayaran & Lisensi */}
+                          <div className="p-4 bg-[#f4f7fe] rounded-xl border border-[#e0e5f2] space-y-3 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between pb-2 border-b border-[#e0e5f2]">
+                                <div className="text-[10px] font-bold text-[#8F9BBA] uppercase tracking-wider">
+                                  Rincian Pembayaran
+                                </div>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                    isPaid ? "bg-[#e9faf4] text-[#01B574]" : "bg-[#fff6e9] text-[#FFB547]"
+                                  }`}
+                                >
+                                  {isPaid ? <IconCheck size={12} /> : null}
+                                  {isPaid ? "Lunas (PAID)" : "Belum Lunas"}
+                                </span>
+                              </div>
+
+                              <div className="divide-y divide-[#e0e5f2]/70 text-xs pt-1">
+                                <div className="py-2 flex items-center justify-between">
+                                  <span className="text-[#8F9BBA]">Nomor Invoice</span>
+                                  <span className="font-mono font-bold text-[#1B2559]">
+                                    {editingEvent.payment_invoice || `INV-${editingEvent.id.slice(0, 8).toUpperCase()}`}
+                                  </span>
+                                </div>
+                                <div className="py-2 flex items-center justify-between">
+                                  <span className="text-[#8F9BBA]">Metode Pembayaran</span>
+                                  <span className="font-semibold text-[#1B2559]">
+                                    {editingEvent.payment_method || "DOKU Payment Gateway"}
+                                  </span>
+                                </div>
+                                <div className="py-2 flex items-center justify-between">
+                                  <span className="text-[#8F9BBA]">Total Nominal</span>
+                                  <span className="font-bold text-[#1B2559]">
+                                    {formatRupiah(editingEvent.payment_amount || pkgInfo.price)}
+                                  </span>
+                                </div>
+                                <div className="py-2 flex items-center justify-between">
+                                  <span className="text-[#8F9BBA]">Durasi Lisensi</span>
+                                  <span className="font-semibold text-[#4318FF]">
+                                    {pkgInfo.durationDays} Hari Kalender
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 flex items-center gap-2 border-t border-[#e0e5f2]">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleEventStatus(editingEvent)}
+                                className={`flex-1 h-9 px-3 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                                  isEventActive
+                                    ? "bg-[#fff6e9] text-[#FFB547] hover:bg-[#FFB547] hover:text-white"
+                                    : "bg-[#e9faf4] text-[#01B574] hover:bg-[#01B574] hover:text-white"
+                                }`}
+                              >
+                                {isEventActive ? "Jeda / Selesaikan Sesi" : "Aktifkan Sesi Sekarang"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowExtendModal(true)}
+                                className="h-9 px-3.5 bg-[#4318FF] hover:bg-[#3311DB] text-white text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1"
+                              >
+                                + Perpanjang
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <form onSubmit={handleSaveEditSubmit} className="space-y-6">
                     {/* Section 1: Event info */}
                     <div className="bg-white rounded-2xl p-6 space-y-4">
@@ -2752,6 +3443,126 @@ export function AdminView({
                       </button>
                     </div>
                   </form>
+
+                  {/* MODAL PERPANJANG DURASI MASA AKTIF */}
+                  {showExtendModal && editingEvent && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e0e5f2] space-y-5">
+                        <div className="flex items-center justify-between pb-3 border-b border-[#e0e5f2]">
+                          <div className="flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center font-bold">
+                              <IconClock size={16} />
+                            </span>
+                            <div>
+                              <h3 className="text-base font-bold text-[#1B2559]">Perpanjang Masa Aktif</h3>
+                              <p className="text-xs text-[#8F9BBA]">Tambah durasi akses photobooth untuk &quot;{editingEvent.title}&quot;</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowExtendModal(false)}
+                            className="text-[#8F9BBA] hover:text-[#1B2559] p-1.5 rounded-lg hover:bg-[#f4f7fe] transition-colors"
+                          >
+                            <IconClose size={18} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="block text-xs font-semibold text-[#1B2559] uppercase tracking-wider">
+                            Pilih Durasi Perpanjangan:
+                          </label>
+
+                          <div className="space-y-2.5">
+                            {(["bronze", "silver", "gold"] as const).map((tierKey) => {
+                              const pkg = VIRTUAL_BOOTH_PACKAGES[tierKey];
+                              const isSelected = extendTierChoice === tierKey;
+                              return (
+                                <div
+                                  key={tierKey}
+                                  onClick={() => setExtendTierChoice(tierKey)}
+                                  className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                                    isSelected
+                                      ? "bg-[#f4f7fe] border-[#4318FF] ring-2 ring-[#4318FF]/20"
+                                      : "bg-white border-[#e0e5f2] hover:border-[#4318FF]/40"
+                                  }`}
+                                >
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold text-[#1B2559]">
+                                        Paket {pkg.name} (+{pkg.durationDays} Hari)
+                                      </span>
+                                      {pkg.isRecommended && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFB547]/20 text-[#FFB547]">
+                                          Populer
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-[#8F9BBA] mt-0.5">
+                                      Akses live booth diperpanjang +{pkg.durationDays} hari real-time
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-extrabold text-[#1B2559]">
+                                      {formatRupiah(pkg.price)}
+                                    </div>
+                                    <div className="text-[10px] text-[#4318FF] font-semibold">
+                                      {isSelected ? "Terpilih" : "Pilih"}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="pt-2 flex items-center gap-3">
+                          <button
+                            type="button"
+                            disabled={isExtendingDuration}
+                            onClick={() => handleExtendPackageDuration(extendTierChoice)}
+                            className="flex-1 h-11 bg-[#4318FF] hover:bg-[#3311DB] disabled:bg-[#a3aed0] text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center justify-center gap-2"
+                          >
+                            {isExtendingDuration ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Menyimpan...
+                              </>
+                            ) : (
+                              `Konfirmasi (+${VIRTUAL_BOOTH_PACKAGES[extendTierChoice].durationDays} Hari)`
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowExtendModal(false)}
+                            className="h-11 px-5 border border-[#e0e5f2] rounded-xl text-xs font-semibold text-[#8F9BBA] hover:text-[#1B2559] transition-colors"
+                          >
+                            Batal
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* DOKU PAYMENT MODAL FOR EDIT EVENT */}
+                  {showEditDokuModal && editingEvent && (
+                    <DokuPaymentModal
+                      isOpen={showEditDokuModal}
+                      onClose={() => {
+                        if (!isProcessingEditDoku) setShowEditDokuModal(false);
+                      }}
+                      onSuccess={(method) => handleExecutePaymentForEditingEvent(method)}
+                      isProcessing={isProcessingEditDoku}
+                      paymentSuccess={editDokuPaymentSuccess}
+                      invoiceId={editDokuInvoiceId}
+                      amount={VIRTUAL_BOOTH_PACKAGES[editSelectedTier].price}
+                      eventName={editingEvent.title || "Virtual Photobooth"}
+                      hostName={editingEvent.host_name || "Pelanggan"}
+                      packageName={VIRTUAL_BOOTH_PACKAGES[editSelectedTier].name}
+                      durationDays={VIRTUAL_BOOTH_PACKAGES[editSelectedTier].durationDays}
+                      startDate={new Date().toISOString().split("T")[0]}
+                      endDate={new Date(Date.now() + VIRTUAL_BOOTH_PACKAGES[editSelectedTier].durationDays * 86400000).toISOString().split("T")[0]}
+                    />
+                  )}
                 </div>
               )}
             </div>
