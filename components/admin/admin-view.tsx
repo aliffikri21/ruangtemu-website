@@ -983,27 +983,22 @@ export function AdminView({
 
   const handleLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanUsername = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    const validEmails = ["admin@ruangtemu.id", "admin"];
-    const validPasswords = [
-      "ruangtemu2026",
-      "ruangtemupalopo2026",
-      "palopo2026",
-      "admin123",
-    ];
+    const isValidAdmin =
+      (cleanUsername === "admin" || cleanUsername === "admin@ruangtemu.id") &&
+      cleanPassword === "ruangtemu21";
 
-    if (
-      cleanEmail &&
-      cleanPassword &&
-      validEmails.includes(cleanEmail) &&
-      validPasswords.includes(cleanPassword)
-    ) {
+    const isValidDev =
+      (cleanUsername === "dev" || cleanUsername === "dev@ruangtemu.id") &&
+      cleanPassword === "admin";
+
+    if (isValidAdmin || isValidDev) {
       setIsAuthenticated(true);
       setLoginError("");
     } else {
-      setLoginError("Email atau password tidak valid. Demo: admin@ruangtemu.id / ruangtemu2026");
+      setLoginError("Username atau password tidak valid.");
     }
   };
 
@@ -1433,14 +1428,14 @@ export function AdminView({
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label htmlFor="admin-email-input" className="block text-sm font-medium text-[#1B2559] mb-1.5">
-                Email
+                Username
               </label>
               <input
                 id="admin-email-input"
                 type="text"
                 autoComplete="username"
                 required
-                placeholder="admin@ruangtemu.id"
+                placeholder="admin / dev"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-lg text-sm text-[#1B2559] placeholder:text-[#a3aed0] outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20 transition-all"
@@ -1461,9 +1456,6 @@ export function AdminView({
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-lg text-sm text-[#1B2559] placeholder:text-[#a3aed0] outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20 transition-all"
               />
-              <p className="text-xs text-[#a3aed0] mt-1.5">
-                Demo: admin@ruangtemu.id / ruangtemu2026
-              </p>
             </div>
 
             <button
