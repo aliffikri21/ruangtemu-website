@@ -4,11 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import * as THREE from "three";
 import { CurvedLoop } from "@/components/reactbits/CurvedLoop";
+import CircularText from "@/components/reactbits/CircularText";
+import { BookingModal } from "@/components/booking-modal";
 import "./landing.css";
+import { span } from "motion/react-m";
 
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [curvedFontSize, setCurvedFontSize] = useState(42);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [bookingPackageId, setBookingPackageId] = useState("pkg-silver");
+
+  const handleOpenBooking = (packageId?: string) => {
+    if (packageId) {
+      setBookingPackageId(packageId);
+    }
+    setIsBookingOpen(true);
+  };
 
   useEffect(() => {
     const updateFontSize = () => {
@@ -506,14 +518,13 @@ export default function HomePage() {
             <a href="#layanan">Layanan</a>
             <a href="#frame">Frame</a>
             <a href="#paket">Paket</a>
-            <a href="#cara">Cara order</a>
+            <a href="#cara">Cara Order</a>
             <a href="#ulasan">Ulasan</a>
           </nav>
-          <a
-            className="btn btn-ink btn-sm"
-            href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20mau%20reservasi%20photobooth%20untuk%20acara%20saya."
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => handleOpenBooking()}
+            className="btn btn-ink btn-sm cursor-pointer"
           >
             Reservasi{" "}
             <span className="btn-ic">
@@ -521,7 +532,7 @@ export default function HomePage() {
                 <path d="M7 17L17 7M8 7h9v9" />
               </svg>
             </span>
-          </a>
+          </button>
           <button className="burger" id="burger" aria-expanded="false" aria-controls="menu">
             Menu
           </button>
@@ -530,8 +541,15 @@ export default function HomePage() {
           <a href="#layanan">Layanan</a>
           <a href="#frame">Frame</a>
           <a href="#paket">Paket</a>
-          <a href="#cara">Cara order</a>
+          <a href="#cara">Cara Order</a>
           <a href="#ulasan">Ulasan</a>
+          <button
+            type="button"
+            onClick={() => handleOpenBooking()}
+            className="btn btn-ink btn-sm mt-3 w-full justify-center text-center cursor-pointer"
+          >
+            Reservasi Online
+          </button>
         </div>
       </header>
 
@@ -550,11 +568,10 @@ export default function HomePage() {
                 Cetak instan dan Virtual Web Photobooth yang dibuka langsung dari browser tamu. Tanpa instal aplikasi, tanpa antre lama.
               </p>
               <div className="cta-row" data-rv="">
-                <a
-                  className="btn btn-ink"
-                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20mau%20reservasi%20jadwal%20acara."
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => handleOpenBooking()}
+                  className="btn btn-ink cursor-pointer"
                 >
                   Reservasi Jadwal Acara{" "}
                   <span className="btn-ic">
@@ -562,7 +579,7 @@ export default function HomePage() {
                       <path d="M7 17L17 7M8 7h9v9" />
                     </svg>
                   </span>
-                </a>
+                </button>
                 <a className="btn btn-ghost" href="#frame">
                   Coba pilih frame{" "}
                   <span className="btn-ic">
@@ -639,7 +656,7 @@ export default function HomePage() {
                 <h3>Virtual Photobooth</h3>
                 <p>Tamu memindai QR Code di meja, lalu berfoto dengan template frame event langsung dari browser.</p>
               </article>
-              <article className="svc tilt" data-rv="">
+              <article className="svc tilt relative" style={{ overflow: "visible" }} data-rv="">
                 <div className="svc-ic">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="12" rx="2" />
@@ -649,6 +666,21 @@ export default function HomePage() {
                 <span className="tag">Layar</span>
                 <h3>Live Videotron</h3>
                 <p>Slideshow otomatis untuk proyektor atau videotron. Foto dan doa dari tamu tampil bergantian.</p>
+
+                <div className="absolute -top-6 -right-4 sm:-top-8 sm:-right-12 lg:-top-10 lg:-right-24 pointer-events-auto z-10 select-none scale-90 sm:scale-100 origin-center">
+                  <CircularText
+                    text="RUANGTEMU PHOTOBOOTH • "
+                    spinDuration={20}
+                    onHover="speedUp"
+                    size={160}
+                    fontSize={14}
+                    fontWeight={700}
+                    fontFamily="var(--f-mono)"
+                    className="text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full bg-white/90 shadow-[0_0_12px_rgba(255,255,255,0.9)]" />
+                  </CircularText>
+                </div>
               </article>
               <article className="svc tilt" data-rv="">
                 <div className="svc-ic">
@@ -818,35 +850,6 @@ export default function HomePage() {
               </p>
             </div>
             <div className="pk-grid">
-              <article className="pk tilt" data-rv="">
-                <div className="pk-top">
-                  <span>Akses 7 hari</span>
-                </div>
-                <h3>Bronze</h3>
-                <div className="price">
-                  Rp 250.000<small>per event</small>
-                </div>
-                <ul>
-                  <li>Virtual Photobooth (foto saja)</li>
-                  <li>1 desain frame</li>
-                  <li>Cetak 100 kartu QR</li>
-                  <li>Foto tanpa batas</li>
-                  <li className="off">Voice message</li>
-                </ul>
-                <a
-                  className="btn btn-light"
-                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20tertarik%20paket%20Bronze."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Pilih Bronze{" "}
-                  <span className="btn-ic">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 17L17 7M8 7h9v9" />
-                    </svg>
-                  </span>
-                </a>
-              </article>
               <article className="pk hot tilt" data-rv="">
                 <div className="pk-top">
                   <span>Akses 10 hari</span>
@@ -863,11 +866,10 @@ export default function HomePage() {
                   <li>QR tanpa batas</li>
                   <li>Foto tanpa batas</li>
                 </ul>
-                <a
-                  className="btn btn-pink"
-                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20tertarik%20paket%20Silver."
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => handleOpenBooking("pkg-silver")}
+                  className="btn btn-pink cursor-pointer w-full justify-center text-center"
                 >
                   Pilih Silver{" "}
                   <span className="btn-ic">
@@ -875,7 +877,7 @@ export default function HomePage() {
                       <path d="M7 17L17 7M8 7h9v9" />
                     </svg>
                   </span>
-                </a>
+                </button>
               </article>
               <article className="pk tilt" data-rv="">
                 <div className="pk-top">
@@ -892,11 +894,10 @@ export default function HomePage() {
                   <li>QR tanpa batas</li>
                   <li>Foto tanpa batas</li>
                 </ul>
-                <a
-                  className="btn btn-light"
-                  href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20tertarik%20paket%20Gold."
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => handleOpenBooking("pkg-gold")}
+                  className="btn btn-light cursor-pointer w-full justify-center text-center"
                 >
                   Pilih Gold{" "}
                   <span className="btn-ic">
@@ -904,7 +905,7 @@ export default function HomePage() {
                       <path d="M7 17L17 7M8 7h9v9" />
                     </svg>
                   </span>
-                </a>
+                </button>
               </article>
             </div>
             <p className="note" data-rv="">
@@ -1042,9 +1043,21 @@ export default function HomePage() {
                   Ceritakan acaranya, kami bantu pilih paket dan siapkan frame-nya.
                 </p>
                 <div className="cta-row" data-rv="" style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBooking()}
+                    className="btn btn-pink cursor-pointer"
+                  >
+                    Formulir Reservasi{" "}
+                    <span className="btn-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M8 7h9v9" />
+                      </svg>
+                    </span>
+                  </button>
                   <a
-                    className="btn btn-pink"
-                    href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%2C%20saya%20mau%20reservasi%20jadwal%20acara."
+                    className="btn btn-ghost"
+                    href="https://wa.me/6282244866088?text=Halo%20RUANGTEMU%2C%20saya%20mau%20reservasi%20jadwal%20acara."
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -1061,18 +1074,32 @@ export default function HomePage() {
                 <div className="ct">
                   <div>
                     <small>WhatsApp</small>
-                    <span>+62 822-9988-7766</span>
+                    <a
+                      href="https://wa.me/6282244866088"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline transition-all"
+                    >
+                      +62 822-4486-6088
+                    </a>
                   </div>
-                  <button className="cp" data-copy="+62 822-9988-7766">
+                  <button className="cp" data-copy="+62 822-4486-6088">
                     Salin
                   </button>
                 </div>
                 <div className="ct">
                   <div>
                     <small>Instagram</small>
-                    <span>@ruangtemu_photobooth</span>
+                    <a
+                      href="https://instagram.com/ruangtemuphotobooth"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline transition-all"
+                    >
+                      @ruangtemuphotobooth
+                    </a>
                   </div>
-                  <button className="cp" data-copy="@ruangtemu_photobooth">
+                  <button className="cp" data-copy="@ruangtemuphotobooth">
                     Salin
                   </button>
                 </div>
@@ -1121,6 +1148,12 @@ export default function HomePage() {
       </main>
 
       <div className="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <BookingModal
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        initialPackageId={bookingPackageId}
+      />
     </div>
   );
 }

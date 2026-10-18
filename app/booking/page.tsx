@@ -17,13 +17,6 @@ interface PackageOption {
 
 const packageOptions: PackageOption[] = [
   {
-    id: "pkg-bronze",
-    slug: "paket-bronze",
-    name: "Paket Bronze — 7 Hari Akses (Photo Only)",
-    price: 250000,
-    duration: 168,
-  },
-  {
     id: "pkg-silver",
     slug: "paket-silver",
     name: "Paket Silver — 10 Hari Akses (Photo & Voice : Terfavorit)",
@@ -71,7 +64,7 @@ function BookingForm() {
   }, [packageParam]);
 
   const selectedPackage =
-    packageOptions.find((p) => p.id === formData.package_id) || packageOptions[1];
+    packageOptions.find((p) => p.id === formData.package_id) || packageOptions[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +136,7 @@ function BookingForm() {
 
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <a
-              href={`https://wa.me/6282299887766?text=${whatsappMessage}`}
+              href={`https://wa.me/6282244866088?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
               className="min-h-[44px] px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs flex items-center justify-center tracking-wide transition-colors"

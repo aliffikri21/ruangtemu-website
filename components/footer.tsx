@@ -10,8 +10,8 @@ export function Footer() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-7 h-7 rounded-md object-cover shadow-xs" />
               <span className="font-bold text-sm text-zinc-950 tracking-tight">
-              RUANGTEMU
-            </span>
+                RUANGTEMU
+              </span>
             </div>
             <p className="text-xs text-stone-400 leading-relaxed max-w-xs">
               Platform photobooth fisik dan virtual modern di Kota Palopo dan Tana Luwu.
@@ -52,20 +52,20 @@ export function Footer() {
             </h4>
             <div className="space-y-2 text-xs">
               <a
-                href="https://wa.me/6282299887766?text=Halo%20RUANGTEMU%20Photobooth,%20saya%20ingin%20tanya%20paket%20photobooth"
+                href="https://wa.me/6282244866088?text=Halo%20RUANGTEMU%20Photobooth,%20saya%20ingin%20tanya%20paket%20photobooth"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-stone-500 hover:text-zinc-950 transition-colors"
               >
-                +62 822-9988-7766 (WhatsApp)
+                +62 822-4486-6088 (WhatsApp)
               </a>
               <a
-                href="https://instagram.com/ruangtemu_photobooth"
+                href="https://instagram.com/ruangtemuphotobooth"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-stone-500 hover:text-zinc-950 transition-colors"
               >
-                @ruangtemu_photobooth
+                @ruangtemuphotobooth
               </a>
               <span className="block text-stone-400">
                 halo@ruangtemu.id

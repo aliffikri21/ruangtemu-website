@@ -17,25 +17,6 @@ function parseJsonField<T>(val: any, fallback: T): T {
 // ============================================================================
 let mockPackages: Package[] = [
   {
-    id: "11111111-1111-1111-1111-111111111111",
-    name: "Paket Bronze",
-    slug: "paket-bronze",
-    tagline: "Virtual Photobooth (Photo Only) dengan 7 hari akses foto",
-    price: 250000,
-    duration_hours: 168,
-    features: [
-      "Virtual Photobooth (Photo Only)",
-      "Free 1 desain template frame (Strip/4R/Polaroid)",
-      "Free cetak 100 pcs kartu QR code",
-      "Akses foto 7 hari",
-      "Unlimited foto",
-    ],
-    popular: false,
-    category: "virtual",
-    prints_included: "Free cetak 100 pcs kartu QR code",
-    backdrop: "1 Desain Template Frame (Strip/4R/Polaroid)",
-  },
-  {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Paket Silver",
     slug: "paket-silver",
@@ -958,23 +939,50 @@ export async function getBookings(): Promise<Booking[]> {
   return mockBookings;
 }
 
+function normalizePackageId(pkgId?: string | null): string | null {
+  if (!pkgId) return null;
+  if (pkgId === "11111111-1111-1111-1111-111111111111" || pkgId === "pkg-bronze" || pkgId === "paket-bronze") {
+    return "22222222-2222-2222-2222-222222222222";
+  }
+  if (pkgId === "22222222-2222-2222-2222-222222222222" || pkgId === "pkg-silver" || pkgId === "paket-silver") {
+    return "22222222-2222-2222-2222-222222222222";
+  }
+  if (pkgId === "33333333-3333-3333-3333-333333333333" || pkgId === "pkg-gold" || pkgId === "paket-gold") {
+    return "33333333-3333-3333-3333-333333333333";
+  }
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(pkgId)) {
+    return pkgId;
+  }
+  return null;
+}
+
 export async function createBooking(
-  booking: Omit<Booking, "id" | "created_at" | "status">
+  booking: Omit<Booking, "id" | "created_at" | "status"> & { status?: BookingStatus }
 ): Promise<Booking> {
+  const resolvedPackageId = normalizePackageId(booking.package_id);
+
   const newBooking: Booking = {
     ...booking,
     id: randomUUID(),
-    status: "pending",
+    package_id: resolvedPackageId || (booking.package_id || ""),
+    status: booking.status || "pending",
+    payment_status: booking.payment_status || "PENDING",
+    payment_method: booking.payment_method || undefined,
+    payment_invoice: booking.payment_invoice || undefined,
+    payment_amount: booking.payment_amount || booking.total_price || 0,
+    payment_paid_at: booking.payment_paid_at || undefined,
+    payment_receipt_url: booking.payment_receipt_url || undefined,
     created_at: new Date().toISOString(),
   };
 
   const client = getDbClient();
   if (client) {
     try {
-      const { error } = await client.from("bookings").insert({
+      const payload: Record<string, any> = {
         id: newBooking.id,
         customer_name: newBooking.customer_name,
-        customer_email: newBooking.customer_email,
+        customer_email: newBooking.customer_email || "",
         customer_phone: newBooking.customer_phone,
         event_type: newBooking.event_type,
         event_name: newBooking.event_name,
@@ -982,18 +990,43 @@ export async function createBooking(
         event_time: newBooking.event_time || null,
         location: newBooking.location,
         city: newBooking.city || "Palopo",
-        package_id: newBooking.package_id || null,
+        package_id: resolvedPackageId,
         package_name: newBooking.package_name || null,
         status: newBooking.status,
         notes: newBooking.notes || null,
         total_price: newBooking.total_price || 0,
-      });
+        payment_status: newBooking.payment_status,
+        payment_method: newBooking.payment_method || null,
+        payment_invoice: newBooking.payment_invoice || null,
+        payment_amount: newBooking.payment_amount || null,
+        payment_paid_at: newBooking.payment_paid_at || null,
+      };
+
+      const { error } = await client.from("bookings").insert(payload);
 
       if (error) {
-        console.warn("[Supabase] createBooking error:", error.message);
-      } else {
-        return newBooking;
+        console.warn("[Supabase] createBooking error (retrying with base fields):", error.message);
+        const basePayload = {
+          id: newBooking.id,
+          customer_name: newBooking.customer_name,
+          customer_email: newBooking.customer_email || "",
+          customer_phone: newBooking.customer_phone,
+          event_type: newBooking.event_type,
+          event_name: newBooking.event_name,
+          event_date: newBooking.event_date,
+          event_time: newBooking.event_time || null,
+          location: newBooking.location,
+          city: newBooking.city || "Palopo",
+          package_id: resolvedPackageId,
+          package_name: newBooking.package_name || null,
+          status: newBooking.status,
+          notes: newBooking.notes || null,
+          total_price: newBooking.total_price || 0,
+        };
+        await client.from("bookings").insert(basePayload);
       }
+      mockBookings.unshift(newBooking);
+      return newBooking;
     } catch (err: any) {
       console.warn("[Supabase] createBooking exception:", err?.message);
     }
@@ -1003,27 +1036,36 @@ export async function createBooking(
   return newBooking;
 }
 
-export async function updateBookingStatus(id: string, status: BookingStatus): Promise<boolean> {
+export async function updateBooking(id: string, updates: Partial<Booking>): Promise<boolean> {
   const client = getDbClient();
   if (client) {
     try {
-      const { error } = await client.from("bookings").update({ status }).eq("id", id);
+      const { error } = await client.from("bookings").update(updates).eq("id", id);
       if (error) {
-        console.warn("[Supabase] updateBookingStatus error:", error.message);
+        console.warn("[Supabase] updateBooking error:", error.message);
+        if (updates.status) {
+          await client.from("bookings").update({ status: updates.status }).eq("id", id);
+        }
       } else {
+        const b = mockBookings.find((item) => item.id === id);
+        if (b) Object.assign(b, updates);
         return true;
       }
     } catch (err: any) {
-      console.warn("[Supabase] updateBookingStatus exception:", err?.message);
+      console.warn("[Supabase] updateBooking exception:", err?.message);
     }
   }
 
   const b = mockBookings.find((item) => item.id === id);
   if (b) {
-    b.status = status;
+    Object.assign(b, updates);
     return true;
   }
   return false;
+}
+
+export async function updateBookingStatus(id: string, status: BookingStatus): Promise<boolean> {
+  return updateBooking(id, { status });
 }
 
 export async function deleteBooking(id: string): Promise<boolean> {

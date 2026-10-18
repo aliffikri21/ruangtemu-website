@@ -444,6 +444,7 @@ export function AdminView({
     )
   );
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+  const [selectedBookingProof, setSelectedBookingProof] = useState<Booking | null>(null);
   const [entries, setEntries] = useState<GalleryEntry[]>(initialEntries);
   const [galleryEventFilter, setGalleryEventFilter] = useState<string>("all");
   const [isRefreshingGallery, setIsRefreshingGallery] = useState(false);
@@ -467,6 +468,29 @@ export function AdminView({
     }
   };
 
+  const [isRefreshingBookings, setIsRefreshingBookings] = useState(false);
+
+  const refreshBookings = async () => {
+    setIsRefreshingBookings(true);
+    try {
+      const res = await fetch("/api/bookings", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.bookings)) {
+        setBookings(data.bookings);
+      }
+    } catch (err) {
+      console.error("Gagal memperbarui data reservasi:", err);
+    } finally {
+      setIsRefreshingBookings(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "bookings") {
+      refreshBookings();
+    }
+  }, [activeTab]);
+
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: "",
@@ -479,7 +503,7 @@ export function AdminView({
   });
 
   // Virtual Booth Package & DOKU Payment States
-  const [selectedPackage, setSelectedPackage] = useState<"bronze" | "silver" | "gold">("silver");
+  const [selectedPackage, setSelectedPackage] = useState<"silver" | "gold">("silver");
   const [addonQrCards, setAddonQrCards] = useState<number>(0);
   const [showDokuModal, setShowDokuModal] = useState<boolean>(false);
   const [dokuInvoiceId, setDokuInvoiceId] = useState<string>("");
@@ -524,13 +548,13 @@ export function AdminView({
   }, []);
 
   // Edit Event Payment & Extension States
-  const [editSelectedTier, setEditSelectedTier] = useState<"bronze" | "silver" | "gold">("bronze");
+  const [editSelectedTier, setEditSelectedTier] = useState<"silver" | "gold">("silver");
   const [showEditDokuModal, setShowEditDokuModal] = useState<boolean>(false);
   const [editDokuInvoiceId, setEditDokuInvoiceId] = useState<string>("");
   const [isProcessingEditDoku, setIsProcessingEditDoku] = useState<boolean>(false);
   const [editDokuPaymentSuccess, setEditDokuPaymentSuccess] = useState<boolean>(false);
   const [showExtendModal, setShowExtendModal] = useState<boolean>(false);
-  const [extendTierChoice, setExtendTierChoice] = useState<"bronze" | "silver" | "gold">("bronze");
+  const [extendTierChoice, setExtendTierChoice] = useState<"silver" | "gold">("silver");
   const [isExtendingDuration, setIsExtendingDuration] = useState<boolean>(false);
 
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -539,8 +563,8 @@ export function AdminView({
 
   const handleStartEditEvent = (evt: EventItem) => {
     setEditingEvent(evt);
-    setEditSelectedTier((evt.package_tier as "bronze" | "silver" | "gold") || "bronze");
-    setExtendTierChoice((evt.package_tier as "bronze" | "silver" | "gold") || "bronze");
+    setEditSelectedTier((evt.package_tier as "silver" | "gold") || "silver");
+    setExtendTierChoice((evt.package_tier as "silver" | "gold") || "silver");
     setEditForm({
       title: evt.title || "",
       host_name: evt.host_name || "",
@@ -993,6 +1017,48 @@ export function AdminView({
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b))
     );
+    try {
+      await fetch("/api/bookings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: bookingId, status: newStatus }),
+      });
+    } catch (err) {
+      console.error("Gagal memperbarui status reservasi:", err);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (
+    bookingId: string,
+    paymentStatus: "PAID" | "PENDING" | "FAILED"
+  ) => {
+    const nowIso = new Date().toISOString();
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === bookingId
+          ? {
+              ...b,
+              payment_status: paymentStatus,
+              payment_paid_at: paymentStatus === "PAID" ? nowIso : undefined,
+              status: paymentStatus === "PAID" ? "confirmed" : b.status,
+            }
+          : b
+      )
+    );
+    try {
+      await fetch("/api/bookings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: bookingId,
+          payment_status: paymentStatus,
+          payment_paid_at: paymentStatus === "PAID" ? nowIso : null,
+          status: paymentStatus === "PAID" ? "confirmed" : undefined,
+        }),
+      });
+    } catch (err) {
+      console.error("Gagal memperbarui status pembayaran:", err);
+    }
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
@@ -1058,13 +1124,13 @@ export function AdminView({
     try {
       const payload: Record<string, any> = { status: newStatus, is_active: newIsActive };
       if (newIsActive && (!evt.license_end_date || new Date(evt.license_end_date).getTime() <= Date.now())) {
-        const tier = (evt.package_tier as "bronze" | "silver" | "gold") || "bronze";
-        const days = VIRTUAL_BOOTH_PACKAGES[tier]?.durationDays || 7;
+        const tier = (evt.package_tier as "silver" | "gold") || "silver";
+        const days = VIRTUAL_BOOTH_PACKAGES[tier]?.durationDays || 10;
         payload.license_start_date = new Date().toISOString();
         payload.license_end_date = new Date(Date.now() + days * 86400000).toISOString();
         if (!evt.package_tier) {
-          payload.package_tier = "bronze";
-          payload.package_name = "BRONZE";
+          payload.package_tier = "silver";
+          payload.package_name = "SILVER";
           payload.payment_status = "PAID";
         }
       }
@@ -1157,7 +1223,7 @@ export function AdminView({
     }
   };
 
-  const handleExtendPackageDuration = async (tier: "bronze" | "silver" | "gold") => {
+  const handleExtendPackageDuration = async (tier: "silver" | "gold") => {
     if (!editingEvent) return;
     setIsExtendingDuration(true);
 
@@ -2302,65 +2368,9 @@ export function AdminView({
                       </div>
                     </div>
 
-                    {/* 3 Package Cards (Inspired by Image 1 & 2) */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* 1. BRONZE CARD */}
-                      <div
-                        onClick={() => setSelectedPackage("bronze")}
-                        className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between ${
-                          selectedPackage === "bronze"
-                            ? "bg-white border-[#4318FF] ring-4 ring-[#4318FF]/10 shadow-lg"
-                            : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
-                        }`}
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h5 className="text-lg font-black tracking-wider text-[#8C4A4A]">BRONZE</h5>
-                            <span className="px-2.5 py-1 bg-[#617344] text-white text-xs font-black rounded-md shadow-sm">
-                              250K
-                            </span>
-                          </div>
-
-                          <div className="text-xs text-[#8F9BBA] font-semibold">
-                            Durasi Sewa: <span className="text-[#1B2559] font-bold">7 Hari Akses Foto</span>
-                          </div>
-
-                          <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
-                            <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                              <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo Only)</strong></span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                              <span>Free <strong className="text-[#8C4A4A] font-semibold">1 desain</strong> template frame (Strip/4R/Polaroid)</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                              <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">100 pcs</strong> kartu QR code</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                              <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">7 hari</strong></span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                              <span>Unlimited foto</span>
-                            </li>
-                          </ul>
-                        </div>
-
-                        <div className="mt-5 pt-3 border-t border-[#E0E5F2]">
-                          <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
-                            selectedPackage === "bronze"
-                              ? "bg-[#01B574] text-white shadow-sm"
-                              : "bg-[#F4F7FE] text-[#1B2559]"
-                          }`}>
-                            TOTAL: Rp 250.000
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 2. SILVER CARD (RECOMMENDED) */}
+                    {/* 2 Package Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* 1. SILVER CARD (RECOMMENDED) */}
                       <div
                         onClick={() => setSelectedPackage("silver")}
                         className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between overflow-hidden ${
@@ -2544,19 +2554,12 @@ export function AdminView({
                       <div className="text-xs font-bold text-[#01B574] uppercase tracking-wider flex items-center gap-1.5">
                         <IconCheck size={14} /> Sudah termasuk di semua paket event:
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-[#1B2559]">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-[#1B2559]">
                         <div className="flex items-start gap-2">
                           <span className="text-[#4318FF] mt-0.5"><IconBooking size={15} /></span>
                           <div>
                             <div className="font-bold">Buku ucapan tamu</div>
                             <p className="text-[11px] text-[#8F9BBA] leading-tight">Tamu berfoto dan merekam pesan ucapan lewat QR di meja</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <span className="text-[#4318FF] mt-0.5"><IconEdit size={15} /></span>
-                          <div>
-                            <div className="font-bold">Undangan online</div>
-                            <p className="text-[11px] text-[#8F9BBA] leading-tight">Sebar tautan undangan ke tamu sebelum atau saat acara</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2">
@@ -2895,8 +2898,8 @@ export function AdminView({
 
                   {/* ═══════ STATUS PEMBAYARAN & DURASI REAL-TIME ═══════ */}
                   {(() => {
-                    const activeTier = (editingEvent.package_tier as "bronze" | "silver" | "gold") || editSelectedTier || "bronze";
-                    const pkgInfo = VIRTUAL_BOOTH_PACKAGES[activeTier] || VIRTUAL_BOOTH_PACKAGES.bronze;
+                    const activeTier = (editingEvent.package_tier as "silver" | "gold") || editSelectedTier || "silver";
+                    const pkgInfo = VIRTUAL_BOOTH_PACKAGES[activeTier] || VIRTUAL_BOOTH_PACKAGES.silver;
                     const isPaid = editingEvent.payment_status === "PAID" || Boolean(editingEvent.package_tier);
                     const isEventActive = editingEvent.is_active !== false && editingEvent.status !== "COMPLETED" && editingEvent.status !== "ARCHIVED";
 
@@ -3114,8 +3117,8 @@ export function AdminView({
                               </button>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                              {(["bronze", "silver", "gold"] as const).map((tierKey) => {
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                              {(["silver", "gold"] as const).map((tierKey) => {
                                 const pkg = VIRTUAL_BOOTH_PACKAGES[tierKey];
                                 const isSelected = editSelectedTier === tierKey;
                                 return (
@@ -3473,7 +3476,7 @@ export function AdminView({
                           </label>
 
                           <div className="space-y-2.5">
-                            {(["bronze", "silver", "gold"] as const).map((tierKey) => {
+                            {(["silver", "gold"] as const).map((tierKey) => {
                               const pkg = VIRTUAL_BOOTH_PACKAGES[tierKey];
                               const isSelected = extendTierChoice === tierKey;
                               return (
@@ -3578,6 +3581,18 @@ export function AdminView({
                     Data calon pelanggan dari formulir pemesanan online ({bookings.length} reservasi)
                   </p>
                 </div>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={refreshBookings}
+                    disabled={isRefreshingBookings}
+                    className="h-9 px-3.5 rounded-xl border border-[#E0E5F2] bg-white hover:bg-[#F4F7FE] text-xs font-semibold text-[#1B2559] transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    title="Segarkan Data Reservasi"
+                  >
+                    <IconRefresh size={14} className={isRefreshingBookings ? "animate-spin" : ""} />
+                    <span>{isRefreshingBookings ? "Memuat..." : "Segarkan Data"}</span>
+                  </button>
+                </div>
               </div>
 
               {bookings.length === 0 ? (
@@ -3593,84 +3608,287 @@ export function AdminView({
                   </p>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
-                  <table className="w-full text-left text-sm">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent overflow-x-auto">
+                  <table className="w-full text-left text-sm min-w-[760px]">
                     <thead className="border-b border-[#e0e5f2] bg-[#F4F7FE]">
                       <tr>
                         <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Pemesan</th>
-                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Acara & Tanggal</th>
-                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Paket & Biaya</th>
-                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Acara &amp; Tanggal</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Paket &amp; Biaya</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Pembayaran DOKU</th>
+                        <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider">Status Jadwal</th>
                         <th className="px-6 py-4 text-xs font-semibold text-[#a3aed0] uppercase tracking-wider text-right">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#e0e5f2]">
-                      {bookings.map((b) => (
-                        <tr key={b.id} className="hover:bg-[#f4f7fe]/50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-[#1B2559]">{b.customer_name}</div>
-                            <a
-                              href={`https://wa.me/${b.customer_phone.replace(/[^0-9]/g, "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-[#4318FF] hover:underline block mt-0.5"
-                            >
-                              {b.customer_phone}
-                            </a>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-[#1B2559]">{b.event_name}</div>
-                            <div className="text-xs text-[#a3aed0] mt-0.5">{b.event_date} ({b.event_time} WITA)</div>
-                            <div className="text-xs text-[#a3aed0]">{b.location}, {b.city}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-[#1B2559]">{b.package_name}</div>
-                            <div className="text-sm font-semibold text-[#1B2559] mt-0.5">{formatRupiah(b.total_price)}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${b.status === "confirmed"
-                                ? "bg-[#e9faf4] text-[#01B574]"
-                                : b.status === "pending"
-                                  ? "bg-[#fff6e9] text-[#FFB547]"
-                                  : "bg-[#f4f7fe] text-[#8F9BBA]"
-                              }`}>
-                              {b.status === "confirmed" ? "Dikonfirmasi" : b.status === "pending" ? "Menunggu" : "Dibatalkan"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {b.status !== "confirmed" && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStatusChange(b.id, "confirmed")}
-                                  className="h-8 px-3 rounded-lg bg-[#e9faf4] text-[#01B574] text-xs font-medium hover:bg-[#01B574] hover:text-white transition-colors"
-                                >
-                                  Setujui
-                                </button>
-                              )}
-                              {b.status !== "cancelled" && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStatusChange(b.id, "cancelled")}
-                                  className="h-8 px-3 rounded-lg bg-[#f4f7fe] text-[#8F9BBA] text-xs font-medium hover:bg-[#8F9BBA] hover:text-white transition-colors"
-                                >
-                                  Batal
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteBooking(b.id)}
-                                className="h-8 px-2.5 rounded-lg text-xs font-medium text-[#A3AED0] hover:text-[#EE5D50] hover:bg-red-50 transition-colors"
-                                title="Hapus Data Reservasi"
+                      {bookings.map((b) => {
+                        const isDokuPaid = b.payment_status === "PAID";
+                        return (
+                          <tr key={b.id} className="hover:bg-[#f4f7fe]/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-[#1B2559]">{b.customer_name}</div>
+                              <a
+                                href={`https://wa.me/${b.customer_phone.replace(/[^0-9]/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-[#4318FF] hover:underline block mt-0.5"
                               >
-                                Hapus
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                {b.customer_phone}
+                              </a>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-[#1B2559]">{b.event_name}</div>
+                              <div className="text-xs text-[#a3aed0] mt-0.5">{b.event_date} ({b.event_time} WITA)</div>
+                              <div className="text-xs text-[#a3aed0]">{b.location}, {b.city}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-[#1B2559]">{b.package_name}</div>
+                              <div className="text-sm font-semibold text-[#1B2559] mt-0.5">{formatRupiah(b.total_price)}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              {isDokuPaid ? (
+                                <div className="space-y-1.5">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#e9faf4] text-[#01B574] border border-[#01B574]/20 shadow-xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#01B574] animate-pulse" />
+                                    <span>Lunas DOKU</span>
+                                  </span>
+                                  <div className="text-[11px] font-mono text-[#707EAE]">
+                                    {b.payment_method?.replace("DOKU_", "") || "QRIS Instant"}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedBookingProof(b)}
+                                    className="px-2.5 py-1 rounded-lg bg-[#4318FF]/10 hover:bg-[#4318FF]/20 text-[#4318FF] font-semibold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                      <polyline points="14 2 14 8 20 8" />
+                                      <line x1="16" y1="13" x2="8" y2="13" />
+                                      <line x1="16" y1="17" x2="8" y2="17" />
+                                      <polyline points="10 9 9 9 8 9" />
+                                    </svg>
+                                    <span>Lihat Struk DOKU</span>
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#fff6e9] text-[#FFB547] border border-[#FFB547]/20">
+                                    <span>⏳ Menunggu Transfer</span>
+                                  </span>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdatePaymentStatus(b.id, "PAID")}
+                                      className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
+                                      title="Tandai pembayaran ini telah lunas"
+                                    >
+                                      ✓ Tandai Lunas
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedBookingProof(b)}
+                                      className="text-[11px] text-[#707EAE] hover:text-[#4318FF] underline transition-colors cursor-pointer"
+                                      title="Lihat Pratinjau Struk Transaksi"
+                                    >
+                                      Cek Form DOKU
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium ${b.status === "confirmed"
+                                  ? "bg-[#e9faf4] text-[#01B574]"
+                                  : b.status === "pending"
+                                    ? "bg-[#fff6e9] text-[#FFB547]"
+                                    : "bg-[#f4f7fe] text-[#8F9BBA]"
+                                }`}>
+                                {b.status === "confirmed" ? "Dikonfirmasi" : b.status === "pending" ? "Menunggu" : "Dibatalkan"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {b.status !== "confirmed" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStatusChange(b.id, "confirmed")}
+                                    className="h-8 px-3 rounded-lg bg-[#e9faf4] text-[#01B574] text-xs font-medium hover:bg-[#01B574] hover:text-white transition-colors cursor-pointer"
+                                  >
+                                    Setujui
+                                  </button>
+                                )}
+                                {b.status !== "cancelled" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStatusChange(b.id, "cancelled")}
+                                    className="h-8 px-3 rounded-lg bg-[#f4f7fe] text-[#8F9BBA] text-xs font-medium hover:bg-[#8F9BBA] hover:text-white transition-colors cursor-pointer"
+                                  >
+                                    Batal
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteBooking(b.id)}
+                                  className="h-8 px-2.5 rounded-lg text-xs font-medium text-[#A3AED0] hover:text-[#EE5D50] hover:bg-red-50 transition-colors cursor-pointer"
+                                  title="Hapus Data Reservasi"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* ═══════ POPUP BUKTI / SCREENSHOT TRANSAKSI DOKU RESMI ═══════ */}
+              {selectedBookingProof && (
+                <div
+                  className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+                  onClick={() => setSelectedBookingProof(null)}
+                >
+                  <div
+                    className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#E0E5F2] my-auto animate-in zoom-in-95 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Official DOKU Header Banner */}
+                    <div className="bg-gradient-to-r from-[#D9222A] via-[#E52534] to-[#C01B22] p-5 text-white flex items-center justify-between shadow-md">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white text-[#D9222A] font-black px-2.5 py-1 rounded-lg text-sm tracking-wider shadow-sm">
+                          DOKU
+                        </div>
+                        <div>
+                          <div className="text-xs uppercase font-extrabold tracking-wider opacity-95">
+                            Bukti Transaksi Resmi
+                          </div>
+                          <div className="text-[11px] opacity-85">RUANGTEMU Official Merchant</div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBookingProof(null)}
+                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Screenshot / Receipt Content */}
+                    <div className="p-6 sm:p-7 text-center space-y-5">
+                      {/* Verification Checkmark */}
+                      <div className="relative w-20 h-20 mx-auto">
+                        <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                        <div className="absolute inset-0 rounded-full border-4 border-emerald-500 animate-ping opacity-25" />
+                      </div>
+
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200 mb-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>TRANSAKSI BERHASIL &amp; SETTLED</span>
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                          Pembayaran DOKU Sukses
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Dana telah berhasil didebet dan terkonfirmasi otomatis oleh sistem gateway DOKU.
+                        </p>
+                      </div>
+
+                      {/* Nominal Box */}
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                        <span className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold block">Total Nominal Transaksi</span>
+                        <span className="text-3xl font-black text-blue-950 font-mono block mt-0.5">
+                          {formatRupiah(selectedBookingProof.payment_amount || selectedBookingProof.total_price)}
+                        </span>
+                        <span className="text-xs text-blue-600 font-semibold block mt-1">
+                          Paket {selectedBookingProof.package_name}
+                        </span>
+                      </div>
+
+                      {/* Detailed Receipt Table */}
+                      <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 text-xs space-y-2.5 text-left">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                          <span className="text-slate-500">Nomor Invoice</span>
+                          <span className="font-mono font-bold text-slate-900">
+                            {selectedBookingProof.payment_invoice || `INV-DOKU-${selectedBookingProof.id.slice(-6).toUpperCase()}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                          <span className="text-slate-500">Metode Pembayaran</span>
+                          <span className="font-bold text-slate-900">
+                            {selectedBookingProof.payment_method
+                              ? selectedBookingProof.payment_method.replace("DOKU_", "DOKU ")
+                              : "DOKU QRIS Instant / VA"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                          <span className="text-slate-500">Waktu Pembayaran</span>
+                          <span className="font-mono text-slate-800">
+                            {formatIndonesianDateTime(selectedBookingProof.payment_paid_at || selectedBookingProof.created_at)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                          <span className="text-slate-500">Nama Pemesan</span>
+                          <span className="font-bold text-slate-900">{selectedBookingProof.customer_name}</span>
+                        </div>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                          <span className="text-slate-500">WhatsApp Pemesan</span>
+                          <span className="font-mono text-slate-800">{selectedBookingProof.customer_phone}</span>
+                        </div>
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                          <span className="text-slate-500">Nama Acara</span>
+                          <span className="font-bold text-slate-900">{selectedBookingProof.event_name}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Tanggal Acara</span>
+                          <span className="font-mono text-slate-800">
+                            {selectedBookingProof.event_date} ({selectedBookingProof.event_time} WITA)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Verification Footer Stamp */}
+                      <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 flex items-center justify-center gap-2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-600 shrink-0">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        <span>Struk ini sah dari DOKU Merchant Gateway RUANGTEMU</span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBookingProof(null)}
+                          className="flex-1 min-h-[44px] px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs border border-slate-200 transition-colors cursor-pointer"
+                        >
+                          Tutup
+                        </button>
+                        <a
+                          href={`https://wa.me/${selectedBookingProof.customer_phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                            `Halo Kak ${selectedBookingProof.customer_name}! Pembayaran Anda untuk reservasi photobooth RUANGTEMU acara "${selectedBookingProof.event_name}" sebesar ${formatRupiah(
+                              selectedBookingProof.payment_amount || selectedBookingProof.total_price
+                            )} via DOKU (${selectedBookingProof.payment_invoice || "LUNAS"}) telah KAMI TERIMA & TERKONFIRMASI LUNAS. Terima kasih!`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 min-h-[44px] px-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                          </svg>
+                          <span>Kirim Konfirmasi WA</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -3879,7 +4097,7 @@ export function AdminView({
                           onClick={() => {
                             setIsCreatingEvent(true);
                             setActiveTab("events");
-                            const matchingKey = pkg.slug.includes("bronze") ? "bronze" : pkg.slug.includes("gold") ? "gold" : "silver";
+                            const matchingKey = pkg.slug.includes("gold") ? "gold" : "silver";
                             setSelectedPackage(matchingKey);
                           }}
                           className={`w-full h-10 rounded-xl text-xs font-bold transition-colors ${

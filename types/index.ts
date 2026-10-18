@@ -48,6 +48,12 @@ export interface Booking {
   notes?: string;
   total_price: number;
   created_at: string;
+  payment_status?: "PENDING" | "PAID" | "UNPAID" | "FAILED";
+  payment_method?: string;
+  payment_invoice?: string;
+  payment_amount?: number;
+  payment_paid_at?: string;
+  payment_receipt_url?: string;
 }
 
 export interface FrameConfig {

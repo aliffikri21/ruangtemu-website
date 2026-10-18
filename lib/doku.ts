@@ -22,7 +22,7 @@ export const DOKU_CONFIG: DokuConfig = {
 };
 
 export interface VirtualBoothPackage {
-  id: "bronze" | "silver" | "gold";
+  id: "silver" | "gold";
   name: string;
   tag: string;
   price: number;
@@ -33,24 +33,7 @@ export interface VirtualBoothPackage {
   features: string[];
 }
 
-export const VIRTUAL_BOOTH_PACKAGES: Record<"bronze" | "silver" | "gold", VirtualBoothPackage> = {
-  bronze: {
-    id: "bronze",
-    name: "BRONZE",
-    tag: "250K",
-    price: 250000,
-    durationDays: 7,
-    freeFrames: 1,
-    freeQrCards: 100,
-    isRecommended: false,
-    features: [
-      "Virtual Photobooth (Photo Only)",
-      "Free 1 desain template frame (Strip/4R/Polaroid)",
-      "Free cetak 100 pcs kartu QR code",
-      "Akses foto 7 hari",
-      "Unlimited foto",
-    ],
-  },
+export const VIRTUAL_BOOTH_PACKAGES: Record<"silver" | "gold", VirtualBoothPackage> = {
   silver: {
     id: "silver",
     name: "SILVER",
@@ -167,7 +150,7 @@ export async function createDokuCheckoutSession(params: DokuPaymentSessionReques
         id: `CUST-${Date.now().toString().slice(-6)}`,
         name: params.customerName || "Admin RUANGTEMU",
         email: params.customerEmail || "admin@ruangtemu.id",
-        phone: params.customerPhone || "6282299887766",
+        phone: params.customerPhone || "6282244866088",
       },
       additional_info: {
         event_name: params.eventName,
