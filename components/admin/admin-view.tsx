@@ -459,6 +459,51 @@ export function AdminView({
   const [galleryEventFilter, setGalleryEventFilter] = useState<string>("all");
   const [isRefreshingGallery, setIsRefreshingGallery] = useState(false);
 
+  // Maintenance Mode states
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean>(false);
+  const [isLoadingMaintenance, setIsLoadingMaintenance] = useState<boolean>(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState<boolean>(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/admin/maintenance")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setIsMaintenanceMode(Boolean(data.enabled));
+          if (data.message) setMaintenanceMessage(data.message);
+        }
+      })
+      .catch((err) => console.error("Error fetching maintenance status:", err));
+  }, []);
+
+  const handleToggleMaintenance = async (targetState: boolean, customMessage?: string) => {
+    setIsLoadingMaintenance(true);
+    try {
+      const res = await fetch("/api/admin/maintenance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enabled: targetState,
+          message: customMessage || maintenanceMessage || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsMaintenanceMode(data.enabled);
+        if (data.message) setMaintenanceMessage(data.message);
+        setShowMaintenanceModal(false);
+      } else {
+        alert(data.error || "Gagal mengubah mode maintenance.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Koneksi gagal. Coba lagi.");
+    } finally {
+      setIsLoadingMaintenance(false);
+    }
+  };
+
   const getEventForEntry = (ent: GalleryEntry) => {
     return events.find((e) => e.id === ent.event_id || (ent.event_slug && e.slug === ent.event_slug));
   };
@@ -2089,6 +2134,34 @@ export function AdminView({
               <IconExternalLink size={13} />
             </Link>
 
+            {/* Maintenance Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowMaintenanceModal(true)}
+              className={`flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                isMaintenanceMode
+                  ? "bg-amber-500 text-slate-950 border-amber-500 shadow-sm animate-pulse"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+              }`}
+              title={
+                isMaintenanceMode
+                  ? "Mode Maintenance AKTIF (Pengunjung diblokir). Klik untuk ubah."
+                  : "Situs Online normal. Klik untuk aktifkan mode maintenance."
+              }
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isMaintenanceMode ? "bg-slate-950" : "bg-emerald-500 animate-pulse"
+                }`}
+              />
+              <span className="hidden sm:inline">
+                {isMaintenanceMode ? "Maintenance: AKTIF" : "Situs: ONLINE"}
+              </span>
+              <span className="sm:hidden">
+                {isMaintenanceMode ? "Maint" : "Online"}
+              </span>
+            </button>
+
             <div className="w-px h-6 bg-[#E0E5F2] mx-1 hidden sm:block" />
 
             {/* User Profile */}
@@ -2118,6 +2191,51 @@ export function AdminView({
             </div>
           </div>
         </header>
+
+        {/* MAINTENANCE ACTIVE BANNER WARNING */}
+        {isMaintenanceMode && (
+          <div className="mx-6 sm:mx-8 mt-6 mb-2 p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-sm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-800">
+                    Situs Sedang Mode Pemeliharaan
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 animate-pulse">
+                    PENGUNJUNG DIBLOKIR
+                  </span>
+                </div>
+                <p className="text-xs text-[#1B2559] mt-0.5">
+                  Pengunjung publik dialihkan ke halaman <strong>/maintenance</strong>. Anda tetap dapat mengakses website secara normal karena memiliki bypass developer.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              <Link
+                href="/maintenance"
+                target="_blank"
+                className="h-9 px-3 rounded-xl bg-white border border-amber-300 text-xs font-semibold text-amber-900 hover:bg-amber-50 transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>Lihat /maintenance</span>
+                <IconExternalLink size={12} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowMaintenanceModal(true)}
+                className="h-9 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-colors cursor-pointer shadow-sm"
+              >
+                Kembalikan Online
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* PAYMENT SUCCESS FLOATING TOAST ALERT */}
         {paymentSuccessToast && (
@@ -5722,6 +5840,152 @@ export function AdminView({
           })()}
         </main>
       </div>
+
+      {/* ──────── MODAL PENGATURAN MODE PEMELIHARAAN (MAINTENANCE) ──────── */}
+      {showMaintenanceModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E0E5F2] space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#E0E5F2]">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                    isMaintenanceMode
+                      ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                      : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                  }`}
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1B2559]">
+                    Pengaturan Mode Pemeliharaan
+                  </h3>
+                  <p className="text-xs text-[#A3AED0]">
+                    Kontrol akses publik pengunjung ke seluruh halaman website
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMaintenanceModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Current Status Box */}
+            <div
+              className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
+                isMaintenanceMode
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-900"
+                  : "bg-emerald-50 border-emerald-200 text-emerald-900"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`w-3 h-3 rounded-full ${
+                    isMaintenanceMode ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
+                  }`}
+                />
+                <div>
+                  <span className="text-xs font-bold block">
+                    {isMaintenanceMode ? "Status: Mode Pemeliharaan AKTIF" : "Status: Situs Normal (ONLINE)"}
+                  </span>
+                  <span className="text-[11px] opacity-80 block">
+                    {isMaintenanceMode
+                      ? "Pengunjung umum dialihkan ke halaman /maintenance"
+                      : "Semua pengunjung dapat mengakses website secara penuh"}
+                  </span>
+                </div>
+              </div>
+              <span
+                className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 ${
+                  isMaintenanceMode ? "bg-amber-500 text-slate-950" : "bg-emerald-500 text-white"
+                }`}
+              >
+                {isMaintenanceMode ? "MAINTENANCE" : "ONLINE"}
+              </span>
+            </div>
+
+            {/* Explanatory Note */}
+            <div className="space-y-2 text-xs text-[#1B2559]">
+              <p>
+                {isMaintenanceMode
+                  ? "Saat mode pemeliharaan dimatikan, website akan langsung kembali normal untuk seluruh pengunjung publik tanpa perlu deploy ulang."
+                  : "Ketika diaktifkan, seluruh pengunjung website (halaman utama, booking, photobooth virtual, dll) tidak dapat mengakses website dan akan diarahkan ke halaman pemeliharaan."}
+              </p>
+              <div className="p-3 bg-[#F4F7FE] rounded-xl text-[11px] text-[#707EAE] leading-relaxed">
+                <strong className="text-[#1B2559] font-semibold">Catatan Pengembang:</strong> Panel admin ini (/admin) dan browser Anda selalu dikecualikan dari pemblokiran, sehingga Anda tetap leluasa melakukan uji coba dan mengembalikan website ke mode online kapan saja.
+              </div>
+            </div>
+
+            {/* Custom Message Field (Only if turning on or editing) */}
+            {!isMaintenanceMode && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#1B2559]">
+                  Pesan Pemeliharaan untuk Pengunjung (Opsional):
+                </label>
+                <textarea
+                  rows={2}
+                  value={maintenanceMessage}
+                  onChange={(e) => setMaintenanceMessage(e.target.value)}
+                  placeholder="Website RUANGTEMU saat ini sedang dalam peningkatan performa berkala..."
+                  className="w-full p-3 bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl text-xs text-[#1B2559] placeholder:text-[#A3AED0] outline-none focus:border-[#4318FF] transition-colors resize-none"
+                />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E0E5F2]">
+              <button
+                type="button"
+                onClick={() => setShowMaintenanceModal(false)}
+                className="h-10 px-4 rounded-xl border border-[#E0E5F2] text-xs font-semibold text-[#8F9BBA] hover:text-[#1B2559] hover:bg-[#F4F7FE] transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+
+              {isMaintenanceMode ? (
+                <button
+                  type="button"
+                  disabled={isLoadingMaintenance}
+                  onClick={() => handleToggleMaintenance(false)}
+                  className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shadow-sm"
+                >
+                  {isLoadingMaintenance ? (
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : null}
+                  <span>Kembalikan ke Mode Normal (Online)</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isLoadingMaintenance}
+                  onClick={() => handleToggleMaintenance(true)}
+                  className="h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shadow-sm"
+                >
+                  {isLoadingMaintenance ? (
+                    <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  ) : null}
+                  <span>Aktifkan Mode Pemeliharaan Sekarang</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

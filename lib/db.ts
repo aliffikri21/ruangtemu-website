@@ -661,7 +661,9 @@ export async function getEvents(): Promise<EventItem[]> {
       if (error) {
         console.warn("[Supabase] getEvents error:", error.message);
       } else if (rows && rows.length > 0) {
-        return rows.map((r: any) => {
+        return rows
+          .filter((r: any) => r.slug !== "__system_maintenance__" && r.category !== "system")
+          .map((r: any) => {
           // Process assigned frames
           let assignedFrames: FrameItem[] = [];
           if (Array.isArray(r.event_frames) && r.event_frames.length > 0) {
@@ -696,9 +698,11 @@ export async function getEvents(): Promise<EventItem[]> {
     }
   }
 
-  return [...mockEvents].sort(
-    (a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime()
-  );
+  return [...mockEvents]
+    .filter((e) => e.slug !== "__system_maintenance__" && e.category !== "system")
+    .sort(
+      (a, b) => new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime()
+    );
 }
 
 export async function getEventBySlug(slug: string): Promise<EventItem | null> {
