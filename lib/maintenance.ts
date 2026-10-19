@@ -22,7 +22,7 @@ const CACHE_TTL_MS = 2000; // 2 seconds TTL
 const LOCAL_FILE_PATH = path.join(process.cwd(), ".maintenance.json");
 
 /**
- * Read maintenance configuration from cache, local file, or Supabase
+ * Read maintenance configuration from cache, Supabase, or local file
  */
 export async function getMaintenanceConfig(): Promise<MaintenanceConfig> {
   const now = Date.now();
@@ -30,26 +30,7 @@ export async function getMaintenanceConfig(): Promise<MaintenanceConfig> {
     return cachedConfig;
   }
 
-  // 1. Try reading from local file first (fastest and works offline)
-  try {
-    if (fs.existsSync(LOCAL_FILE_PATH)) {
-      const raw = fs.readFileSync(LOCAL_FILE_PATH, "utf-8");
-      const parsed = JSON.parse(raw);
-      if (typeof parsed.enabled === "boolean") {
-        cachedConfig = {
-          enabled: parsed.enabled,
-          message: parsed.message || DEFAULT_CONFIG.message,
-          updatedAt: parsed.updatedAt || new Date().toISOString(),
-        };
-        lastLoadedTime = now;
-        return cachedConfig;
-      }
-    }
-  } catch (err) {
-    console.warn("[Maintenance] Error reading local file:", err);
-  }
-
-  // 2. Try Supabase if configured (persisted in events table with slug '__system_maintenance__')
+  // 1. Authoritative source: Supabase (persisted in events table with slug '__system_maintenance__')
   if (isSupabaseConfigured) {
     try {
       const client = getDbClient();
@@ -75,12 +56,31 @@ export async function getMaintenanceConfig(): Promise<MaintenanceConfig> {
     }
   }
 
+  // 2. Secondary fallback: Local file (for local development when Supabase is offline)
+  try {
+    if (fs.existsSync(LOCAL_FILE_PATH)) {
+      const raw = fs.readFileSync(LOCAL_FILE_PATH, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.enabled === "boolean") {
+        cachedConfig = {
+          enabled: parsed.enabled,
+          message: parsed.message || DEFAULT_CONFIG.message,
+          updatedAt: parsed.updatedAt || new Date().toISOString(),
+        };
+        lastLoadedTime = now;
+        return cachedConfig;
+      }
+    }
+  } catch (err) {
+    console.warn("[Maintenance] Error reading local fallback file:", err);
+  }
+
   lastLoadedTime = now;
   return cachedConfig;
 }
 
 /**
- * Update maintenance configuration across local file and Supabase
+ * Update maintenance configuration across Supabase and local file
  */
 export async function setMaintenanceConfig(enabled: boolean, message?: string): Promise<MaintenanceConfig> {
   const updated: MaintenanceConfig = {
@@ -93,14 +93,7 @@ export async function setMaintenanceConfig(enabled: boolean, message?: string): 
   cachedConfig = updated;
   lastLoadedTime = Date.now();
 
-  // 2. Write to local file
-  try {
-    fs.writeFileSync(LOCAL_FILE_PATH, JSON.stringify(updated, null, 2), "utf-8");
-  } catch (err) {
-    console.warn("[Maintenance] Error writing local file:", err);
-  }
-
-  // 3. Sync to Supabase if configured
+  // 2. Sync to Supabase first as source of truth
   if (isSupabaseConfigured) {
     try {
       const client = getDbClient();
@@ -121,6 +114,14 @@ export async function setMaintenanceConfig(enabled: boolean, message?: string): 
     } catch (err) {
       console.warn("[Maintenance] Supabase update exception:", err);
     }
+  }
+
+  // 3. Write to local file as secondary fallback
+  try {
+    fs.writeFileSync(LOCAL_FILE_PATH, JSON.stringify(updated, null, 2), "utf-8");
+  } catch (err) {
+    // Non-fatal on read-only environments like Vercel
+    console.warn("[Maintenance] Local file write ignored:", err);
   }
 
   return updated;

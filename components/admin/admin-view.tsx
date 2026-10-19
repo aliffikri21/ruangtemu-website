@@ -2213,7 +2213,7 @@ export function AdminView({
                   </span>
                 </div>
                 <p className="text-xs text-[#1B2559] mt-0.5">
-                  Pengunjung publik dialihkan ke halaman <strong>/maintenance</strong>. Anda tetap dapat mengakses website secara normal karena memiliki bypass developer.
+                  Pengunjung publik yang mengakses website RUANGTEMU akan langsung dialihkan ke halaman <strong>/maintenance</strong>. Panel admin (/admin) tetap dapat diakses.
                 </p>
               </div>
             </div>
@@ -5927,7 +5927,7 @@ export function AdminView({
                   : "Ketika diaktifkan, seluruh pengunjung website (halaman utama, booking, photobooth virtual, dll) tidak dapat mengakses website dan akan diarahkan ke halaman pemeliharaan."}
               </p>
               <div className="p-3 bg-[#F4F7FE] rounded-xl text-[11px] text-[#707EAE] leading-relaxed">
-                <strong className="text-[#1B2559] font-semibold">Catatan Pengembang:</strong> Panel admin ini (/admin) dan browser Anda selalu dikecualikan dari pemblokiran, sehingga Anda tetap leluasa melakukan uji coba dan mengembalikan website ke mode online kapan saja.
+                <strong className="text-[#1B2559] font-semibold">Akses Admin:</strong> Panel admin ini (/admin) selalu dapat diakses sehingga Anda dapat mengembalikan website ke mode online kapan saja. Seluruh halaman publik (halaman depan, booking, galeri, event photobooth) akan langsung diarahkan ke halaman pemeliharaan.
               </div>
             </div>
 

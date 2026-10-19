@@ -24,45 +24,21 @@ const SUPABASE_KEY =
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Admin dashboard access: Always allowed & grants admin bypass cookie
+  // 1. Admin dashboard routes are ALWAYS accessible so admins/developers can manage maintenance
   if (pathname.startsWith("/admin")) {
     const response = NextResponse.next();
-    response.cookies.set("rt_admin_bypass", "true", {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    if (request.cookies.has("rt_admin_bypass")) {
+      response.cookies.delete("rt_admin_bypass");
+    }
     return response;
   }
 
-  // 2. Secret developer bypass via query param ?bypass=ruangtemu
-  const bypassParam = request.nextUrl.searchParams.get("bypass");
-  if (bypassParam === "ruangtemu") {
-    const cleanUrl = new URL(request.url);
-    cleanUrl.searchParams.delete("bypass");
-    const response = NextResponse.redirect(cleanUrl);
-    response.cookies.set("rt_admin_bypass", "true", {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    return response;
-  }
-
-  // 3. If developer has bypass cookie, allow full access to all pages
-  const hasBypass = request.cookies.get("rt_admin_bypass")?.value === "true";
-  if (hasBypass) {
-    return NextResponse.next();
-  }
-
-  // 4. Query maintenance mode directly from Supabase REST (fast Edge query, no localhost deadlock)
+  // 2. Query maintenance mode directly from Supabase REST in real time (cache: "no-store")
   let isMaintenance = false;
   try {
     const queryUrl = `${SUPABASE_URL}/rest/v1/events?slug=eq.__system_maintenance__&select=is_active`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1200);
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
     const res = await fetch(queryUrl, {
       signal: controller.signal,
@@ -70,7 +46,7 @@ export async function middleware(request: NextRequest) {
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
       },
-      next: { revalidate: 3 },
+      cache: "no-store",
     });
     clearTimeout(timeoutId);
 
@@ -85,18 +61,35 @@ export async function middleware(request: NextRequest) {
     isMaintenance = false;
   }
 
-  // 5. Handle /maintenance route
-  if (pathname === "/maintenance") {
-    if (!isMaintenance) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-    return NextResponse.next();
-  }
-
-  // 6. If maintenance is active, redirect public visitor to /maintenance
+  // 3. Maintenance mode is ACTIVE
   if (isMaintenance) {
-    return NextResponse.redirect(new URL("/maintenance", request.url));
+    // Already on the maintenance page -> allow viewing
+    if (pathname === "/maintenance") {
+      const response = NextResponse.next();
+      if (request.cookies.has("rt_admin_bypass")) {
+        response.cookies.delete("rt_admin_bypass");
+      }
+      return response;
+    }
+
+    // All public paths (homepage '/', '/booking', '/event/...', etc.) redirect to /maintenance
+    const response = NextResponse.redirect(new URL("/maintenance", request.url), 307);
+    if (request.cookies.has("rt_admin_bypass")) {
+      response.cookies.delete("rt_admin_bypass");
+    }
+    return response;
   }
 
-  return NextResponse.next();
+  // 4. Maintenance mode is INACTIVE
+  // If someone directly visits /maintenance while the site is online, redirect to homepage
+  if (pathname === "/maintenance") {
+    return NextResponse.redirect(new URL("/", request.url), 307);
+  }
+
+  // Normal public browsing
+  const response = NextResponse.next();
+  if (request.cookies.has("rt_admin_bypass")) {
+    response.cookies.delete("rt_admin_bypass");
+  }
+  return response;
 }

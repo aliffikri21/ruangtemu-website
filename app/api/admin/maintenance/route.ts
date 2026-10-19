@@ -37,13 +37,8 @@ export async function POST(req: NextRequest) {
       updatedAt: updated.updatedAt,
     });
 
-    // If enabling or disabling, ensure the admin making the request has the bypass cookie
-    response.cookies.set("rt_admin_bypass", "true", {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    // Ensure any legacy bypass cookie is cleared
+    response.cookies.delete("rt_admin_bypass");
 
     return response;
   } catch (error: unknown) {
