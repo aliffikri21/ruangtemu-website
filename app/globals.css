@@ -47,6 +47,9 @@ body {
 /* ─────────────────────────────────────────────────────────────
    RUANGTEMU ADMIN DARK MODE (Charcoal & Sleek Dark Palette)
    ───────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   RUANGTEMU ADMIN DARK MODE (Charcoal & Sleek Dark Palette)
+   ───────────────────────────────────────────────────────────── */
 .admin-dark {
   color-scheme: dark;
   background-color: #121214 !important;
@@ -67,26 +70,157 @@ body {
   background-color: #0E0E10 !important;
 }
 
-/* Text colors */
+.admin-dark .bg-\[\#EAEFFA\],
+.admin-dark .bg-\[\#eaeffa\] {
+  background-color: rgba(67, 24, 255, 0.16) !important;
+}
+
+/* Light pastel card/modal surfaces converted to sleek dark containers */
+.admin-dark .bg-slate-50,
+.admin-dark .bg-slate-50\/70,
+.admin-dark .bg-slate-100 {
+  background-color: #141517 !important;
+}
+
+.admin-dark .bg-emerald-50,
+.admin-dark .bg-emerald-50\/60,
+.admin-dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.14) !important;
+}
+
+.admin-dark .bg-amber-50,
+.admin-dark .bg-amber-50\/70,
+.admin-dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+}
+
+.admin-dark .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.14) !important;
+}
+
+.admin-dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.14) !important;
+}
+
+.admin-dark .bg-blue-100 {
+  background-color: rgba(37, 99, 235, 0.16) !important;
+}
+
+.admin-dark .bg-\[\#E9FAF4\],
+.admin-dark .bg-\[\#e9faf4\],
+.admin-dark .bg-\[\#E9FAF4\]\/60,
+.admin-dark .bg-\[\#E9FAF4\]\/70 {
+  background-color: rgba(1, 181, 116, 0.15) !important;
+}
+
+.admin-dark .bg-\[\#FFF6E9\],
+.admin-dark .bg-\[\#fff6e9\] {
+  background-color: rgba(255, 181, 71, 0.15) !important;
+}
+
+.admin-dark .bg-\[\#FEEFEE\],
+.admin-dark .bg-\[\#feefee\] {
+  background-color: rgba(238, 93, 80, 0.15) !important;
+}
+
+/* Primary and Heading Text */
 .admin-dark .text-\[\#1B2559\],
-.admin-dark .text-\[\#2B3674\] {
+.admin-dark .text-\[\#1b2559\],
+.admin-dark .text-\[\#2B3674\],
+.admin-dark .text-\[\#2b3674\],
+.admin-dark .text-slate-800,
+.admin-dark .text-slate-900,
+.admin-dark .text-blue-950 {
   color: #F8F9FA !important;
 }
 
+/* Secondary & Muted Text (Case-insensitive support) */
 .admin-dark .text-\[\#8F9BBA\],
-.admin-dark .text-\[\#a3aed0\] {
+.admin-dark .text-\[\#8f9bba\],
+.admin-dark .text-\[\#A3AED0\],
+.admin-dark .text-\[\#a3aed0\],
+.admin-dark .text-\[\#707EAE\],
+.admin-dark .text-\[\#707eae\],
+.admin-dark .text-\[\#5B6B8B\],
+.admin-dark .text-\[\#735656\],
+.admin-dark .text-\[\#8C4A4A\],
+.admin-dark .text-\[\#995C3D\],
+.admin-dark .text-slate-500 {
   color: #909296 !important;
+}
+
+/* Brand Accent Text on dark backgrounds */
+.admin-dark .text-\[\#4318FF\],
+.admin-dark .text-\[\#4318ff\] {
+  color: #7551FF !important;
+}
+
+/* Status & Badge Text colors with high contrast */
+.admin-dark .text-emerald-600,
+.admin-dark .text-emerald-700,
+.admin-dark .text-emerald-800,
+.admin-dark .text-emerald-900 {
+  color: #34D399 !important;
+}
+
+.admin-dark .text-amber-700,
+.admin-dark .text-amber-800,
+.admin-dark .text-amber-900,
+.admin-dark .text-amber-950 {
+  color: #FCD34D !important;
+}
+
+.admin-dark .text-sky-700 {
+  color: #38BDF8 !important;
+}
+
+.admin-dark .text-blue-900 {
+  color: #60A5FA !important;
+}
+
+.admin-dark .text-blue-600 {
+  color: #7551FF !important;
+}
+
+.admin-dark .text-red-700 {
+  color: #F87171 !important;
 }
 
 /* Borders and dividers */
 .admin-dark .border-\[\#E0E5F2\],
-.admin-dark .border-\[\#e0e5f2\] {
+.admin-dark .border-\[\#e0e5f2\],
+.admin-dark .border-\[\#E0E5F2\]\/60,
+.admin-dark .border-slate-200 {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .admin-dark .divide-\[\#E0E5F2\] > * + *,
-.admin-dark .divide-\[\#e0e5f2\] > * + * {
+.admin-dark .divide-\[\#e0e5f2\] > * + *,
+.admin-dark .divide-\[\#e0e5f2\]\/70 > * + * {
   border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.admin-dark .border-emerald-100,
+.admin-dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.28) !important;
+}
+
+.admin-dark .border-amber-200,
+.admin-dark .border-amber-200\/80,
+.admin-dark .border-amber-300 {
+  border-color: rgba(245, 158, 11, 0.28) !important;
+}
+
+.admin-dark .border-sky-200 {
+  border-color: rgba(14, 165, 233, 0.28) !important;
+}
+
+.admin-dark .border-blue-300 {
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+.admin-dark .border-red-200 {
+  border-color: rgba(239, 68, 68, 0.28) !important;
 }
 
 /* Sidebar and Header */
@@ -109,49 +243,101 @@ body {
   color: #F8F9FA !important;
 }
 
+.admin-dark option {
+  background-color: #1A1B1E !important;
+  color: #F8F9FA !important;
+}
+
 .admin-dark input::placeholder,
 .admin-dark textarea::placeholder {
   color: #5C5F66 !important;
 }
 
-/* Hover and active states */
+.admin-dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  cursor: pointer;
+}
+
+/* Hover and active states (prevent text from turning dark or flashing white) */
 .admin-dark .hover\:bg-\[\#F4F7FE\]:hover,
-.admin-dark .hover\:bg-\[\#f4f7fe\]:hover {
+.admin-dark .hover\:bg-\[\#f4f7fe\]:hover,
+.admin-dark .hover\:bg-\[\#f4f7fe\]\/50:hover,
+.admin-dark .hover\:bg-\[\#F4F7FE\]\/40:hover,
+.admin-dark .hover\:bg-\[\#EAEFFA\]:hover,
+.admin-dark .hover\:bg-\[\#eaeffa\]:hover,
+.admin-dark .hover\:bg-\[\#eaedfa\]:hover,
+.admin-dark .hover\:bg-\[\#eaeefa\]:hover,
+.admin-dark .hover\:bg-\[\#E0E5F2\]:hover,
+.admin-dark .hover\:bg-\[\#e0e5f2\]:hover,
+.admin-dark .hover\:bg-white:hover {
   background-color: rgba(255, 255, 255, 0.06) !important;
 }
 
-.admin-dark .hover\:bg-\[\#F4F7FE\]\/40:hover {
-  background-color: rgba(255, 255, 255, 0.04) !important;
+.admin-dark .hover\:bg-emerald-100:hover {
+  background-color: rgba(16, 185, 129, 0.22) !important;
 }
 
-.admin-dark .hover\:bg-\[\#EAEFFA\]:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+.admin-dark .hover\:bg-amber-50:hover {
+  background-color: rgba(245, 158, 11, 0.22) !important;
 }
 
-.admin-dark .hover\:bg-\[\#E0E5F2\]:hover,
-.admin-dark .hover\:bg-\[\#e0e5f2\]:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+.admin-dark .hover\:bg-red-50:hover,
+.admin-dark .hover\:bg-rose-50:hover {
+  background-color: rgba(239, 68, 68, 0.18) !important;
 }
 
-/* Card badges */
-.admin-dark .bg-\[\#E9FAF4\],
-.admin-dark .bg-\[\#e9faf4\] {
-  background-color: rgba(1, 181, 116, 0.15) !important;
+.admin-dark .hover\:bg-slate-200:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.admin-dark .bg-\[\#FFF6E9\],
-.admin-dark .bg-\[\#fff6e9\] {
-  background-color: rgba(255, 181, 71, 0.15) !important;
+/* Hover text: MUST NOT turn dark navy on dark background */
+.admin-dark .hover\:text-\[\#1B2559\]:hover,
+.admin-dark .hover\:text-\[\#1b2559\]:hover,
+.admin-dark .hover\:text-\[\#2B3674\]:hover,
+.admin-dark .hover\:text-\[\#2b3674\]:hover {
+  color: #FFFFFF !important;
 }
 
-.admin-dark .bg-\[\#FEEFEE\],
-.admin-dark .bg-\[\#feefee\] {
-  background-color: rgba(238, 93, 80, 0.15) !important;
+.admin-dark .hover\:text-\[\#4318FF\]:hover,
+.admin-dark .hover\:text-\[\#4318ff\]:hover {
+  color: #8568FF !important;
+}
+
+/* Table headers & rows */
+.admin-dark thead,
+.admin-dark thead th {
+  background-color: #121214 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.admin-dark tr {
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Card shadows */
 .admin-dark .shadow-\[0_18px_40px_0_rgba\(112\,144\,176\,0\.06\)\] {
   box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+.admin-dark .shadow-xs,
+.admin-dark .shadow-sm {
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dark mode scrollbars */
+.admin-dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.admin-dark ::-webkit-scrollbar-track {
+  background: #121214;
+}
+.admin-dark ::-webkit-scrollbar-thumb {
+  background: #2C2E33;
+  border-radius: 4px;
+}
+.admin-dark ::-webkit-scrollbar-thumb:hover {
+  background: #373A40;
 }
 
 /* ─────────────────────────────────────────────────────────────

@@ -2141,6 +2141,8 @@ export function AdminView({
               className={`flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                 isMaintenanceMode
                   ? "bg-amber-500 text-slate-950 border-amber-500 shadow-sm animate-pulse"
+                  : isDarkMode
+                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
                   : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
               }`}
               title={
@@ -2412,7 +2414,11 @@ export function AdminView({
                             type="button"
                             onClick={() => setOverviewCategoryFilter("photobooth")}
                             className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                              overviewCategoryFilter === "photobooth" ? "bg-white text-amber-900 shadow-xs" : "text-[#8F9BBA] hover:text-[#1B2559]"
+                              overviewCategoryFilter === "photobooth"
+                                ? isDarkMode
+                                  ? "bg-white text-amber-400 shadow-xs"
+                                  : "bg-white text-amber-900 shadow-xs"
+                                : "text-[#8F9BBA] hover:text-[#1B2559]"
                             }`}
                           >
                             Photobooth
@@ -3605,7 +3611,11 @@ export function AdminView({
                     type="button"
                     onClick={() => setEventsCategoryFilter("photobooth")}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                      eventsCategoryFilter === "photobooth" ? "bg-white text-amber-900 shadow-xs" : "text-[#8F9BBA] hover:text-[#1B2559]"
+                      eventsCategoryFilter === "photobooth"
+                        ? isDarkMode
+                          ? "bg-white text-amber-400 shadow-xs"
+                          : "bg-white text-amber-900 shadow-xs"
+                        : "text-[#8F9BBA] hover:text-[#1B2559]"
                     }`}
                   >
                     Photobooth Fisik ({events.filter((e) => e.category === "photobooth").length})
