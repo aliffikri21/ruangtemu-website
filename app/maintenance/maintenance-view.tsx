@@ -116,7 +116,7 @@ export default function MaintenanceView() {
 /* ---------- header ---------- */
 .top{display:flex;justify-content:center;padding-block:26px 0}
 .logo{display:inline-flex;align-items:center;gap:10px;font:800 18px/1 var(--f-display);letter-spacing:-.02em;text-decoration:none}
-.logo svg{width:30px;height:30px}
+.logo svg,.logo img{width:30px;height:30px;border-radius:50%;object-fit:cover;box-shadow:0 2px 6px rgba(12,16,23,.15)}
 .logo small{font:500 11px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-left:-2px}
 
 /* ---------- isi ---------- */
@@ -187,11 +187,13 @@ export default function MaintenanceView() {
         <div className="page">
           <header className="top pad">
             <a className="logo" href="/" aria-label="RUANGTEMU Digital">
-              <svg viewBox="0 0 28 28" aria-hidden="true">
-                <circle cx="14" cy="14" r="13" fill="#0c1017" />
-                <circle cx="14" cy="14" r="6" fill="none" stroke="#38bdf8" strokeWidth="2.4" />
-                <circle cx="14" cy="14" r="2" fill="#38bdf8" />
-              </svg>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-ruangtemu.jpg"
+                alt="RUANGTEMU"
+                width={30}
+                height={30}
+              />
               RUANGTEMU <small>Digital</small>
             </a>
           </header>
