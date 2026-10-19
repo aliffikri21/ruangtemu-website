@@ -95,6 +95,17 @@ export default function EventGalleryPage({ params }: Props) {
 
   const displayHostName = event?.host_name || (slug.includes("ilva") ? "Ilva & Ricky" : slug.includes("jaya") ? "Jaya & Rika" : event?.title || "Wedding Memories");
 
+  if (!isLoading && event?.category === "photobooth") {
+    return (
+      <div className="min-h-screen bg-[#fafaf9] text-stone-900 flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-xl font-bold text-stone-900 mb-2">Halaman Tidak Tersedia</h1>
+        <p className="text-sm text-stone-600 max-w-md">
+          Acara ini merupakan layanan Photobooth Fisik (cetak langsung di lokasi) dan tidak memiliki galeri virtual publik.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] bg-[#f8fafc] text-stone-900 flex flex-col antialiased">
       {/* Top Header */}

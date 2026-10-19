@@ -13,22 +13,46 @@ interface PackageOption {
   name: string;
   price: number;
   duration: number;
+  category: "photobooth" | "virtual_photobooth";
+  description: string;
 }
 
 const packageOptions: PackageOption[] = [
   {
+    id: "pkg-basic",
+    slug: "paket-basic",
+    name: "Paket Basic Photobooth (2 Jam Cetak Fisik)",
+    category: "photobooth",
+    price: 1800000,
+    duration: 120,
+    description: "Unlimited print 4R / 2-strip, studio lighting, props, 2 kru operator",
+  },
+  {
+    id: "pkg-deluxe",
+    slug: "paket-deluxe",
+    name: "Paket Standard Deluxe (3 Jam Cetak Fisik)",
+    category: "photobooth",
+    price: 2500000,
+    duration: 180,
+    description: "Unlimited glossy prints, custom frame, props, live gallery, 2 kru, bonus album",
+  },
+  {
     id: "pkg-silver",
     slug: "paket-silver",
-    name: "Paket Silver — 10 Hari Akses (Photo & Voice : Terfavorit)",
+    name: "Paket Silver (10 Hari Akses, 2 Frame, 200 QR)",
+    category: "virtual_photobooth",
     price: 350000,
     duration: 240,
+    description: "Foto & voice message, 2 desain frame, 200 kartu QR, scan QR tanpa batas",
   },
   {
     id: "pkg-gold",
     slug: "paket-gold",
-    name: "Paket Gold — 14 Hari Akses (Photo & Voice + 3 Frame)",
+    name: "Paket Gold (14 Hari Akses, 3 Frame, 300 QR)",
+    category: "virtual_photobooth",
     price: 450000,
     duration: 336,
+    description: "Foto & voice message, 3 desain frame, 300 kartu QR, live feed proyektor",
   },
 ];
 
@@ -36,6 +60,13 @@ function BookingForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const packageParam = searchParams.get("package");
+  const categoryParam = searchParams.get("category");
+
+  const [serviceCategory, setServiceCategory] = useState<"photobooth" | "virtual_photobooth">(() => {
+    if (categoryParam === "photobooth") return "photobooth";
+    if (packageParam?.includes("basic") || packageParam?.includes("deluxe")) return "photobooth";
+    return "virtual_photobooth";
+  });
 
   const [formData, setFormData] = useState({
     customer_name: "",
@@ -58,13 +89,23 @@ function BookingForm() {
     if (packageParam) {
       const found = packageOptions.find((p) => p.slug === packageParam);
       if (found) {
+        setServiceCategory(found.category);
         setFormData((prev) => ({ ...prev, package_id: found.id }));
       }
     }
   }, [packageParam]);
 
+  const filteredPackages = packageOptions.filter((p) => p.category === serviceCategory);
   const selectedPackage =
-    packageOptions.find((p) => p.id === formData.package_id) || packageOptions[0];
+    packageOptions.find((p) => p.id === formData.package_id) || filteredPackages[0] || packageOptions[0];
+
+  const handleCategoryChange = (cat: "photobooth" | "virtual_photobooth") => {
+    setServiceCategory(cat);
+    const firstOfCat = packageOptions.find((p) => p.category === cat);
+    if (firstOfCat) {
+      setFormData((prev) => ({ ...prev, package_id: firstOfCat.id }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +117,8 @@ function BookingForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          category: serviceCategory,
+          booking_category: serviceCategory,
           package_name: selectedPackage.name,
           total_price: selectedPackage.price,
         }),
@@ -95,6 +138,7 @@ function BookingForm() {
 
   const whatsappMessage = encodeURIComponent(
     `Halo Admin RUANGTEMU Photobooth Palopo! Saya sudah mengisi formulir reservasi:\n\n` +
+      `• Kategori Layanan: ${serviceCategory === "photobooth" ? "Photobooth (Cetak Fisik)" : "Virtual Photobooth"}\n` +
       `• Nama: ${formData.customer_name}\n` +
       `• Event: ${formData.event_name} (${formData.event_type})\n` +
       `• Tanggal: ${formData.event_date} (${formData.event_time} WITA)\n` +
@@ -344,12 +388,38 @@ function BookingForm() {
                   Paket Layanan
                 </h4>
                 <span className="font-mono text-[10px] text-stone-400">
-                  {packageOptions.length} pilihan
+                  {filteredPackages.length} pilihan
                 </span>
               </div>
 
+              {/* Category Selector Tabs */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-100 border border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange("photobooth")}
+                  className={`min-h-[40px] px-2 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer ${
+                    serviceCategory === "photobooth"
+                      ? "bg-white text-stone-900 shadow-sm border border-stone-300 font-bold"
+                      : "text-stone-500 hover:text-stone-900"
+                  }`}
+                >
+                  1. Photobooth
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange("virtual_photobooth")}
+                  className={`min-h-[40px] px-2 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer ${
+                    serviceCategory === "virtual_photobooth"
+                      ? "bg-white text-stone-900 shadow-sm border border-stone-300 font-bold"
+                      : "text-stone-500 hover:text-stone-900"
+                  }`}
+                >
+                  2. Virtual
+                </button>
+              </div>
+
               <div className="space-y-2">
-                {packageOptions.map((pkg) => {
+                {filteredPackages.map((pkg) => {
                   const isSelected = formData.package_id === pkg.id;
                   return (
                     <label
@@ -371,7 +441,8 @@ function BookingForm() {
                         />
                         <div className="flex-1">
                           <div className="text-xs font-medium text-stone-900 leading-snug">{pkg.name}</div>
-                          <div className="font-mono text-xs text-stone-600 mt-1">
+                          <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">{pkg.description}</p>
+                          <div className="font-mono text-xs text-stone-900 font-semibold mt-1.5">
                             {formatRupiah(pkg.price)}
                           </div>
                         </div>

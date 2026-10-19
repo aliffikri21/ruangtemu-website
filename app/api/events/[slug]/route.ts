@@ -89,6 +89,7 @@ export async function PUT(
     if (body.city !== undefined) updates.city = body.city;
     if (body.description !== undefined) updates.description = body.description;
     if (body.cover_image !== undefined) updates.cover_image = body.cover_image;
+    if (body.category !== undefined) updates.category = body.category;
     if (body.status !== undefined) updates.status = body.status;
     if (body.is_active !== undefined) updates.is_active = body.is_active;
     if (body.allow_guestbook !== undefined)

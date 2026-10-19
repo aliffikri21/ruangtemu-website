@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
       city: body.city || "Palopo",
       description: body.description || "",
       cover_image: body.cover_image || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
+      category: body.category || "virtual_photobooth",
       status: "ACTIVE",
       is_active: true,
       allow_guestbook: body.allow_guestbook ?? true,
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
             textColor: "#ffffff",
             padding: 16,
             borderRadius: 12,
-            sticker: "💍",
+            sticker: "✦",
           },
     };
 

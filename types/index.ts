@@ -17,6 +17,8 @@ export interface PhotoSlot {
   height: number;
 }
 
+export type ServiceCategory = "photobooth" | "virtual_photobooth";
+
 export interface Package {
   id: string;
   name: string;
@@ -44,6 +46,8 @@ export interface Booking {
   city: string;
   package_id: string;
   package_name?: string;
+  category?: ServiceCategory | string;
+  booking_category?: ServiceCategory | string;
   status: BookingStatus;
   notes?: string;
   total_price: number;
@@ -105,6 +109,7 @@ export interface EventItem {
   host_name: string;
   client_name?: string;
   event_type: EventType;
+  category?: ServiceCategory | string;
   date: string;
   event_date?: string;
   venue: string;
@@ -123,7 +128,7 @@ export interface EventItem {
   theme_config?: LandingThemeConfig;
   created_at: string;
   updated_at?: string;
-  package_tier?: "bronze" | "silver" | "gold";
+  package_tier?: "bronze" | "silver" | "gold" | "basic" | "deluxe" | string;
   package_name?: string;
   payment_status?: "PENDING" | "PAID" | "UNPAID" | "FAILED";
   payment_amount?: number;

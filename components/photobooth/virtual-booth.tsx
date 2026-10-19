@@ -1660,7 +1660,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 <div className="space-y-2">
                   <div className="text-xs font-medium text-stone-400">Aksen Ikon</div>
                   <div className="flex gap-2 flex-wrap">
-                    {["✦", "💍", "❤️", "🥂", "🎉", "⭐"].map((emoji) => (
+                    {["✦", "✧", "◆", "◇", "★", "☆"].map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
@@ -2238,7 +2238,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           : "bg-stone-800 active:bg-stone-700 text-stone-200 border border-stone-700"
                         }`}
                     >
-                      {isRecordingAudio ? "Berhenti" : "🎤 Rekam"}
+                      {isRecordingAudio ? "Berhenti" : "Rekam Suara"}
                     </button>
 
                     {audioUrl && !isRecordingAudio && (
@@ -2287,7 +2287,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           <main className={`flex-1 flex flex-col items-center justify-center px-5 py-8 relative z-10 ${isNurulIqraWedding ? "bg-transparent text-stone-900" : ""}`}>
             <div className="w-full max-w-sm text-center space-y-6">
               <div className="space-y-2">
-                <div className="text-4xl">🎉</div>
+                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center">
+                  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
                 <h3 className={`text-2xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-[family-name:var(--font-cinzel)]" : "text-white"}`}>
                   Foto Berhasil Dikirim
                 </h3>

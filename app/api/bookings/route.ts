@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
       city: body.city || "Palopo",
       package_id: body.package_id || "22222222-2222-2222-2222-222222222222",
       package_name: body.package_name || "Paket Silver",
+      category: body.category || "virtual_photobooth",
+      booking_category: body.category || "virtual_photobooth",
       notes: body.notes || "",
       total_price: body.total_price || 350000,
       payment_status: body.payment_status || "PENDING",

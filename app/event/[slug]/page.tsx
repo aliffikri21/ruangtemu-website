@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
 
-  if (!event) {
+  if (!event || event.category === "photobooth") {
     return {
       title: "Event Not Found | RUANGTEMU Digital",
     };
@@ -32,7 +32,7 @@ export default async function EventPhotoboothPage({ params }: Props) {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
 
-  if (!event) {
+  if (!event || event.category === "photobooth") {
     notFound();
   }
 

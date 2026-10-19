@@ -13,12 +13,13 @@ export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [curvedFontSize, setCurvedFontSize] = useState(42);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [bookingPackageId, setBookingPackageId] = useState("pkg-silver");
+  const [selectedLandingCategory, setSelectedLandingCategory] = useState<"virtual_photobooth" | "photobooth">("virtual_photobooth");
+  const [bookingPackageId, setBookingPackageId] = useState<string | undefined>(undefined);
+  const [bookingInitialCategory, setBookingInitialCategory] = useState<"photobooth" | "virtual_photobooth" | undefined>(undefined);
 
-  const handleOpenBooking = (packageId?: string) => {
-    if (packageId) {
-      setBookingPackageId(packageId);
-    }
+  const handleOpenBooking = (packageId?: string, category?: "photobooth" | "virtual_photobooth") => {
+    setBookingPackageId(packageId);
+    setBookingInitialCategory(category);
     setIsBookingOpen(true);
   };
 
@@ -264,7 +265,7 @@ export default function HomePage() {
     });
 
     /* =====================================================================
-       SCENE 3D — satu objek kontur yang mengikuti section aktif
+       SCENE 3D: satu objek kontur yang mengikuti section aktif
     ===================================================================== */
     const canvas = canvasRef.current || ($("#gl") as HTMLCanvasElement | null);
     if (!canvas) return;
@@ -446,9 +447,15 @@ export default function HomePage() {
       mouse.sy += (mouse.y - mouse.sy) * (reduce ? 0 : Math.min(1, dt * 4));
 
       const w = window.innerWidth;
-      const isMobile = w < 640;
-      const isTablet = w >= 640 && w < 1024;
-      const scale = S.s * halfH * (isMobile ? 0.25 : isTablet ? 0.38 : 0.54);
+      const isMobile = w < 860;
+      if (isMobile) {
+        strips.visible = false;
+        animId = requestAnimationFrame(frame);
+        return;
+      }
+
+      const isTablet = w >= 860 && w < 1024;
+      const scale = S.s * halfH * (isTablet ? 0.38 : 0.54);
       anchor.position.set(S.x * halfW, S.y * halfH, 0);
 
       strips.visible = S.strips > 0.02;
@@ -500,7 +507,7 @@ export default function HomePage() {
 
   return (
     <div className="landing-root">
-      <canvas id="gl" ref={canvasRef} aria-hidden="true"></canvas>
+      <canvas id="gl" ref={canvasRef} aria-hidden="true" className="hidden md:block"></canvas>
 
       <header className="nav" id="top">
         <div className="nav-in">
@@ -667,7 +674,7 @@ export default function HomePage() {
                 <h3>Live Videotron</h3>
                 <p>Slideshow otomatis untuk proyektor atau videotron. Foto dan doa dari tamu tampil bergantian.</p>
 
-                <div className="absolute -top-6 -right-4 sm:-top-8 sm:-right-12 lg:-top-10 lg:-right-24 pointer-events-auto z-10 select-none scale-90 sm:scale-100 origin-center">
+                <div className="hidden md:block absolute -top-8 sm:-right-12 lg:-top-10 lg:-right-24 pointer-events-auto z-10 select-none scale-90 sm:scale-100 origin-center">
                   <CircularText
                     text="RUANGTEMU PHOTOBOOTH • "
                     spinDuration={20}
@@ -846,70 +853,162 @@ export default function HomePage() {
                 Pilih paket yang <em>pas</em> untuk acara Anda
               </h2>
               <p className="lead" data-rv="">
-                Harga per event. Semua paket menyertakan foto tanpa batas.
+                Harga per event. Tersedia paket booth cetak fisik di lokasi dan virtual photobooth via smartphone.
               </p>
             </div>
-            <div className="pk-grid">
-              <article className="pk hot tilt" data-rv="">
-                <div className="pk-top">
-                  <span>Akses 10 hari</span>
-                  <span className="badge">Rekomendasi</span>
-                </div>
-                <h3>Silver</h3>
-                <div className="price">
-                  Rp 350.000<small>per event</small>
-                </div>
-                <ul>
-                  <li>Foto dan voice message</li>
-                  <li>2 desain frame</li>
-                  <li>Cetak 200 kartu QR</li>
-                  <li>QR tanpa batas</li>
-                  <li>Foto tanpa batas</li>
-                </ul>
+
+            {/* Category Selector Tabs */}
+            <div className="flex items-center justify-center mb-8 px-2" data-rv="">
+              <div className="w-full max-w-md grid grid-cols-2 p-1 sm:p-1.5 rounded-2xl sm:rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
                 <button
                   type="button"
-                  onClick={() => handleOpenBooking("pkg-silver")}
-                  className="btn btn-pink cursor-pointer w-full justify-center text-center"
+                  onClick={() => setSelectedLandingCategory("virtual_photobooth")}
+                  className={`min-h-[44px] px-3 sm:px-6 py-2.5 rounded-xl sm:rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    selectedLandingCategory === "virtual_photobooth"
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
+                  }`}
                 >
-                  Pilih Silver{" "}
-                  <span className="btn-ic">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 17L17 7M8 7h9v9" />
-                    </svg>
-                  </span>
+                  <span>Virtual Booth</span>
                 </button>
-              </article>
-              <article className="pk tilt" data-rv="">
-                <div className="pk-top">
-                  <span>Akses 14 hari</span>
-                </div>
-                <h3>Gold</h3>
-                <div className="price">
-                  Rp 450.000<small>per event</small>
-                </div>
-                <ul>
-                  <li>Foto dan voice message</li>
-                  <li>3 desain frame</li>
-                  <li>Cetak 300 kartu QR</li>
-                  <li>QR tanpa batas</li>
-                  <li>Foto tanpa batas</li>
-                </ul>
                 <button
                   type="button"
-                  onClick={() => handleOpenBooking("pkg-gold")}
-                  className="btn btn-light cursor-pointer w-full justify-center text-center"
+                  onClick={() => setSelectedLandingCategory("photobooth")}
+                  className={`min-h-[44px] px-3 sm:px-6 py-2.5 rounded-xl sm:rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    selectedLandingCategory === "photobooth"
+                      ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30"
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
+                  }`}
                 >
-                  Pilih Gold{" "}
-                  <span className="btn-ic">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 17L17 7M8 7h9v9" />
-                    </svg>
-                  </span>
+                  <span>Booth Fisik</span>
                 </button>
-              </article>
+              </div>
             </div>
+
+            {selectedLandingCategory === "virtual_photobooth" ? (
+              <div className="pk-grid">
+                <article className="pk hot tilt" data-rv="">
+                  <div className="pk-top">
+                    <span>Akses 10 hari</span>
+                    <span className="badge">Rekomendasi</span>
+                  </div>
+                  <h3>Silver</h3>
+                  <div className="price">
+                    Rp 350.000<small>per event</small>
+                  </div>
+                  <ul>
+                    <li>Foto dan voice message ucapan</li>
+                    <li>2 pilihan desain frame kustom</li>
+                    <li>Cetak 200 kartu QR eksklusif</li>
+                    <li>Scan QR dan unduhan tanpa batas</li>
+                    <li>Live gallery slideshow untuk proyektor</li>
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBooking("pkg-silver", "virtual_photobooth")}
+                    className="btn btn-pink cursor-pointer w-full justify-center text-center"
+                  >
+                    Pilih Silver{" "}
+                    <span className="btn-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M8 7h9v9" />
+                      </svg>
+                    </span>
+                  </button>
+                </article>
+                <article className="pk tilt" data-rv="">
+                  <div className="pk-top">
+                    <span>Akses 14 hari</span>
+                  </div>
+                  <h3>Gold</h3>
+                  <div className="price">
+                    Rp 450.000<small>per event</small>
+                  </div>
+                  <ul>
+                    <li>Foto dan voice message ucapan</li>
+                    <li>3 pilihan desain frame kustom</li>
+                    <li>Cetak 300 kartu QR eksklusif</li>
+                    <li>Scan QR dan unduhan tanpa batas</li>
+                    <li>Live gallery real-time &amp; prioritas support</li>
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBooking("pkg-gold", "virtual_photobooth")}
+                    className="btn btn-light cursor-pointer w-full justify-center text-center"
+                  >
+                    Pilih Gold{" "}
+                    <span className="btn-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M8 7h9v9" />
+                      </svg>
+                    </span>
+                  </button>
+                </article>
+              </div>
+            ) : (
+              <div className="pk-grid">
+                <article className="pk tilt" data-rv="">
+                  <div className="pk-top">
+                    <span>Durasi 2 Jam</span>
+                    <span className="badge bg-amber-500 text-slate-950 font-bold">Booth Fisik</span>
+                  </div>
+                  <h3>Basic Photobooth</h3>
+                  <div className="price">
+                    Rp 1.800.000<small>per 2 jam acara</small>
+                  </div>
+                  <ul>
+                    <li>Unlimited cetak foto 4R / 2-strip</li>
+                    <li>Kamera profesional &amp; lighting studio</li>
+                    <li>Aneka properti foto seru &amp; fun props</li>
+                    <li>2 kru operator ramah standby</li>
+                    <li>Link Google Drive soft copy seluruh foto</li>
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBooking("pkg-basic", "photobooth")}
+                    className="btn btn-light cursor-pointer w-full justify-center text-center"
+                  >
+                    Pilih Paket Basic{" "}
+                    <span className="btn-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M8 7h9v9" />
+                      </svg>
+                    </span>
+                  </button>
+                </article>
+                <article className="pk hot tilt" data-rv="">
+                  <div className="pk-top">
+                    <span>Durasi 3 Jam</span>
+                    <span className="badge bg-amber-500 text-slate-950 font-bold">Rekomendasi Wedding</span>
+                  </div>
+                  <h3>Standard Deluxe</h3>
+                  <div className="price">
+                    Rp 2.500.000<small>per 3 jam acara</small>
+                  </div>
+                  <ul>
+                    <li>Unlimited cetak foto glossy kecepatan tinggi</li>
+                    <li>Kustom frame template eksklusif sesuai tema</li>
+                    <li>Lighting studio, backdrop, &amp; properti tematik</li>
+                    <li>Live gallery monitor &amp; 2 kru operator standby</li>
+                    <li>Bonus 1 album foto eksklusif acara</li>
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBooking("pkg-deluxe", "photobooth")}
+                    className="btn btn-pink cursor-pointer w-full justify-center text-center"
+                  >
+                    Pilih Paket Deluxe{" "}
+                    <span className="btn-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M8 7h9v9" />
+                      </svg>
+                    </span>
+                  </button>
+                </article>
+              </div>
+            )}
             <p className="note" data-rv="">
-              Acara di luar Kota Palopo? Tersedia paket khusus lewat konsultasi WhatsApp.
+              Acara di luar Kota Palopo (Luwu, Luwu Utara, Luwu Timur, Toraja)? Tersedia paket perjalanan khusus lewat konsultasi WhatsApp.
             </p>
           </div>
         </section>
@@ -958,8 +1057,8 @@ export default function HomePage() {
           data-obj="0,-0.12,1.05,0,0,1"
           data-objm="0,-0.05,0.95,0,0,1"
         >
-          {/* React Bits Curved Loop Animation - Full Width (Edge to Edge) */}
-          <div className="w-full overflow-hidden -mt-6 sm:-mt-10 mb-6 sm:mb-10" data-rv="">
+          {/* React Bits Curved Loop Animation - Desktop Only */}
+          <div className="hidden md:block w-full overflow-hidden -mt-6 sm:-mt-10 mb-8 sm:mb-14" data-rv="">
             <CurvedLoop
               marqueeText="RUANGTEMU Photobooth ✦ Virtual Photobooth"
               speed={2}
@@ -987,36 +1086,54 @@ export default function HomePage() {
             </div>
             <div className="rv-grid">
               <article className="rv" data-rv="">
-                <span className="q" aria-hidden="true">
-                  “
-                </span>
+                <svg
+                  className="rv-quote-icon"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 18 14"
+                >
+                  <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z" />
+                </svg>
                 <p>Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.</p>
                 <footer>
-                  <b>Andi Pratama &amp; Sarah</b>
-                  <span>Banua Subur Hall</span>
-                  <i>Pernikahan</i>
+                  <b>Ilva &amp; Ricky</b>
+                  <span>Gedung Opu Daeng Risadju, Palopo</span>
+                  <i>PERNIKAHAN</i>
                 </footer>
               </article>
               <article className="rv" data-rv="">
-                <span className="q" aria-hidden="true">
-                  “
-                </span>
+                <svg
+                  className="rv-quote-icon"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 18 14"
+                >
+                  <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z" />
+                </svg>
                 <p>Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.</p>
                 <footer>
-                  <b>dr. Rian &amp; Nurul</b>
-                  <span>Merdeka Convention Hall</span>
-                  <i>Resepsi</i>
+                  <b>Jaya &amp; Rika</b>
+                  <span>D&apos;Twins Cafe, Palopo</span>
+                  <i>PERNIKAHAN</i>
                 </footer>
               </article>
               <article className="rv" data-rv="">
-                <span className="q" aria-hidden="true">
-                  “
-                </span>
+                <svg
+                  className="rv-quote-icon"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 18 14"
+                >
+                  <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z" />
+                </svg>
                 <p>Menilai layanan rapi, tepat waktu, dan interaktif berkat live projection di lokasi.</p>
                 <footer>
-                  <b>Komunitas Kreatif Luwu</b>
-                  <span>Palopo Youth Creative Festival</span>
-                  <i>Festival</i>
+                  <b>Nurul &amp; Iqra</b>
+                  <span>Gedung Merdeka Convention Centre, Palopo</span>
+                  <i>PERNIKAHAN</i>
                 </footer>
               </article>
             </div>
@@ -1153,6 +1270,7 @@ export default function HomePage() {
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
         initialPackageId={bookingPackageId}
+        initialCategory={bookingInitialCategory}
       />
     </div>
   );

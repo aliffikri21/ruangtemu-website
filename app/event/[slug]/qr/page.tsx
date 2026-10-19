@@ -14,6 +14,18 @@ export default function QrStandeePage({ params }: Props) {
 
   const [qrUrl, setQrUrl] = useState<string>("");
   const [eventUrl, setEventUrl] = useState<string>("");
+  const [eventCategory, setEventCategory] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/events/${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.event) {
+          setEventCategory(data.event.category || null);
+        }
+      })
+      .catch(() => {});
+  }, [slug]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -33,6 +45,17 @@ export default function QrStandeePage({ params }: Props) {
   const handlePrint = () => {
     window.print();
   };
+
+  if (eventCategory === "photobooth") {
+    return (
+      <div className="min-h-screen bg-[#fafaf9] text-stone-900 flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-xl font-bold mb-2">QR Standee Tidak Tersedia</h1>
+        <p className="text-sm text-stone-600 max-w-md">
+          Acara ini merupakan layanan Photobooth Fisik (cetak langsung di lokasi) dan tidak memiliki QR standee untuk kamera tamu online.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#fafaf9] text-stone-900 flex flex-col items-center justify-center p-6 print:bg-white print:p-0">

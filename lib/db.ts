@@ -17,10 +17,51 @@ function parseJsonField<T>(val: any, fallback: T): T {
 // ============================================================================
 let mockPackages: Package[] = [
   {
+    id: "11111111-1111-1111-1111-111111111111",
+    name: "Paket Basic Photobooth",
+    slug: "paket-basic-photobooth",
+    tagline: "Photobooth fisik hemat dengan cetak instan unlimited untuk perayaan di Palopo",
+    price: 1800000,
+    duration_hours: 2,
+    features: [
+      "2 Jam Layanan Aktif di Lokasi Acara",
+      "Unlimited Print Foto 4R / 2-Strip",
+      "Custom Template Frame Sesuai Tema Acara",
+      "Standard Fun Props & Aksesoris Foto",
+      "Download Semua Foto via Cloud Storage",
+      "1 Operator Mesin & 1 Asisten Standby",
+    ],
+    popular: false,
+    category: "physical",
+    prints_included: "Unlimited Print 4R / 2-Strip",
+    backdrop: "Standard Backdrop / Sequin Fabric",
+  },
+  {
+    id: "44444444-4444-4444-4444-444444444444",
+    name: "Paket Standard Deluxe",
+    slug: "paket-standard-deluxe",
+    tagline: "Paket photobooth fisik terlengkap untuk resepsi pernikahan & wisuda di Palopo",
+    price: 2500000,
+    duration_hours: 3,
+    features: [
+      "3 Jam Layanan Penuh di Lokasi Acara",
+      "Unlimited Cetak Strip / 4R Glossy Prints",
+      "Custom Frame Eksklusif dengan Logo Event",
+      "Premium Props & Kacamata Unik",
+      "Live Digital Gallery & QR Download",
+      "2 Kru Profesional RUANGTEMU Standby",
+      "Free 1 Album Foto Kenangan Eksklusif",
+    ],
+    popular: true,
+    category: "physical",
+    prints_included: "Unlimited Glossy Thermal Photo Print",
+    backdrop: "Pilihan 5+ Premium Backdrop",
+  },
+  {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Paket Silver",
     slug: "paket-silver",
-    tagline: "Virtual Photobooth (Photo & Voice Message) terfavorit dengan 10 hari akses",
+    tagline: "Paket virtual terpopuler 10 hari akses dengan 2 template frame & 200 QR",
     price: 350000,
     duration_hours: 240,
     features: [
@@ -363,7 +404,7 @@ let mockEvents: EventItem[] = [
       textColor: "#ffffff",
       padding: 16,
       borderRadius: 12,
-      sticker: "💍",
+      sticker: "✦",
     },
     created_at: "2026-10-02T14:46:55.000Z",
     assigned_frames: defaultDemoFrames,
@@ -431,6 +472,7 @@ function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { t
     allow_custom_frame: Boolean(row.allow_custom_frame),
     gallery_visibility: row.gallery_visibility || "PUBLIC",
     default_frame_config: parsedFrameConfig,
+    category: row.category || pkgMeta.category || "virtual_photobooth",
     assigned_frames: assignedFrames && assignedFrames.length > 0 ? assignedFrames : defaultDemoFrames,
     package_tier: row.package_tier || pkgMeta.package_tier || undefined,
     package_name: row.package_name || pkgMeta.package_name || undefined,
@@ -450,11 +492,59 @@ function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { t
   };
 }
 
+function parseBookingNotes(notes?: string | null): { cleanNotes?: string; meta?: Record<string, any> } {
+  if (!notes) return { cleanNotes: undefined, meta: undefined };
+  const match = notes.match(/<!--RUANGTEMU_META:([\s\S]*?)-->/);
+  if (!match) return { cleanNotes: notes, meta: undefined };
+  try {
+    const meta = JSON.parse(match[1]);
+    const cleanNotes = notes.replace(/\s*<!--RUANGTEMU_META:[\s\S]*?-->/, "").trim();
+    return { cleanNotes: cleanNotes || undefined, meta };
+  } catch {
+    return { cleanNotes: notes, meta: undefined };
+  }
+}
+
+function encodeBookingNotes(userNotes?: string | null, meta?: Record<string, any>): string | null {
+  const clean = (userNotes || "").replace(/\s*<!--RUANGTEMU_META:[\s\S]*?-->/, "").trim();
+  const validMeta = meta && Object.keys(meta).length > 0
+    ? Object.fromEntries(Object.entries(meta).filter(([_, v]) => v !== undefined && v !== null && v !== ""))
+    : null;
+
+  if (!validMeta || Object.keys(validMeta).length === 0) {
+    return clean || null;
+  }
+  const metaString = `<!--RUANGTEMU_META:${JSON.stringify(validMeta)}-->`;
+  return clean ? `${clean}\n${metaString}` : metaString;
+}
+
 function mapBookingRow(row: any): Booking {
+  const { cleanNotes, meta } = parseBookingNotes(row.notes);
+  const pkgNameLower = String(row.package_name || "").toLowerCase();
+  const pkgId = String(row.package_id || "");
+  const isPhysical =
+    meta?.category === "photobooth" ||
+    meta?.booking_category === "photobooth" ||
+    row.category === "photobooth" ||
+    row.booking_category === "photobooth" ||
+    pkgNameLower.includes("basic photobooth") ||
+    pkgNameLower.includes("standard deluxe") ||
+    pkgId.includes("11111111") ||
+    pkgId.includes("44444444") ||
+    pkgId.includes("basic") ||
+    pkgId.includes("deluxe");
+
+  const resolvedCategory =
+    meta?.category ||
+    meta?.booking_category ||
+    row.category ||
+    row.booking_category ||
+    (isPhysical ? "photobooth" : "virtual_photobooth");
+
   return {
     id: String(row.id),
     customer_name: String(row.customer_name),
-    customer_email: String(row.customer_email),
+    customer_email: String(row.customer_email || ""),
     customer_phone: String(row.customer_phone),
     event_type: row.event_type,
     event_name: String(row.event_name),
@@ -464,9 +554,17 @@ function mapBookingRow(row: any): Booking {
     city: String(row.city || "Palopo"),
     package_id: String(row.package_id || ""),
     package_name: row.package_name || undefined,
+    category: resolvedCategory,
+    booking_category: resolvedCategory,
     status: row.status,
-    notes: row.notes || undefined,
+    notes: cleanNotes,
     total_price: Number(row.total_price || 0),
+    payment_status: row.payment_status || meta?.payment_status || "PENDING",
+    payment_method: row.payment_method || meta?.payment_method || undefined,
+    payment_invoice: row.payment_invoice || meta?.payment_invoice || undefined,
+    payment_amount: row.payment_amount ? Number(row.payment_amount) : (meta?.payment_amount ? Number(meta.payment_amount) : undefined),
+    payment_paid_at: row.payment_paid_at || meta?.payment_paid_at || undefined,
+    payment_receipt_url: row.payment_receipt_url || meta?.payment_receipt_url || undefined,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
   };
 }
@@ -686,6 +784,7 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
         description: newEvent.description || "",
         cover_image: newEvent.cover_image || "",
         cover_image_url: newEvent.cover_image_url || newEvent.cover_image || "",
+        category: newEvent.category || "virtual_photobooth",
         status: newEvent.status || "ACTIVE",
         is_active: newEvent.is_active ?? true,
         allow_guestbook: newEvent.allow_guestbook ?? true,
@@ -695,6 +794,7 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
         default_frame_config: {
           ...(newEvent.default_frame_config || {}),
           _package_info: {
+            category: newEvent.category || "virtual_photobooth",
             package_tier: newEvent.package_tier,
             package_name: newEvent.package_name,
             payment_status: newEvent.payment_status,
@@ -769,6 +869,7 @@ export async function updateEvent(
         updatePayload.cover_image = updates.cover_image;
         updatePayload.cover_image_url = updates.cover_image;
       }
+      if (updates.category !== undefined) updatePayload.category = updates.category;
       if (updates.status !== undefined) updatePayload.status = updates.status;
       if (updates.is_active !== undefined) updatePayload.is_active = updates.is_active;
       if (updates.allow_guestbook !== undefined) updatePayload.allow_guestbook = updates.allow_guestbook;
@@ -778,6 +879,7 @@ export async function updateEvent(
       if (updates.theme_config !== undefined) updatePayload.theme_config = updates.theme_config;
 
       if (
+        updates.category !== undefined ||
         updates.package_tier !== undefined ||
         updates.package_name !== undefined ||
         updates.payment_status !== undefined ||
@@ -797,6 +899,7 @@ export async function updateEvent(
           ...(typeof baseConfig === "object" ? baseConfig : {}),
           _package_info: {
             ...existingMeta,
+            ...(updates.category !== undefined ? { category: updates.category } : {}),
             ...(updates.package_tier !== undefined ? { package_tier: updates.package_tier } : {}),
             ...(updates.package_name !== undefined ? { package_name: updates.package_name } : {}),
             ...(updates.payment_status !== undefined ? { payment_status: updates.payment_status } : {}),
@@ -929,8 +1032,11 @@ export async function getBookings(): Promise<Booking[]> {
 
       if (error) {
         console.warn("[Supabase] getBookings error:", error.message);
-      } else if (data && data.length > 0) {
-        return data.map(mapBookingRow);
+      } else if (data) {
+        const dbBookings = data.map(mapBookingRow);
+        const dbIds = new Set(dbBookings.map((b) => b.id));
+        const extraMocks = mockBookings.filter((b) => !dbIds.has(b.id));
+        return [...extraMocks, ...dbBookings];
       }
     } catch (err: any) {
       console.warn("[Supabase] getBookings exception:", err?.message);
@@ -941,10 +1047,13 @@ export async function getBookings(): Promise<Booking[]> {
 
 function normalizePackageId(pkgId?: string | null): string | null {
   if (!pkgId) return null;
-  if (pkgId === "11111111-1111-1111-1111-111111111111" || pkgId === "pkg-bronze" || pkgId === "paket-bronze") {
-    return "22222222-2222-2222-2222-222222222222";
+  if (pkgId === "11111111-1111-1111-1111-111111111111" || pkgId === "pkg-basic" || pkgId === "paket-basic" || pkgId === "paket-basic-photobooth") {
+    return "11111111-1111-1111-1111-111111111111";
   }
-  if (pkgId === "22222222-2222-2222-2222-222222222222" || pkgId === "pkg-silver" || pkgId === "paket-silver") {
+  if (pkgId === "44444444-4444-4444-4444-444444444444" || pkgId === "pkg-deluxe" || pkgId === "paket-standard-deluxe" || pkgId === "paket-deluxe") {
+    return "44444444-4444-4444-4444-444444444444";
+  }
+  if (pkgId === "22222222-2222-2222-2222-222222222222" || pkgId === "pkg-silver" || pkgId === "paket-silver" || pkgId === "pkg-bronze") {
     return "22222222-2222-2222-2222-222222222222";
   }
   if (pkgId === "33333333-3333-3333-3333-333333333333" || pkgId === "pkg-gold" || pkgId === "paket-gold") {
@@ -961,16 +1070,55 @@ export async function createBooking(
   booking: Omit<Booking, "id" | "created_at" | "status"> & { status?: BookingStatus }
 ): Promise<Booking> {
   const resolvedPackageId = normalizePackageId(booking.package_id);
+  const pkgNameLower = String(booking.package_name || "").toLowerCase();
+  const isPhysical =
+    booking.category === "photobooth" ||
+    booking.booking_category === "photobooth" ||
+    pkgNameLower.includes("basic photobooth") ||
+    pkgNameLower.includes("standard deluxe") ||
+    booking.package_id?.includes("11111111") ||
+    booking.package_id?.includes("44444444") ||
+    booking.package_id?.includes("basic") ||
+    booking.package_id?.includes("deluxe");
+
+  const resolvedCategory =
+    booking.category ||
+    booking.booking_category ||
+    (isPhysical ? "photobooth" : "virtual_photobooth");
+
+  const resolvedPackageName =
+    booking.package_name ||
+    (resolvedPackageId === "11111111-1111-1111-1111-111111111111"
+      ? "Paket Basic Photobooth"
+      : resolvedPackageId === "44444444-4444-4444-4444-444444444444"
+      ? "Paket Standard Deluxe"
+      : resolvedPackageId === "33333333-3333-3333-3333-333333333333"
+      ? "Paket Gold"
+      : "Paket Silver");
+
+  const resolvedPrice =
+    booking.total_price ||
+    (resolvedPackageId === "11111111-1111-1111-1111-111111111111"
+      ? 1800000
+      : resolvedPackageId === "44444444-4444-4444-4444-444444444444"
+      ? 2500000
+      : resolvedPackageId === "33333333-3333-3333-3333-333333333333"
+      ? 450000
+      : 350000);
 
   const newBooking: Booking = {
     ...booking,
     id: randomUUID(),
     package_id: resolvedPackageId || (booking.package_id || ""),
+    package_name: resolvedPackageName,
+    category: resolvedCategory,
+    booking_category: resolvedCategory,
     status: booking.status || "pending",
+    total_price: resolvedPrice,
     payment_status: booking.payment_status || "PENDING",
     payment_method: booking.payment_method || undefined,
     payment_invoice: booking.payment_invoice || undefined,
-    payment_amount: booking.payment_amount || booking.total_price || 0,
+    payment_amount: booking.payment_amount || resolvedPrice,
     payment_paid_at: booking.payment_paid_at || undefined,
     payment_receipt_url: booking.payment_receipt_url || undefined,
     created_at: new Date().toISOString(),
@@ -979,7 +1127,18 @@ export async function createBooking(
   const client = getDbClient();
   if (client) {
     try {
-      const payload: Record<string, any> = {
+      const meta = {
+        category: resolvedCategory,
+        booking_category: resolvedCategory,
+        payment_status: newBooking.payment_status,
+        payment_method: newBooking.payment_method,
+        payment_invoice: newBooking.payment_invoice,
+        payment_amount: newBooking.payment_amount,
+        payment_paid_at: newBooking.payment_paid_at,
+        payment_receipt_url: newBooking.payment_receipt_url,
+      };
+
+      const basePayload: Record<string, any> = {
         id: newBooking.id,
         customer_name: newBooking.customer_name,
         customer_email: newBooking.customer_email || "",
@@ -991,44 +1150,31 @@ export async function createBooking(
         location: newBooking.location,
         city: newBooking.city || "Palopo",
         package_id: resolvedPackageId,
-        package_name: newBooking.package_name || null,
+        package_name: resolvedPackageName,
         status: newBooking.status,
-        notes: newBooking.notes || null,
+        notes: encodeBookingNotes(newBooking.notes, meta),
         total_price: newBooking.total_price || 0,
-        payment_status: newBooking.payment_status,
-        payment_method: newBooking.payment_method || null,
-        payment_invoice: newBooking.payment_invoice || null,
-        payment_amount: newBooking.payment_amount || null,
-        payment_paid_at: newBooking.payment_paid_at || null,
       };
 
-      const { error } = await client.from("bookings").insert(payload);
+      const { error } = await client.from("bookings").insert(basePayload);
 
       if (error) {
-        console.warn("[Supabase] createBooking error (retrying with base fields):", error.message);
-        const basePayload = {
-          id: newBooking.id,
-          customer_name: newBooking.customer_name,
-          customer_email: newBooking.customer_email || "",
-          customer_phone: newBooking.customer_phone,
-          event_type: newBooking.event_type,
-          event_name: newBooking.event_name,
-          event_date: newBooking.event_date,
-          event_time: newBooking.event_time || null,
-          location: newBooking.location,
-          city: newBooking.city || "Palopo",
-          package_id: resolvedPackageId,
-          package_name: newBooking.package_name || null,
-          status: newBooking.status,
-          notes: newBooking.notes || null,
-          total_price: newBooking.total_price || 0,
-        };
-        await client.from("bookings").insert(basePayload);
+        console.warn("[Supabase] createBooking insert error (retrying with null package_id fallback):", error.message);
+        if (error.message.includes("foreign key") || error.message.includes("violates foreign key")) {
+          const fallbackPayload = { ...basePayload, package_id: null };
+          const { error: fkErr } = await client.from("bookings").insert(fallbackPayload);
+          if (fkErr) {
+            console.error("[Supabase] createBooking FK fallback failed:", fkErr.message);
+          }
+        }
       }
+
       mockBookings.unshift(newBooking);
       return newBooking;
     } catch (err: any) {
       console.warn("[Supabase] createBooking exception:", err?.message);
+      mockBookings.unshift(newBooking);
+      return newBooking;
     }
   }
 
@@ -1040,17 +1186,49 @@ export async function updateBooking(id: string, updates: Partial<Booking>): Prom
   const client = getDbClient();
   if (client) {
     try {
-      const { error } = await client.from("bookings").update(updates).eq("id", id);
+      const { data: cur } = await client.from("bookings").select("*").eq("id", id).maybeSingle();
+      const curNotes = cur?.notes || "";
+      const { cleanNotes, meta: existingMeta } = parseBookingNotes(curNotes);
+
+      const mergedMeta = {
+        ...existingMeta,
+        ...(updates.category && { category: updates.category, booking_category: updates.category }),
+        ...(updates.booking_category && { booking_category: updates.booking_category }),
+        ...(updates.payment_status && { payment_status: updates.payment_status }),
+        ...(updates.payment_method && { payment_method: updates.payment_method }),
+        ...(updates.payment_invoice && { payment_invoice: updates.payment_invoice }),
+        ...(updates.payment_amount !== undefined && { payment_amount: updates.payment_amount }),
+        ...(updates.payment_paid_at !== undefined && { payment_paid_at: updates.payment_paid_at }),
+        ...(updates.payment_receipt_url !== undefined && { payment_receipt_url: updates.payment_receipt_url }),
+      };
+
+      const targetNotesText = updates.notes !== undefined ? updates.notes : cleanNotes;
+      const encodedNotes = encodeBookingNotes(targetNotesText, mergedMeta);
+
+      const baseUpdates: Record<string, any> = {};
+      if (updates.status !== undefined) baseUpdates.status = updates.status;
+      if (updates.customer_name !== undefined) baseUpdates.customer_name = updates.customer_name;
+      if (updates.customer_email !== undefined) baseUpdates.customer_email = updates.customer_email;
+      if (updates.customer_phone !== undefined) baseUpdates.customer_phone = updates.customer_phone;
+      if (updates.event_type !== undefined) baseUpdates.event_type = updates.event_type;
+      if (updates.event_name !== undefined) baseUpdates.event_name = updates.event_name;
+      if (updates.event_date !== undefined) baseUpdates.event_date = updates.event_date;
+      if (updates.event_time !== undefined) baseUpdates.event_time = updates.event_time;
+      if (updates.location !== undefined) baseUpdates.location = updates.location;
+      if (updates.city !== undefined) baseUpdates.city = updates.city;
+      if (updates.package_id !== undefined) baseUpdates.package_id = normalizePackageId(updates.package_id);
+      if (updates.package_name !== undefined) baseUpdates.package_name = updates.package_name;
+      if (updates.total_price !== undefined) baseUpdates.total_price = updates.total_price;
+      baseUpdates.notes = encodedNotes;
+
+      const { error } = await client.from("bookings").update(baseUpdates).eq("id", id);
       if (error) {
         console.warn("[Supabase] updateBooking error:", error.message);
-        if (updates.status) {
-          await client.from("bookings").update({ status: updates.status }).eq("id", id);
-        }
-      } else {
-        const b = mockBookings.find((item) => item.id === id);
-        if (b) Object.assign(b, updates);
-        return true;
       }
+
+      const b = mockBookings.find((item) => item.id === id);
+      if (b) Object.assign(b, updates);
+      return true;
     } catch (err: any) {
       console.warn("[Supabase] updateBooking exception:", err?.message);
     }
@@ -1069,26 +1247,27 @@ export async function updateBookingStatus(id: string, status: BookingStatus): Pr
 }
 
 export async function deleteBooking(id: string): Promise<boolean> {
+  const idx = mockBookings.findIndex((item) => item.id === id);
+  if (idx !== -1) {
+    mockBookings.splice(idx, 1);
+  }
+
   const client = getDbClient();
   if (client) {
     try {
       const { error } = await client.from("bookings").delete().eq("id", id);
       if (error) {
         console.warn("[Supabase] deleteBooking error:", error.message);
-      } else {
-        return true;
+        return false;
       }
+      return true;
     } catch (err: any) {
       console.warn("[Supabase] deleteBooking exception:", err?.message);
+      return false;
     }
   }
 
-  const idx = mockBookings.findIndex((item) => item.id === id);
-  if (idx !== -1) {
-    mockBookings.splice(idx, 1);
-    return true;
-  }
-  return false;
+  return idx !== -1;
 }
 
 // ============================================================================

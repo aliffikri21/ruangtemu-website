@@ -18,7 +18,19 @@ export default function ProjectionModePage({ params }: Props) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [eventCategory, setEventCategory] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/events/${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.event) {
+          setEventCategory(data.event.category || null);
+        }
+      })
+      .catch(() => {});
+  }, [slug]);
 
   // Generate QR Code for the event URL
   useEffect(() => {
@@ -71,6 +83,17 @@ export default function ProjectionModePage({ params }: Props) {
   };
 
   const currentEntry = entries[currentIndex];
+
+  if (eventCategory === "photobooth") {
+    return (
+      <div className="fixed inset-0 bg-[#0f0f11] text-stone-100 flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-xl font-bold mb-2">Layar Panggung Tidak Tersedia</h1>
+        <p className="text-sm text-stone-400 max-w-md">
+          Acara ini merupakan layanan Photobooth Fisik. Fitur layar tayang videotron live hanya digunakan untuk Virtual Photobooth.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -76,6 +76,55 @@ export const ADDON_PRICING = {
   qrCardsPer100: 50000, // +50K/100pcs
 };
 
+export interface PhotoboothPhysicalPackage {
+  id: "basic" | "deluxe";
+  name: string;
+  tag: string;
+  price: number;
+  durationHours: number;
+  printsIncluded: string;
+  isRecommended: boolean;
+  features: string[];
+}
+
+export const PHOTOBOOTH_PHYSICAL_PACKAGES: Record<"basic" | "deluxe", PhotoboothPhysicalPackage> = {
+  basic: {
+    id: "basic",
+    name: "Paket Basic Photobooth",
+    tag: "1.8M",
+    price: 1800000,
+    durationHours: 2,
+    printsIncluded: "Unlimited Cetak 4R / 2-Strip",
+    isRecommended: false,
+    features: [
+      "2 Jam Layanan Aktif di Lokasi Acara",
+      "Unlimited Print Foto 4R / 2-Strip",
+      "Custom Template Frame Sesuai Tema Acara",
+      "Standard Fun Props & Aksesoris Foto",
+      "Download Semua Foto via Cloud Storage",
+      "1 Operator Mesin & 1 Asisten Standby",
+    ],
+  },
+  deluxe: {
+    id: "deluxe",
+    name: "Paket Standard Deluxe",
+    tag: "2.5M",
+    price: 2500000,
+    durationHours: 3,
+    printsIncluded: "Unlimited Cetak Strip / 4R Glossy",
+    isRecommended: true,
+    features: [
+      "3 Jam Layanan Penuh di Lokasi Acara",
+      "Unlimited Cetak Strip / 4R Glossy Prints",
+      "Custom Frame Eksklusif dengan Logo Event",
+      "Premium Props & Kacamata Unik",
+      "Live Digital Gallery & QR Download",
+      "2 Kru Profesional RUANGTEMU Standby",
+      "Free 1 Album Foto Kenangan Eksklusif",
+    ],
+  },
+};
+
 export interface DokuPaymentSessionRequest {
   orderId: string;
   amount: number;

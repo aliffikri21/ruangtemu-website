@@ -4,6 +4,8 @@ import { useEffect, useState, useId } from "react";
 import { formatRupiah } from "@/lib/utils";
 import { EventType } from "@/types";
 
+export type BookingServiceCategory = "photobooth" | "virtual_photobooth";
+
 export interface PackageOption {
   id: string;
   slug: string;
@@ -11,10 +13,55 @@ export interface PackageOption {
   badge?: string;
   price: number;
   duration: number;
+  durationLabel: string;
+  category: BookingServiceCategory;
   description: string;
+  features?: string[];
 }
 
-export const BOOKING_PACKAGES: PackageOption[] = [
+export const PHOTOBOOTH_PACKAGES: PackageOption[] = [
+  {
+    id: "11111111-1111-1111-1111-111111111111",
+    slug: "paket-basic-photobooth",
+    name: "Paket Basic Photobooth",
+    badge: "2 Jam Layanan",
+    price: 1800000,
+    duration: 2,
+    durationLabel: "2 Jam Layanan",
+    category: "photobooth",
+    description: "Cetak fisik unlimited 4R / 2-strip, custom frame sesuai tema, fun props, dan operator standby.",
+    features: [
+      "2 Jam Layanan Aktif di Venue",
+      "Unlimited Print Foto 4R / 2-Strip",
+      "Custom Template Frame Sesuai Tema",
+      "Standard Fun Props & Aksesoris",
+      "Download Cloud Semua Foto",
+      "1 Operator & 1 Asisten Standby",
+    ],
+  },
+  {
+    id: "44444444-4444-4444-4444-444444444444",
+    slug: "paket-standard-deluxe",
+    name: "Paket Standard Deluxe",
+    badge: "Rekomendasi (3 Jam)",
+    price: 2500000,
+    duration: 3,
+    durationLabel: "3 Jam Layanan",
+    category: "photobooth",
+    description: "Cetak glossy unlimited, custom frame eksklusif, live digital gallery, 2 kru standby, free album kenangan.",
+    features: [
+      "3 Jam Layanan Penuh di Venue",
+      "Unlimited Cetak Strip / 4R Glossy",
+      "Custom Frame Eksklusif dengan Logo Event",
+      "Premium Props & Kacamata Unik",
+      "Live Digital Gallery & QR Download",
+      "2 Kru Profesional RUANGTEMU Standby",
+      "Free 1 Album Foto Kenangan Eksklusif",
+    ],
+  },
+];
+
+export const VIRTUAL_PHOTOBOOTH_PACKAGES: PackageOption[] = [
   {
     id: "22222222-2222-2222-2222-222222222222",
     slug: "paket-silver",
@@ -22,7 +69,17 @@ export const BOOKING_PACKAGES: PackageOption[] = [
     badge: "Rekomendasi (10 Hari)",
     price: 350000,
     duration: 240,
-    description: "Foto dan voice message, 2 desain frame kustom, cetak 200 kartu QR.",
+    durationLabel: "Akses 10 Hari",
+    category: "virtual_photobooth",
+    description: "Foto dan voice message, 2 desain frame kustom, cetak 200 kartu QR meja, tanpa aplikasi.",
+    features: [
+      "Virtual Web Photobooth via HP Tamu",
+      "2 Desain Template Frame Kustom",
+      "Free Cetak 200 Pcs Kartu QR Meja",
+      "Unlimited Akses QR & Foto",
+      "Akses Foto 10 Hari",
+      "Buku Tamu Digital & Rekam Voice Note",
+    ],
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
@@ -31,31 +88,85 @@ export const BOOKING_PACKAGES: PackageOption[] = [
     badge: "14 Hari Akses",
     price: 450000,
     duration: 336,
-    description: "Foto dan voice message, 3 desain frame kustom, cetak 300 kartu QR.",
+    durationLabel: "Akses 14 Hari",
+    category: "virtual_photobooth",
+    description: "Foto dan voice message, 3 desain frame kustom, cetak 300 kartu QR meja, tanpa aplikasi.",
+    features: [
+      "Virtual Web Photobooth via HP Tamu",
+      "3 Desain Template Frame Kustom",
+      "Free Cetak 300 Pcs Kartu QR Meja",
+      "Unlimited Akses QR & Foto",
+      "Akses Foto 14 Hari",
+      "Buku Tamu Digital & Rekam Voice Note",
+    ],
   },
+];
+
+export const BOOKING_PACKAGES: PackageOption[] = [
+  ...VIRTUAL_PHOTOBOOTH_PACKAGES,
+  ...PHOTOBOOTH_PACKAGES,
 ];
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialPackageId?: string;
+  initialCategory?: BookingServiceCategory;
 }
 
 export function BookingModal({
   isOpen,
   onClose,
-  initialPackageId = "22222222-2222-2222-2222-222222222222",
+  initialPackageId,
+  initialCategory,
 }: BookingModalProps) {
   const modalTitleId = useId();
 
-  // Multi-step state: 1 = Basic Details, 2 = Event Details, 3 = Package & Verification, 4 = Pembayaran DOKU
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const inferCategoryFromPkg = (pkgKey?: string): BookingServiceCategory | null => {
+    if (!pkgKey) return null;
+    if (
+      pkgKey.includes("basic") ||
+      pkgKey.includes("deluxe") ||
+      pkgKey === "11111111-1111-1111-1111-111111111111" ||
+      pkgKey === "44444444-4444-4444-4444-444444444444"
+    ) {
+      return "photobooth";
+    }
+    if (
+      pkgKey.includes("silver") ||
+      pkgKey.includes("gold") ||
+      pkgKey === "22222222-2222-2222-2222-222222222222" ||
+      pkgKey === "33333333-3333-3333-3333-333333333333"
+    ) {
+      return "virtual_photobooth";
+    }
+    return null;
+  };
 
-  const resolveInitPkgId = (pkgKey?: string) => {
-    if (!pkgKey) return "22222222-2222-2222-2222-222222222222";
-    if (pkgKey.includes("gold")) return "33333333-3333-3333-3333-333333333333";
+  const resolveInitPkgId = (pkgKey?: string, cat: BookingServiceCategory = "virtual_photobooth") => {
+    if (cat === "photobooth") {
+      if (pkgKey?.includes("deluxe") || pkgKey === "44444444-4444-4444-4444-444444444444") {
+        return "44444444-4444-4444-4444-444444444444";
+      }
+      return "11111111-1111-1111-1111-111111111111";
+    }
+    if (pkgKey?.includes("gold") || pkgKey === "33333333-3333-3333-3333-333333333333") {
+      return "33333333-3333-3333-3333-333333333333";
+    }
     return "22222222-2222-2222-2222-222222222222";
   };
+
+  const [serviceCategory, setServiceCategory] = useState<BookingServiceCategory>(() => {
+    return initialCategory || inferCategoryFromPkg(initialPackageId) || "virtual_photobooth";
+  });
+
+  // Multi-step state: 0 = Pilih Kategori, 1 = Basic Details, 2 = Event Details, 3 = Package & Verification, 4 = Pembayaran DOKU
+  const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3 | 4>(() => {
+    if (initialCategory || inferCategoryFromPkg(initialPackageId)) {
+      return 1;
+    }
+    return 0;
+  });
 
   const [formData, setFormData] = useState({
     customer_name: "",
@@ -68,14 +179,14 @@ export function BookingModal({
     event_venue_type: "indoor" as "indoor" | "outdoor",
     location: "",
     city: "Palopo",
-    package_id: resolveInitPkgId(initialPackageId),
+    package_id: resolveInitPkgId(initialPackageId, initialCategory || inferCategoryFromPkg(initialPackageId) || "virtual_photobooth"),
     notes: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [submittedData, setSubmittedData] = useState<typeof formData | null>(null);
+  const [submittedData, setSubmittedData] = useState<(typeof formData & { category: BookingServiceCategory }) | null>(null);
 
   // DOKU Payment States
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -104,12 +215,21 @@ export function BookingModal({
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Sync initial package if changed externally
+  // Sync initial category or package if changed externally
   useEffect(() => {
-    if (initialPackageId) {
-      setFormData((prev) => ({ ...prev, package_id: resolveInitPkgId(initialPackageId) }));
+    if (!isOpen) return;
+    const cat = initialCategory || inferCategoryFromPkg(initialPackageId);
+    if (cat) {
+      setServiceCategory(cat);
+      setCurrentStep(1);
+      setFormData((prev) => ({
+        ...prev,
+        package_id: resolveInitPkgId(initialPackageId, cat),
+      }));
+    } else {
+      setCurrentStep(0);
     }
-  }, [initialPackageId]);
+  }, [isOpen, initialCategory, initialPackageId]);
 
   // Handle escape key and body scroll lock
   useEffect(() => {
@@ -131,16 +251,43 @@ export function BookingModal({
     };
   }, [isOpen, onClose]);
 
+  const handleSelectCategory = (cat: BookingServiceCategory) => {
+    setServiceCategory(cat);
+    const defaultPkgId = cat === "photobooth"
+      ? "11111111-1111-1111-1111-111111111111"
+      : "22222222-2222-2222-2222-222222222222";
+    setFormData((prev) => ({ ...prev, package_id: defaultPkgId }));
+    setCurrentStep(1);
+  };
+
+  const handleSwitchCategory = (cat: BookingServiceCategory) => {
+    setServiceCategory(cat);
+    const defaultPkgId = cat === "photobooth"
+      ? "11111111-1111-1111-1111-111111111111"
+      : "22222222-2222-2222-2222-222222222222";
+    setFormData((prev) => ({ ...prev, package_id: defaultPkgId }));
+  };
+
   if (!isOpen) return null;
 
+  const activeCategoryPackages = serviceCategory === "photobooth"
+    ? PHOTOBOOTH_PACKAGES
+    : VIRTUAL_PHOTOBOOTH_PACKAGES;
+
   const selectedPackage =
-    BOOKING_PACKAGES.find(
+    activeCategoryPackages.find(
       (p) =>
         p.id === formData.package_id ||
         p.slug === formData.package_id ||
-        (formData.package_id?.includes("gold") && p.slug === "paket-gold") ||
-        (formData.package_id?.includes("silver") && p.slug === "paket-silver")
-    ) || BOOKING_PACKAGES[0];
+        (serviceCategory === "photobooth" && (
+          (formData.package_id?.includes("deluxe") && p.slug.includes("deluxe")) ||
+          (formData.package_id?.includes("basic") && p.slug.includes("basic"))
+        )) ||
+        (serviceCategory === "virtual_photobooth" && (
+          (formData.package_id?.includes("gold") && p.slug === "paket-gold") ||
+          (formData.package_id?.includes("silver") && p.slug === "paket-silver")
+        ))
+    ) || activeCategoryPackages[0];
 
   const getVaNumber = (bank: string) => {
     const rawNumber = invoiceId.replace(/\D/g, "").padEnd(6, "8");
@@ -219,6 +366,8 @@ export function BookingModal({
         event_time: formData.event_time,
         location: `${formData.location.trim()} (${formData.event_venue_type === "indoor" ? "Indoor" : "Outdoor"})`,
         city: formData.city,
+        category: serviceCategory,
+        booking_category: serviceCategory,
         package_id: selectedPackage.id,
         package_name: selectedPackage.name,
         notes: formData.notes.trim(),
@@ -243,7 +392,7 @@ export function BookingModal({
       if (json.booking?.id) {
         setBookingId(json.booking.id);
       }
-      setSubmittedData({ ...formData });
+      setSubmittedData({ ...formData, category: serviceCategory });
       setCurrentStep(4);
     } catch (err: any) {
       setErrorMessage(err?.message || "Terjadi kendala jaringan saat mengajukan reservasi.");
@@ -318,7 +467,7 @@ export function BookingModal({
   const handleResetAndClose = () => {
     setIsSuccess(false);
     setPaymentSuccess(false);
-    setCurrentStep(1);
+    setCurrentStep(initialCategory ? 1 : 0);
     setBookingId(null);
     setInvoiceId(`INV-DOKU-${Date.now().toString().slice(-6)}`);
     setErrorMessage(null);
@@ -339,6 +488,7 @@ export function BookingModal({
         paymentSuccess
           ? `Halo Admin RUANGTEMU Photobooth Palopo! Saya telah menyelesaikan reservasi dan melunasi pembayaran via DOKU Payment Gateway:\n\n` +
             `• No. Invoice: ${invoiceId}\n` +
+            `• Layanan: ${submittedData.category === "photobooth" ? "Photobooth (Cetak Fisik)" : "Virtual Photobooth"}\n` +
             `• Nama: ${submittedData.customer_name}\n` +
             `• Acara: ${submittedData.event_name} (${submittedData.event_type})\n` +
             `• Tanggal: ${submittedData.event_date} (${submittedData.event_time} WITA)\n` +
@@ -348,6 +498,7 @@ export function BookingModal({
             `Mohon dicek di dashboard admin RUANGTEMU. Terima kasih!`
           : `Halo Admin RUANGTEMU Photobooth Palopo! Saya sudah mengisi formulir reservasi online:\n\n` +
             `• No. Invoice: ${invoiceId}\n` +
+            `• Layanan: ${submittedData.category === "photobooth" ? "Photobooth (Cetak Fisik)" : "Virtual Photobooth"}\n` +
             `• Nama: ${submittedData.customer_name}\n` +
             `• Acara: ${submittedData.event_name} (${submittedData.event_type})\n` +
             `• Tanggal: ${submittedData.event_date} (${submittedData.event_time} WITA)\n` +
@@ -372,7 +523,7 @@ export function BookingModal({
     >
       {/* Clean White Card Modal */}
       <div
-        className="relative w-full max-w-xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-slate-800"
+        className="relative w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-slate-800 transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Bar */}
@@ -411,19 +562,27 @@ export function BookingModal({
 
         {/* Stepper Header (Clean White with Blue Accent) */}
         <div className="px-6 pt-4 pb-4 sm:px-8 sm:pb-5 bg-white border-b border-slate-100 shrink-0">
-          <div className="text-center mb-5">
+          <div className="text-center mb-3">
             <h2 id={modalTitleId} className="text-2xl sm:text-3xl font-extrabold text-blue-950 tracking-tight">
-              {isSuccess ? "Reservasi Terkirim" : "Reservasi Photobooth"}
+              {isSuccess
+                ? "Reservasi Terkirim"
+                : currentStep === 0
+                ? "Pilih Layanan Photobooth"
+                : serviceCategory === "photobooth"
+                ? "Reservasi Photobooth (Fisik)"
+                : "Reservasi Virtual Photobooth"}
             </h2>
             <p className="text-xs sm:text-sm text-blue-700/80 font-medium mt-1">
               {isSuccess
                 ? "Data pesanan Anda telah tersimpan rapi di sistem kami"
+                : currentStep === 0
+                ? "Pilih format layanan yang sesuai dengan kebutuhan acara Anda"
                 : "Isi data acara untuk mengamankan slot photobooth di Palopo & Luwu Raya"}
             </p>
           </div>
 
-          {!isSuccess && (
-            <div className="max-w-md mx-auto">
+          {!isSuccess && currentStep > 0 && (
+            <div className="max-w-xl mx-auto">
               <div className="relative flex items-center justify-between">
                 {/* Connecting Track */}
                 <div className="absolute left-6 right-6 top-3.5 h-[2px] bg-slate-200 -z-0" />
@@ -581,7 +740,7 @@ export function BookingModal({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-slate-700 text-sm bg-white">
+        <div className="p-5 sm:p-7 md:p-8 overflow-y-auto space-y-5 text-slate-700 text-sm bg-white">
           {errorMessage && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-in fade-in">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0 text-rose-600">
@@ -778,9 +937,190 @@ export function BookingModal({
             </div>
           ) : (
             <div>
+              {/* STEP 0: PILIH LAYANAN (1. Photobooth / 2. Virtual Photobooth) */}
+              {currentStep === 0 && (
+                <div className="space-y-6 py-2">
+                  <div className="text-center pb-2">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                      Langkah 1 dari 4: Tentukan Format Layanan
+                    </span>
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 mt-2.5 tracking-tight">
+                      Pilih Jenis Layanan yang Ingin Dipesan
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-xl mx-auto">
+                      Silakan pilih antara booth fisik dengan cetak instan di lokasi, atau photobooth virtual berbasis QR smartphone tamu.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pt-1">
+                    {/* OPTION 1: PHOTOBOOTH FISIK */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSelectCategory("photobooth")}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectCategory("photobooth");
+                        }
+                      }}
+                      className="group relative p-4 sm:p-6 md:p-7 rounded-2xl border-2 border-slate-200 hover:border-amber-500 bg-white hover:bg-amber-50/20 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between text-left focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      <div className="space-y-3.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-8 h-8 rounded-xl bg-amber-500 text-white font-mono font-black text-xs flex items-center justify-center shadow-sm">
+                              01
+                            </span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                              Cetak Fisik di Lokasi
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
+                            Booth Offline
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-xl font-black text-slate-900 group-hover:text-amber-800 transition-colors">
+                            1. Photobooth
+                          </h4>
+                          <p className="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">
+                            Mesin booth foto profesional di lokasi acara dengan cetak instan kecepatan tinggi, lighting studio, dan kru operator standby.
+                          </p>
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-100 space-y-2 text-xs sm:text-sm text-slate-600">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <span>Unlimited cetak foto glossy (4R / 2-strip)</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <span>Studio lighting &amp; aneka properti seru</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <span>2 kru operator ramah standby selama acara</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <span>Link soft copy Google Drive dibagikan</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block uppercase font-mono font-semibold">Mulai Dari</span>
+                          <span className="font-mono font-black text-amber-700 text-base sm:text-lg">Rp 1.800.000</span>
+                        </div>
+                        <span className="min-h-[46px] px-5 py-2.5 rounded-xl bg-amber-500 group-hover:bg-amber-600 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all">
+                          <span>Pilih Photobooth</span>
+                          <span aria-hidden="true">&rarr;</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* OPTION 2: VIRTUAL PHOTOBOOTH */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSelectCategory("virtual_photobooth")}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectCategory("virtual_photobooth");
+                        }
+                      }}
+                      className="group relative p-4 sm:p-6 md:p-7 rounded-2xl border-2 border-slate-200 hover:border-blue-600 bg-white hover:bg-blue-50/20 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between text-left focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    >
+                      <div className="space-y-3.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-8 h-8 rounded-xl bg-blue-600 text-white font-mono font-black text-xs flex items-center justify-center shadow-sm">
+                              02
+                            </span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                              QR Smartphone Tamu
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full">
+                            Web Digital
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-xl font-black text-slate-900 group-hover:text-blue-900 transition-colors">
+                            2. Virtual Photobooth
+                          </h4>
+                          <p className="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">
+                            Tamu scan QR code dari meja masing-masing lewat smartphone, foto selfie dengan frame eksklusif acara, tanpa antre.
+                          </p>
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-100 space-y-2 text-xs sm:text-sm text-slate-600">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                            <span>Tanpa antre, bisa foto dari meja mana saja</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                            <span>Akses langsung lewat browser tanpa install aplikasi</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                            <span>Buku tamu digital &amp; pesan ucapan voice note</span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                            <span>Live feed galeri real-time untuk layar proyektor</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block uppercase font-mono font-semibold">Mulai Dari</span>
+                          <span className="font-mono font-black text-blue-700 text-base sm:text-lg">Rp 350.000</span>
+                        </div>
+                        <span className="min-h-[46px] px-5 py-2.5 rounded-xl bg-blue-600 group-hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all">
+                          <span>Pilih Virtual Booth</span>
+                          <span aria-hidden="true">&rarr;</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* STEP 1: DATA DIRI PEMESAN */}
               {currentStep === 1 && (
                 <form onSubmit={handleNextToStep2} className="space-y-4">
+                  {/* Category Switcher Pill Header */}
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-slate-500 font-medium shrink-0">Layanan Dipilih:</span>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold truncate ${
+                        serviceCategory === "photobooth"
+                          ? "bg-amber-100 text-amber-900 border border-amber-300"
+                          : "bg-blue-100 text-blue-900 border border-blue-300"
+                      }`}>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${serviceCategory === "photobooth" ? "bg-amber-500" : "bg-blue-600"}`} />
+                        <span className="truncate">
+                          {serviceCategory === "photobooth" ? "1. Photobooth (Cetak Fisik)" : "2. Virtual Photobooth"}
+                        </span>
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(0)}
+                      className="min-h-[44px] px-3 py-1.5 text-xs text-blue-700 hover:text-blue-900 font-bold underline underline-offset-2 cursor-pointer shrink-0 transition-colors"
+                    >
+                      Ubah Kategori
+                    </button>
+                  </div>
+
                   {/* Clean Section Header (No Add Photo) */}
                   <div className="pb-2 border-b border-slate-100">
                     <h3 className="text-base sm:text-lg font-bold text-blue-900 tracking-tight">Basic Details</h3>
@@ -863,7 +1203,7 @@ export function BookingModal({
                   </div>
 
                   {/* Save & Continue Button */}
-                  <div className="pt-3 flex justify-center">
+                  <div className="pt-3 pb-3 flex justify-center">
                     <button
                       type="submit"
                       className="min-h-[46px] px-10 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
@@ -1014,7 +1354,7 @@ export function BookingModal({
                   </div>
 
                   {/* Bottom Navigation Buttons */}
-                  <div className="pt-2 flex items-center justify-between gap-3">
+                  <div className="pt-2 pb-3 flex items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => setCurrentStep(1)}
@@ -1042,24 +1382,57 @@ export function BookingModal({
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
                       <h3 className="text-base sm:text-lg font-bold text-blue-900 tracking-tight">Package &amp; Verification</h3>
-                      <p className="text-xs text-blue-700/80 mt-0.5">Pilih paket layanan dan verifikasi rincian sebelum mengirim</p>
+                      <p className="text-xs text-blue-700/80 mt-0.5">Pilih paket layanan dan verifikasi rincian sebelum konfirmasi</p>
                     </div>
                     <span className="text-xs font-bold text-blue-600 hidden sm:inline">
-                      + 2 Opsi Paket
+                      {serviceCategory === "photobooth" ? "Paket Photobooth Fisik" : "Paket Virtual Photobooth"}
                     </span>
                   </div>
 
-                  {/* 2 Package Cards */}
+                  {/* Category Switch Tabs */}
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchCategory("photobooth")}
+                      className={`min-h-[44px] py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        serviceCategory === "photobooth"
+                          ? "bg-white text-amber-900 shadow-sm border border-amber-300"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span>1. Photobooth (Fisik)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchCategory("virtual_photobooth")}
+                      className={`min-h-[44px] py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        serviceCategory === "virtual_photobooth"
+                          ? "bg-white text-blue-900 shadow-sm border border-blue-300"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-blue-600" />
+                      <span>2. Virtual Photobooth</span>
+                    </button>
+                  </div>
+
+                  {/* Active Category Package Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {BOOKING_PACKAGES.map((pkg) => {
-                      const isSelected = formData.package_id === pkg.id;
+                    {activeCategoryPackages.map((pkg) => {
+                      const isSelected =
+                        formData.package_id === pkg.id ||
+                        formData.package_id === pkg.slug ||
+                        selectedPackage?.id === pkg.id;
                       return (
                         <label
                           key={pkg.id}
                           className={`relative p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
                             isSelected
-                              ? "bg-blue-50/70 border-2 border-blue-600 shadow-sm"
-                              : "bg-white border-slate-200 hover:border-blue-300 shadow-none"
+                              ? serviceCategory === "photobooth"
+                                ? "bg-amber-50/70 border-2 border-amber-500 shadow-sm"
+                                : "bg-blue-50/70 border-2 border-blue-600 shadow-sm"
+                              : "bg-white border-slate-200 hover:border-slate-300 shadow-none"
                           }`}
                         >
                           <input
@@ -1076,7 +1449,9 @@ export function BookingModal({
                               {pkg.badge && (
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                                   isSelected
-                                    ? "bg-blue-600 text-white"
+                                    ? serviceCategory === "photobooth"
+                                      ? "bg-amber-600 text-white"
+                                      : "bg-blue-600 text-white"
                                     : "bg-slate-100 text-slate-600"
                                 }`}>
                                   {pkg.badge}
@@ -1088,8 +1463,10 @@ export function BookingModal({
                             </p>
                           </div>
                           <div className="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                            <span className="text-[11px] text-slate-400 font-mono">Biaya</span>
-                            <span className="font-mono text-sm font-bold text-blue-700">
+                            <span className="text-[11px] text-slate-400 font-mono">Biaya Investasi</span>
+                            <span className={`font-mono text-sm font-bold ${
+                              serviceCategory === "photobooth" ? "text-amber-700" : "text-blue-700"
+                            }`}>
                               {formatRupiah(pkg.price)}
                             </span>
                           </div>
@@ -1143,7 +1520,7 @@ export function BookingModal({
                   </div>
 
                   {/* Bottom Navigation Buttons */}
-                  <div className="pt-2 flex items-center justify-between gap-3">
+                  <div className="pt-2 pb-3 flex items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => setCurrentStep(2)}
@@ -1237,7 +1614,7 @@ export function BookingModal({
                           : "text-slate-500 hover:text-slate-800"
                       }`}
                     >
-                      <span>📱 QRIS Instant</span>
+                      <span>QRIS Instant</span>
                     </button>
                     <button
                       type="button"
@@ -1248,7 +1625,7 @@ export function BookingModal({
                           : "text-slate-500 hover:text-slate-800"
                       }`}
                     >
-                      <span>🏦 Virtual Account</span>
+                      <span>Virtual Account</span>
                     </button>
                   </div>
 
@@ -1369,7 +1746,7 @@ export function BookingModal({
                   )}
 
                   {/* Primary & Secondary Action Buttons */}
-                  <div className="space-y-2 pt-1">
+                  <div className="space-y-2 pt-1 pb-3">
                     {/* Primary: Confirm Payment */}
                     <button
                       type="button"
