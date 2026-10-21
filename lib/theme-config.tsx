@@ -1,5 +1,6 @@
 import React from "react";
 import { LandingThemeConfig, EventItem } from "@/types";
+import { formatDate } from "@/lib/utils";
 
 export const ICONS: Record<string, React.ReactNode> = {
   arrow: (
@@ -46,7 +47,7 @@ export const DEFAULT_THEME_CONFIG: LandingThemeConfig = {
   background: { image: "", color: "#8c949e", overlay: 0.12, fade: 0.75, posY: 50 },
   header: { show: true, left: "The Wedding", right: "Memories", color: "#ffffff", size: 15 },
   title: { show: true, text: "Jaya & Rika", font: "Great Vibes", size: 58, color: "#ffffff", top: 18, align: "center" },
-  info: { show: true, line1: "12 Oktober 2026", line2: "D'Twins Cafe", color: "#ffffff", size: 13, align: "left", top: 14 },
+  info: { show: true, line1: "12/10/2026", line2: "D'Twins Cafe", color: "#ffffff", size: 13, align: "left", top: 14 },
   cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#ffffff", color: "#111111", iconBg: "#224DA5", iconColor: "#ffffff", href: "/capture" },
   cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/album" },
   footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#ffffff" },
@@ -180,10 +181,10 @@ export function getDefaultThemeConfigForEvent(event?: Partial<EventItem>): Landi
       : (event?.host_name || event?.title || "Jaya & Rika");
 
   const dateText = isJayaRika
-    ? "12 Oktober 2026"
+    ? "12/10/2026"
     : isIlvaRicky
-      ? "08 Oktober 2026"
-      : (event?.date || "12 Oktober 2026");
+      ? "08/10/2026"
+      : (event?.date ? formatDate(event.date) : "12/10/2026");
 
   const venueText = isJayaRika
     ? "D'Twins Cafe"

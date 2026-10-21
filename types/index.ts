@@ -18,6 +18,7 @@ export interface PhotoSlot {
 }
 
 export type ServiceCategory = "photobooth" | "virtual_photobooth";
+export type PhysicalPrintSize = "2R" | "4R";
 
 export interface Package {
   id: string;
@@ -25,6 +26,8 @@ export interface Package {
   slug: string;
   tagline: string;
   price: number;
+  price_2r?: number;
+  price_4r?: number;
   duration_hours: number;
   features: string[];
   popular?: boolean;

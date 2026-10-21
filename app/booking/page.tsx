@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
 import { EventType } from "@/types";
 
 interface PackageOption {
@@ -12,6 +12,8 @@ interface PackageOption {
   slug: string;
   name: string;
   price: number;
+  price2R?: number;
+  price4R?: number;
   duration: number;
   category: "photobooth" | "virtual_photobooth";
   description: string;
@@ -19,22 +21,57 @@ interface PackageOption {
 
 const packageOptions: PackageOption[] = [
   {
-    id: "pkg-basic",
-    slug: "paket-basic",
-    name: "Paket Basic Photobooth (2 Jam Cetak Fisik)",
+    id: "pkg-fisik-2h",
+    slug: "paket-2-jam-photobooth",
+    name: "Paket 2 Jam Photobooth Fisik",
     category: "photobooth",
-    price: 1800000,
+    price: 2000000,
+    price2R: 2000000,
+    price4R: 2500000,
     duration: 120,
-    description: "Unlimited print 4R / 2-strip, studio lighting, props, 2 kru operator",
+    description: "Unlimited print 2R / 4R, studio lighting, props, 2 kru operator",
   },
   {
-    id: "pkg-deluxe",
-    slug: "paket-deluxe",
-    name: "Paket Standard Deluxe (3 Jam Cetak Fisik)",
+    id: "pkg-fisik-3h",
+    slug: "paket-3-jam-photobooth",
+    name: "Paket 3 Jam Photobooth Fisik",
     category: "photobooth",
     price: 2500000,
+    price2R: 2500000,
+    price4R: 3000000,
     duration: 180,
-    description: "Unlimited glossy prints, custom frame, props, live gallery, 2 kru, bonus album",
+    description: "Paket terpopuler pernikahan, unlimited print glossy, custom frame, 2 kru",
+  },
+  {
+    id: "pkg-fisik-4h",
+    slug: "paket-4-jam-photobooth",
+    name: "Paket 4 Jam Photobooth Fisik",
+    category: "photobooth",
+    price: 3000000,
+    price2R: 3000000,
+    price4R: 3500000,
+    duration: 240,
+    description: "4 jam penuh layanan di lokasi, custom frame template, properti lengkap, 2 kru",
+  },
+  {
+    id: "pkg-fisik-5h",
+    slug: "paket-5-jam-photobooth",
+    name: "Paket 5 Jam Photobooth Fisik",
+    category: "photobooth",
+    price: 3500000,
+    price2R: 3500000,
+    price4R: 4000000,
+    duration: 300,
+    description: "5 jam penuh seharian, unlimited cetak instan di lokasi, properti tematik, 2 kru",
+  },
+  {
+    id: "pkg-bronze",
+    slug: "paket-bronze",
+    name: "Paket Bronze (7 Hari Akses, 1 Frame, 100 QR)",
+    category: "virtual_photobooth",
+    price: 250000,
+    duration: 168,
+    description: "Foto virtual, 1 desain frame, 100 kartu QR, scan QR tanpa batas",
   },
   {
     id: "pkg-silver",
@@ -64,9 +101,18 @@ function BookingForm() {
 
   const [serviceCategory, setServiceCategory] = useState<"photobooth" | "virtual_photobooth">(() => {
     if (categoryParam === "photobooth") return "photobooth";
-    if (packageParam?.includes("basic") || packageParam?.includes("deluxe")) return "photobooth";
+    if (
+      packageParam?.includes("basic") ||
+      packageParam?.includes("deluxe") ||
+      packageParam?.includes("fisik") ||
+      packageParam?.includes("jam")
+    ) {
+      return "photobooth";
+    }
     return "virtual_photobooth";
   });
+
+  const [physicalPrintSize, setPhysicalPrintSize] = useState<"2R" | "4R">("2R");
 
   const [formData, setFormData] = useState({
     customer_name: "",
@@ -75,10 +121,10 @@ function BookingForm() {
     event_type: "wedding" as EventType,
     event_name: "",
     event_date: "",
-    event_time: "18:30",
+    event_time: "13:00",
     location: "",
     city: "Palopo",
-    package_id: "pkg-silver",
+    package_id: "pkg-fisik-2h",
     notes: "",
   });
 
@@ -87,7 +133,7 @@ function BookingForm() {
 
   useEffect(() => {
     if (packageParam) {
-      const found = packageOptions.find((p) => p.slug === packageParam);
+      const found = packageOptions.find((p) => p.slug === packageParam || p.id === packageParam);
       if (found) {
         setServiceCategory(found.category);
         setFormData((prev) => ({ ...prev, package_id: found.id }));
@@ -98,6 +144,15 @@ function BookingForm() {
   const filteredPackages = packageOptions.filter((p) => p.category === serviceCategory);
   const selectedPackage =
     packageOptions.find((p) => p.id === formData.package_id) || filteredPackages[0] || packageOptions[0];
+
+  const getPackagePrice = (pkg: PackageOption) => {
+    if (pkg.category === "photobooth") {
+      return physicalPrintSize === "4R" ? (pkg.price4R ?? pkg.price) : (pkg.price2R ?? pkg.price);
+    }
+    return pkg.price;
+  };
+
+  const selectedPackagePrice = getPackagePrice(selectedPackage);
 
   const handleCategoryChange = (cat: "photobooth" | "virtual_photobooth") => {
     setServiceCategory(cat);
@@ -112,6 +167,10 @@ function BookingForm() {
     setIsSubmitting(true);
 
     try {
+      const resolvedPackageName = serviceCategory === "photobooth"
+        ? `${selectedPackage.name} (Cetak ${physicalPrintSize})`
+        : selectedPackage.name;
+
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,8 +178,9 @@ function BookingForm() {
           ...formData,
           category: serviceCategory,
           booking_category: serviceCategory,
-          package_name: selectedPackage.name,
-          total_price: selectedPackage.price,
+          package_name: resolvedPackageName,
+          total_price: selectedPackagePrice,
+          notes: `${formData.notes}${serviceCategory === "photobooth" ? ` [Ukuran Cetak: ${physicalPrintSize}]` : ""}`.trim(),
         }),
       });
 
@@ -138,12 +198,12 @@ function BookingForm() {
 
   const whatsappMessage = encodeURIComponent(
     `Halo Admin RUANGTEMU Photobooth Palopo! Saya sudah mengisi formulir reservasi:\n\n` +
-      `• Kategori Layanan: ${serviceCategory === "photobooth" ? "Photobooth (Cetak Fisik)" : "Virtual Photobooth"}\n` +
+      `• Kategori Layanan: ${serviceCategory === "photobooth" ? `Photobooth (Cetak Fisik ${physicalPrintSize})` : "Virtual Photobooth"}\n` +
       `• Nama: ${formData.customer_name}\n` +
       `• Event: ${formData.event_name} (${formData.event_type})\n` +
-      `• Tanggal: ${formData.event_date} (${formData.event_time} WITA)\n` +
+      `• Tanggal: ${formatDate(formData.event_date)} (${formatTime(formData.event_time)} WITA)\n` +
       `• Lokasi: ${formData.location}, ${formData.city}\n` +
-      `• Paket: ${selectedPackage.name} (${formatRupiah(selectedPackage.price)})\n` +
+      `• Paket: ${selectedPackage.name}${serviceCategory === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""} (${formatRupiah(selectedPackagePrice)})\n` +
       `• Catatan: ${formData.notes || "-"}\n\n` +
       `Mohon konfirmasi ketersediaan jadwalnya. Terima kasih!`
   );
@@ -161,7 +221,7 @@ function BookingForm() {
             </h2>
             <p className="text-stone-600 text-sm max-w-lg leading-relaxed">
               Terima kasih, <strong className="font-medium text-stone-900">{formData.customer_name}</strong>. Detail acara Anda untuk tanggal{" "}
-              <span className="font-mono text-stone-900">{formData.event_date}</span> telah masuk ke sistem kami.
+              <span className="font-mono text-stone-900">{formatDate(formData.event_date)}</span> telah masuk ke sistem kami.
             </p>
           </div>
 
@@ -170,11 +230,11 @@ function BookingForm() {
               Ringkasan Reservasi
             </div>
             <div className="font-medium text-stone-900 text-sm">{formData.event_name}</div>
-            <div className="text-stone-600">{selectedPackage.name}</div>
+            <div className="text-stone-600">{selectedPackage.name}{serviceCategory === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""}</div>
             <div className="text-stone-500">{formData.location}, {formData.city}</div>
             <div className="pt-3 border-t border-stone-200 flex justify-between items-baseline font-mono text-sm text-stone-900">
               <span className="text-stone-500 text-xs">Total Estimasi:</span>
-              <span className="font-semibold">{formatRupiah(selectedPackage.price)}</span>
+              <span className="font-semibold">{formatRupiah(selectedPackagePrice)}</span>
             </div>
           </div>
 
@@ -418,6 +478,39 @@ function BookingForm() {
                 </button>
               </div>
 
+              {/* Print Size Selector (2R vs 4R) for Photobooth */}
+              {serviceCategory === "photobooth" && (
+                <div className="p-3 bg-stone-50 border border-stone-200 space-y-1.5">
+                  <span className="block font-mono text-[10px] uppercase tracking-wider text-stone-600 font-semibold">
+                    Ukuran Cetak Foto
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-200/60 border border-stone-300/60">
+                    <button
+                      type="button"
+                      onClick={() => setPhysicalPrintSize("2R")}
+                      className={`min-h-[44px] px-2 py-1.5 text-xs font-mono transition-colors cursor-pointer flex items-center justify-center ${
+                        physicalPrintSize === "2R"
+                          ? "bg-stone-900 text-white font-bold shadow-sm"
+                          : "text-stone-700 hover:text-stone-950 hover:bg-stone-100"
+                      }`}
+                    >
+                      2R (Strip)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhysicalPrintSize("4R")}
+                      className={`min-h-[44px] px-2 py-1.5 text-xs font-mono transition-colors cursor-pointer flex items-center justify-center ${
+                        physicalPrintSize === "4R"
+                          ? "bg-stone-900 text-white font-bold shadow-sm"
+                          : "text-stone-700 hover:text-stone-950 hover:bg-stone-100"
+                      }`}
+                    >
+                      4R (Postcard)
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 {filteredPackages.map((pkg) => {
                   const isSelected = formData.package_id === pkg.id;
@@ -443,7 +536,7 @@ function BookingForm() {
                           <div className="text-xs font-medium text-stone-900 leading-snug">{pkg.name}</div>
                           <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">{pkg.description}</p>
                           <div className="font-mono text-xs text-stone-900 font-semibold mt-1.5">
-                            {formatRupiah(pkg.price)}
+                            {formatRupiah(getPackagePrice(pkg))}
                           </div>
                         </div>
                       </div>
@@ -455,16 +548,16 @@ function BookingForm() {
               {/* Price Calculation Box */}
               <div className="pt-4 border-t border-stone-200 space-y-2 text-xs">
                 <div className="flex justify-between text-stone-500">
-                  <span>Biaya Layanan</span>
-                  <span className="font-mono text-stone-900">{formatRupiah(selectedPackage.price)}</span>
+                  <span>Biaya Layanan ({selectedPackage.name}{serviceCategory === "photobooth" ? ` • ${physicalPrintSize}` : ""})</span>
+                  <span className="font-mono text-stone-900">{formatRupiah(selectedPackagePrice)}</span>
                 </div>
                 <div className="flex justify-between text-stone-500">
-                  <span>Transport & Setup (Palopo)</span>
+                  <span>Transport &amp; Setup (Palopo)</span>
                   <span className="font-mono text-stone-900">Termasuk</span>
                 </div>
                 <div className="pt-2 border-t border-stone-200 flex justify-between items-baseline text-stone-900">
                   <span className="font-mono text-[11px] uppercase tracking-wider text-stone-500">Total Estimasi</span>
-                  <span className="font-mono text-base font-semibold">{formatRupiah(selectedPackage.price)}</span>
+                  <span className="font-mono text-base font-semibold">{formatRupiah(selectedPackagePrice)}</span>
                 </div>
               </div>
 

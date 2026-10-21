@@ -18,14 +18,16 @@ function parseJsonField<T>(val: any, fallback: T): T {
 let mockPackages: Package[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
-    name: "Paket Basic Photobooth",
-    slug: "paket-basic-photobooth",
-    tagline: "Photobooth fisik hemat dengan cetak instan unlimited untuk perayaan di Palopo",
-    price: 1800000,
+    name: "Paket 2 Jam Photobooth Fisik",
+    slug: "paket-2-jam-photobooth",
+    tagline: "Photobooth fisik hemat dengan cetak instan unlimited di Palopo & Luwu Raya",
+    price: 2000000,
+    price_2r: 2000000,
+    price_4r: 2500000,
     duration_hours: 2,
     features: [
       "2 Jam Layanan Aktif di Lokasi Acara",
-      "Unlimited Print Foto 4R / 2-Strip",
+      "Unlimited Print Foto 2R Strip / 4R",
       "Custom Template Frame Sesuai Tema Acara",
       "Standard Fun Props & Aksesoris Foto",
       "Download Semua Foto via Cloud Storage",
@@ -33,29 +35,94 @@ let mockPackages: Package[] = [
     ],
     popular: false,
     category: "physical",
-    prints_included: "Unlimited Print 4R / 2-Strip",
+    prints_included: "Unlimited Print 2R Strip / 4R",
     backdrop: "Standard Backdrop / Sequin Fabric",
   },
   {
     id: "44444444-4444-4444-4444-444444444444",
-    name: "Paket Standard Deluxe",
-    slug: "paket-standard-deluxe",
-    tagline: "Paket photobooth fisik terlengkap untuk resepsi pernikahan & wisuda di Palopo",
+    name: "Paket 3 Jam Photobooth Fisik",
+    slug: "paket-3-jam-photobooth",
+    tagline: "Paket photobooth fisik terpopuler untuk resepsi pernikahan & wisuda di Palopo",
     price: 2500000,
+    price_2r: 2500000,
+    price_4r: 3000000,
     duration_hours: 3,
     features: [
       "3 Jam Layanan Penuh di Lokasi Acara",
-      "Unlimited Cetak Strip / 4R Glossy Prints",
+      "Unlimited Print Foto 2R Strip / 4R Glossy",
       "Custom Frame Eksklusif dengan Logo Event",
       "Premium Props & Kacamata Unik",
-      "Live Digital Gallery & QR Download",
+      "Download Semua Foto via Cloud Storage",
       "2 Kru Profesional RUANGTEMU Standby",
-      "Free 1 Album Foto Kenangan Eksklusif",
     ],
     popular: true,
     category: "physical",
-    prints_included: "Unlimited Glossy Thermal Photo Print",
+    prints_included: "Unlimited Print 2R Strip / 4R",
     backdrop: "Pilihan 5+ Premium Backdrop",
+  },
+  {
+    id: "55555555-5555-5555-5555-555555555555",
+    name: "Paket 4 Jam Photobooth Fisik",
+    slug: "paket-4-jam-photobooth",
+    tagline: "Durasi panjang untuk event besar, resepsi malam, & pesta wisuda",
+    price: 3000000,
+    price_2r: 3000000,
+    price_4r: 3500000,
+    duration_hours: 4,
+    features: [
+      "4 Jam Layanan Penuh di Lokasi Acara",
+      "Unlimited Print Foto 2R Strip / 4R Glossy",
+      "Custom Frame Eksklusif dengan Logo Event",
+      "Premium Props & Kacamata Unik",
+      "Download Semua Foto via Cloud Storage",
+      "2 Kru Profesional RUANGTEMU Standby",
+    ],
+    popular: false,
+    category: "physical",
+    prints_included: "Unlimited Print 2R Strip / 4R",
+    backdrop: "Pilihan 5+ Premium Backdrop",
+  },
+  {
+    id: "66666666-6666-6666-6666-666666666666",
+    name: "Paket 5 Jam Photobooth Fisik",
+    slug: "paket-5-jam-photobooth",
+    tagline: "Layanan maksimal untuk pesta seharian penuh tanpa khawatir kehabisan waktu",
+    price: 3500000,
+    price_2r: 3500000,
+    price_4r: 4000000,
+    duration_hours: 5,
+    features: [
+      "5 Jam Layanan Penuh di Lokasi Acara",
+      "Unlimited Print Foto 2R Strip / 4R Glossy",
+      "Custom Frame Eksklusif dengan Logo Event",
+      "Premium Props & Kacamata Unik",
+      "Download Semua Foto via Cloud Storage",
+      "2 Kru Profesional RUANGTEMU Standby",
+    ],
+    popular: false,
+    category: "physical",
+    prints_included: "Unlimited Print 2R Strip / 4R",
+    backdrop: "Pilihan 5+ Premium Backdrop",
+  },
+  {
+    id: "77777777-7777-7777-7777-777777777777",
+    name: "Paket Bronze",
+    slug: "paket-bronze",
+    tagline: "Paket virtual ekonomis 7 hari akses dengan 1 template frame & 100 QR",
+    price: 250000,
+    duration_hours: 168,
+    features: [
+      "Virtual Photobooth (Photo Only)",
+      "Free 1 desain template frame (Strip/4R/Polaroid)",
+      "Free cetak 100 pcs kartu QR code",
+      "Unlimited Akses QR Code",
+      "Akses foto 7 hari",
+      "Unlimited foto",
+    ],
+    popular: false,
+    category: "virtual",
+    prints_included: "Free cetak 100 pcs kartu QR code",
+    backdrop: "1 Desain Template Frame (Strip/4R/Polaroid)",
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
@@ -1051,13 +1118,58 @@ export async function getBookings(): Promise<Booking[]> {
 
 function normalizePackageId(pkgId?: string | null): string | null {
   if (!pkgId) return null;
-  if (pkgId === "11111111-1111-1111-1111-111111111111" || pkgId === "pkg-basic" || pkgId === "paket-basic" || pkgId === "paket-basic-photobooth") {
+  if (
+    pkgId === "11111111-1111-1111-1111-111111111111" ||
+    pkgId === "pkg-fisik-2h" ||
+    pkgId === "pkg-basic" ||
+    pkgId === "paket-basic" ||
+    pkgId === "paket-2-jam" ||
+    pkgId === "paket-2-jam-photobooth" ||
+    pkgId === "paket-basic-photobooth"
+  ) {
     return "11111111-1111-1111-1111-111111111111";
   }
-  if (pkgId === "44444444-4444-4444-4444-444444444444" || pkgId === "pkg-deluxe" || pkgId === "paket-standard-deluxe" || pkgId === "paket-deluxe") {
+  if (
+    pkgId === "44444444-4444-4444-4444-444444444444" ||
+    pkgId === "pkg-fisik-3h" ||
+    pkgId === "pkg-deluxe" ||
+    pkgId === "paket-standard-deluxe" ||
+    pkgId === "paket-3-jam" ||
+    pkgId === "paket-3-jam-photobooth" ||
+    pkgId === "paket-deluxe"
+  ) {
     return "44444444-4444-4444-4444-444444444444";
   }
-  if (pkgId === "22222222-2222-2222-2222-222222222222" || pkgId === "pkg-silver" || pkgId === "paket-silver" || pkgId === "pkg-bronze") {
+  if (
+    pkgId === "55555555-5555-5555-5555-555555555555" ||
+    pkgId === "pkg-fisik-4h" ||
+    pkgId === "paket-4-jam" ||
+    pkgId === "paket-4-jam-photobooth"
+  ) {
+    return "55555555-5555-5555-5555-555555555555";
+  }
+  if (
+    pkgId === "66666666-6666-6666-6666-666666666666" ||
+    pkgId === "pkg-fisik-5h" ||
+    pkgId === "paket-5-jam" ||
+    pkgId === "paket-5-jam-photobooth"
+  ) {
+    return "66666666-6666-6666-6666-666666666666";
+  }
+  if (
+    pkgId === "77777777-7777-7777-7777-777777777777" ||
+    pkgId === "pkg-bronze" ||
+    pkgId === "paket-bronze" ||
+    pkgId === "bronze"
+  ) {
+    return "77777777-7777-7777-7777-777777777777";
+  }
+  if (
+    pkgId === "22222222-2222-2222-2222-222222222222" ||
+    pkgId === "pkg-silver" ||
+    pkgId === "paket-silver" ||
+    pkgId === "silver"
+  ) {
     return "22222222-2222-2222-2222-222222222222";
   }
   if (pkgId === "33333333-3333-3333-3333-333333333333" || pkgId === "pkg-gold" || pkgId === "paket-gold") {
@@ -1078,10 +1190,14 @@ export async function createBooking(
   const isPhysical =
     booking.category === "photobooth" ||
     booking.booking_category === "photobooth" ||
-    pkgNameLower.includes("basic photobooth") ||
-    pkgNameLower.includes("standard deluxe") ||
+    pkgNameLower.includes("photobooth") ||
+    pkgNameLower.includes("cetak fisik") ||
+    pkgNameLower.includes("jam") ||
     booking.package_id?.includes("11111111") ||
     booking.package_id?.includes("44444444") ||
+    booking.package_id?.includes("55555555") ||
+    booking.package_id?.includes("66666666") ||
+    booking.package_id?.includes("fisik") ||
     booking.package_id?.includes("basic") ||
     booking.package_id?.includes("deluxe");
 
@@ -1093,9 +1209,15 @@ export async function createBooking(
   const resolvedPackageName =
     booking.package_name ||
     (resolvedPackageId === "11111111-1111-1111-1111-111111111111"
-      ? "Paket Basic Photobooth"
+      ? "Paket 2 Jam Photobooth"
       : resolvedPackageId === "44444444-4444-4444-4444-444444444444"
-      ? "Paket Standard Deluxe"
+      ? "Paket 3 Jam Photobooth"
+      : resolvedPackageId === "55555555-5555-5555-5555-555555555555"
+      ? "Paket 4 Jam Photobooth"
+      : resolvedPackageId === "66666666-6666-6666-6666-666666666666"
+      ? "Paket 5 Jam Photobooth"
+      : resolvedPackageId === "77777777-7777-7777-7777-777777777777"
+      ? "Paket Bronze"
       : resolvedPackageId === "33333333-3333-3333-3333-333333333333"
       ? "Paket Gold"
       : "Paket Silver");
@@ -1103,9 +1225,15 @@ export async function createBooking(
   const resolvedPrice =
     booking.total_price ||
     (resolvedPackageId === "11111111-1111-1111-1111-111111111111"
-      ? 1800000
+      ? 2000000
       : resolvedPackageId === "44444444-4444-4444-4444-444444444444"
       ? 2500000
+      : resolvedPackageId === "55555555-5555-5555-5555-555555555555"
+      ? 3000000
+      : resolvedPackageId === "66666666-6666-6666-6666-666666666666"
+      ? 3500000
+      : resolvedPackageId === "77777777-7777-7777-7777-777777777777"
+      ? 250000
       : resolvedPackageId === "33333333-3333-3333-3333-333333333333"
       ? 450000
       : 350000);

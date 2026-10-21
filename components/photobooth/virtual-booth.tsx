@@ -12,6 +12,7 @@ import {
 } from "@/lib/frame-canvas";
 import { VoiceNoteRecorder } from "@/lib/audio";
 import { LandingPageView } from "@/lib/theme-config";
+import { formatDate } from "@/lib/utils";
 
 interface VirtualBoothProps {
   event: EventItem;
@@ -63,10 +64,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       : (event.host_name || event.title);
 
   const customDateText = isJayaRikaWedding
-    ? "12 Oktober 2026"
+    ? "12/10/2026"
     : isIlvaRickyWedding
-      ? "08 Oktober 2026"
-      : event.date;
+      ? "08/10/2026"
+      : (event.date ? formatDate(event.date) : "05/10/2026");
 
   const customVenueText = isJayaRikaWedding
     ? "D'Twins Cafe"
@@ -1332,7 +1333,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     Ilva & Ricky
                   </h1>
                   <div className="text-xs text-stone-300 mt-1 select-none">
-                    08 Oktober 2026 • Gedung Opu Daeng Risadju
+                    08/10/2026 • Gedung Opu Daeng Risadju
                   </div>
                 </div>
               ) : (

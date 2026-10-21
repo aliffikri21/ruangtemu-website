@@ -324,11 +324,12 @@ Renderer canvas di `lib/frame-canvas.ts`:
 1. **Sticky Glass Navigation Bar:** Logo RUANGTEMU + nav links + CTA "Reservasi Event"
 2. **Hero Section:** Badge lokasi, heading utama, value proposition pills, dual CTA
 3. **Core Services (3 Cards):** Physical Print, Virtual Web, Live Projection
-4. **Pricing (4 Cards):**
-   - Paket Basic (2 Jam) - Rp 1.800.000
-   - Paket Standard Deluxe (3 Jam, BEST SELLER) - Rp 2.500.000
-   - Paket Virtual & Web (12 Jam) - Rp 2.200.000
-   - Paket Platinum Hybrid (4 Jam + Virtual) - Rp 3.800.000
+4. **Pricing (4 Durasi Photobooth Fisik & Virtual):**
+   - Paket 2 Jam: Rp 2.000.000 (2R) / Rp 2.500.000 (4R)
+   - Paket 3 Jam: Rp 2.500.000 (2R) / Rp 3.000.000 (4R) — BEST SELLER
+   - Paket 4 Jam: Rp 3.000.000 (2R) / Rp 3.500.000 (4R)
+   - Paket 5 Jam: Rp 3.500.000 (2R) / Rp 4.000.000 (4R)
+   - Paket Virtual Web Photobooth: Rp 350.000 (Silver) / Rp 500.000 (Gold)
 5. **Demo Showcase:** Link demo live event
 6. **Testimonials:** Ulasan dari event organizer Palopo
 7. **Footer:** Alamat Palopo, WhatsApp, copyright

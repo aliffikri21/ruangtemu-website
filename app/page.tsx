@@ -14,6 +14,7 @@ export default function HomePage() {
   const [curvedFontSize, setCurvedFontSize] = useState(42);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedLandingCategory, setSelectedLandingCategory] = useState<"virtual_photobooth" | "photobooth">("virtual_photobooth");
+  const [physicalPrintSize, setPhysicalPrintSize] = useState<"2R" | "4R">("2R");
   const [bookingPackageId, setBookingPackageId] = useState<string | undefined>(undefined);
   const [bookingInitialCategory, setBookingInitialCategory] = useState<"photobooth" | "virtual_photobooth" | undefined>(undefined);
 
@@ -648,7 +649,7 @@ export default function HomePage() {
                 </div>
                 <span className="tag">Cetak</span>
                 <h3>Cetak Sublimasi Cepat</h3>
-                <p>Printer DNP mencetak satu lembar dalam 12 detik, di atas kertas tahan air dan anti pudar.</p>
+                <p>Printer mencetak satu lembar dalam 12 detik, di atas kertas tahan air dan anti pudar.</p>
               </article>
               <article className="svc tilt" data-rv="">
                 <div className="svc-ic">
@@ -886,7 +887,35 @@ export default function HomePage() {
             </div>
 
             {selectedLandingCategory === "virtual_photobooth" ? (
-              <div className="pk-grid">
+              <div className="pk-grid pk-grid-3">
+                <article className="pk tilt" data-rv="">
+                  <div className="pk-top">
+                    <span>Akses 7 hari</span>
+                  </div>
+                  <h3>Bronze</h3>
+                  <div className="price">
+                    Rp 250.000<small>per event</small>
+                  </div>
+                  <ul>
+                    <li>Virtual Web Photobooth (Photo Only)</li>
+                    <li>1 pilihan desain frame kustom</li>
+                    <li>Cetak 100 kartu QR eksklusif</li>
+                    <li>Scan QR dan unduhan tanpa batas</li>
+                    <li>Akses galeri digital 7 hari</li>
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBooking("pkg-bronze", "virtual_photobooth")}
+                    className="btn btn-light cursor-pointer w-full justify-center text-center"
+                  >
+                    Pilih Bronze{" "}
+                    <span className="btn-ic">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M8 7h9v9" />
+                      </svg>
+                    </span>
+                  </button>
+                </article>
                 <article className="pk hot tilt" data-rv="">
                   <div className="pk-top">
                     <span>Akses 10 hari</span>
@@ -946,65 +975,169 @@ export default function HomePage() {
                 </article>
               </div>
             ) : (
-              <div className="pk-grid">
-                <article className="pk tilt" data-rv="">
-                  <div className="pk-top">
-                    <span>Durasi 2 Jam</span>
-                    <span className="badge bg-amber-500 text-slate-950 font-bold">Booth Fisik</span>
+              <div>
+                {/* Print Size Selector (2R vs 4R) */}
+                <div className="flex flex-col items-center justify-center gap-2 mb-8 px-2" data-rv="">
+                  <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
+                    Pilih Format Ukuran Cetak:
+                  </span>
+                  <div className="inline-flex p-1.5 rounded-2xl sm:rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+                    <button
+                      type="button"
+                      onClick={() => setPhysicalPrintSize("2R")}
+                      className={`min-h-[44px] px-5 py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        physicalPrintSize === "2R"
+                          ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25"
+                          : "text-slate-300 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <span>Ukuran 2R (Strip)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhysicalPrintSize("4R")}
+                      className={`min-h-[44px] px-5 py-2 rounded-xl sm:rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        physicalPrintSize === "4R"
+                          ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25"
+                          : "text-slate-300 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <span>Ukuran 4R (Postcard)</span>
+                    </button>
                   </div>
-                  <h3>Basic Photobooth</h3>
-                  <div className="price">
-                    Rp 1.800.000<small>per 2 jam acara</small>
-                  </div>
-                  <ul>
-                    <li>Unlimited cetak foto 4R / 2-strip</li>
-                    <li>Kamera profesional &amp; lighting studio</li>
-                    <li>Aneka properti foto seru &amp; fun props</li>
-                    <li>2 kru operator ramah standby</li>
-                    <li>Link Google Drive soft copy seluruh foto</li>
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenBooking("pkg-basic", "photobooth")}
-                    className="btn btn-light cursor-pointer w-full justify-center text-center"
-                  >
-                    Pilih Paket Basic{" "}
-                    <span className="btn-ic">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M7 17L17 7M8 7h9v9" />
-                      </svg>
-                    </span>
-                  </button>
-                </article>
-                <article className="pk hot tilt" data-rv="">
-                  <div className="pk-top">
-                    <span>Durasi 3 Jam</span>
-                    <span className="badge bg-amber-500 text-slate-950 font-bold">Rekomendasi Wedding</span>
-                  </div>
-                  <h3>Standard Deluxe</h3>
-                  <div className="price">
-                    Rp 2.500.000<small>per 3 jam acara</small>
-                  </div>
-                  <ul>
-                    <li>Unlimited cetak foto glossy kecepatan tinggi</li>
-                    <li>Kustom frame template eksklusif sesuai tema</li>
-                    <li>Lighting studio, backdrop, &amp; properti tematik</li>
-                    <li>Live gallery monitor &amp; 2 kru operator standby</li>
-                    <li>Bonus 1 album foto eksklusif acara</li>
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenBooking("pkg-deluxe", "photobooth")}
-                    className="btn btn-pink cursor-pointer w-full justify-center text-center"
-                  >
-                    Pilih Paket Deluxe{" "}
-                    <span className="btn-ic">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M7 17L17 7M8 7h9v9" />
-                      </svg>
-                    </span>
-                  </button>
-                </article>
+                </div>
+
+                <div className="pk-grid pk-grid-4">
+                  {/* 1. Paket 2 Jam */}
+                  <article className="pk tilt" data-rv="">
+                    <div className="pk-top">
+                      <span>Durasi 2 Jam</span>
+                      <span className="badge bg-amber-500 text-slate-950 font-bold">Booth Fisik</span>
+                    </div>
+                    <h3>Paket 2 Jam</h3>
+                    <div className="price">
+                      {physicalPrintSize === "4R" ? "Rp 2.500.000" : "Rp 2.000.000"}
+                      <small>Cetak {physicalPrintSize} • per 2 jam acara</small>
+                    </div>
+                    <ul>
+                      <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
+                      <li>Kamera profesional &amp; lighting studio</li>
+                      <li>Aneka properti foto seru &amp; fun props</li>
+                      <li>2 kru operator ramah standby</li>
+                      <li>Link Google Drive soft copy seluruh foto</li>
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBooking("pkg-fisik-2h", "photobooth")}
+                      className="btn btn-light cursor-pointer w-full justify-center text-center"
+                    >
+                      Pilih Paket 2 Jam{" "}
+                      <span className="btn-ic">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M7 17L17 7M8 7h9v9" />
+                        </svg>
+                      </span>
+                    </button>
+                  </article>
+
+                  {/* 2. Paket 3 Jam (Recommended) */}
+                  <article className="pk hot tilt" data-rv="">
+                    <div className="pk-top">
+                      <span>Durasi 3 Jam</span>
+                      <span className="badge bg-amber-500 text-slate-950 font-bold">Rekomendasi Acara</span>
+                    </div>
+                    <h3>Paket 3 Jam</h3>
+                    <div className="price">
+                      {physicalPrintSize === "4R" ? "Rp 3.000.000" : "Rp 2.500.000"}
+                      <small>Cetak {physicalPrintSize} • per 3 jam acara</small>
+                    </div>
+                    <ul>
+                      <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
+                      <li>Kustom frame template eksklusif sesuai tema</li>
+                      <li>Lighting studio, backdrop, &amp; properti tematik</li>
+                      <li>2 kru profesional RUANGTEMU standby</li>
+                      <li>Link Google Drive soft copy seluruh foto</li>
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBooking("pkg-fisik-3h", "photobooth")}
+                      className="btn btn-pink cursor-pointer w-full justify-center text-center"
+                    >
+                      Pilih Paket 3 Jam{" "}
+                      <span className="btn-ic">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M7 17L17 7M8 7h9v9" />
+                        </svg>
+                      </span>
+                    </button>
+                  </article>
+
+                  {/* 3. Paket 4 Jam */}
+                  <article className="pk tilt" data-rv="">
+                    <div className="pk-top">
+                      <span>Durasi 4 Jam</span>
+                      <span className="badge bg-amber-500 text-slate-950 font-bold">Event Besar</span>
+                    </div>
+                    <h3>Paket 4 Jam</h3>
+                    <div className="price">
+                      {physicalPrintSize === "4R" ? "Rp 3.500.000" : "Rp 3.000.000"}
+                      <small>Cetak {physicalPrintSize} • per 4 jam acara</small>
+                    </div>
+                    <ul>
+                      <li>4 jam penuh layanan mesin &amp; kru di lokasi</li>
+                      <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
+                      <li>Kustom frame template eksklusif sesuai tema</li>
+                      <li>Lighting studio &amp; properti tematik lengkap</li>
+                      <li>2 kru profesional RUANGTEMU standby</li>
+                      <li>Link Google Drive soft copy seluruh foto</li>
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBooking("pkg-fisik-4h", "photobooth")}
+                      className="btn btn-light cursor-pointer w-full justify-center text-center"
+                    >
+                      Pilih Paket 4 Jam{" "}
+                      <span className="btn-ic">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M7 17L17 7M8 7h9v9" />
+                        </svg>
+                      </span>
+                    </button>
+                  </article>
+
+                  {/* 4. Paket 5 Jam */}
+                  <article className="pk tilt" data-rv="">
+                    <div className="pk-top">
+                      <span>Durasi 5 Jam</span>
+                      <span className="badge bg-amber-500 text-slate-950 font-bold">Seharian Penuh</span>
+                    </div>
+                    <h3>Paket 5 Jam</h3>
+                    <div className="price">
+                      {physicalPrintSize === "4R" ? "Rp 4.000.000" : "Rp 3.500.000"}
+                      <small>Cetak {physicalPrintSize} • per 5 jam acara</small>
+                    </div>
+                    <ul>
+                      <li>5 jam penuh layanan mesin &amp; kru di lokasi</li>
+                      <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
+                      <li>Kustom frame template eksklusif sesuai tema</li>
+                      <li>Lighting studio &amp; properti tematik lengkap</li>
+                      <li>2 kru profesional RUANGTEMU standby</li>
+                      <li>Link Google Drive soft copy seluruh foto</li>
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBooking("pkg-fisik-5h", "photobooth")}
+                      className="btn btn-light cursor-pointer w-full justify-center text-center"
+                    >
+                      Pilih Paket 5 Jam{" "}
+                      <span className="btn-ic">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M7 17L17 7M8 7h9v9" />
+                        </svg>
+                      </span>
+                    </button>
+                  </article>
+                </div>
               </div>
             )}
             <p className="note" data-rv="">
@@ -1271,6 +1404,7 @@ export default function HomePage() {
         onClose={() => setIsBookingOpen(false)}
         initialPackageId={bookingPackageId}
         initialCategory={bookingInitialCategory}
+        initialPrintSize={physicalPrintSize}
       />
     </div>
   );

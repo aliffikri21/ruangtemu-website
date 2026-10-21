@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useId } from "react";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
 import { EventType } from "@/types";
 
 export type BookingServiceCategory = "photobooth" | "virtual_photobooth";
@@ -12,6 +12,8 @@ export interface PackageOption {
   name: string;
   badge?: string;
   price: number;
+  price2R?: number;
+  price4R?: number;
   duration: number;
   durationLabel: string;
   category: BookingServiceCategory;
@@ -22,17 +24,20 @@ export interface PackageOption {
 export const PHOTOBOOTH_PACKAGES: PackageOption[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
-    slug: "paket-basic-photobooth",
-    name: "Paket Basic Photobooth",
+    slug: "paket-2-jam-photobooth",
+    name: "Paket 2 Jam",
     badge: "2 Jam Layanan",
-    price: 1800000,
+    price: 2000000,
+    price2R: 2000000,
+    price4R: 2500000,
     duration: 2,
     durationLabel: "2 Jam Layanan",
     category: "photobooth",
-    description: "Cetak fisik unlimited 4R / 2-strip, custom frame sesuai tema, fun props, dan operator standby.",
+    description: "Cetak fisik unlimited di lokasi acara, custom frame, fun props, dan operator standby.",
     features: [
       "2 Jam Layanan Aktif di Venue",
-      "Unlimited Print Foto 4R / 2-Strip",
+      "Unlimited Print Foto Instan",
+      "Pilihan Ukuran: 2R Strip atau 4R",
       "Custom Template Frame Sesuai Tema",
       "Standard Fun Props & Aksesoris",
       "Download Cloud Semua Foto",
@@ -41,27 +46,92 @@ export const PHOTOBOOTH_PACKAGES: PackageOption[] = [
   },
   {
     id: "44444444-4444-4444-4444-444444444444",
-    slug: "paket-standard-deluxe",
-    name: "Paket Standard Deluxe",
+    slug: "paket-3-jam-photobooth",
+    name: "Paket 3 Jam",
     badge: "Rekomendasi (3 Jam)",
     price: 2500000,
+    price2R: 2500000,
+    price4R: 3000000,
     duration: 3,
     durationLabel: "3 Jam Layanan",
     category: "photobooth",
-    description: "Cetak glossy unlimited, custom frame eksklusif, live digital gallery, 2 kru standby, free album kenangan.",
+    description: "Paket terpopuler untuk resepsi pernikahan & wisuda dengan kru lengkap di lokasi.",
     features: [
       "3 Jam Layanan Penuh di Venue",
-      "Unlimited Cetak Strip / 4R Glossy",
+      "Unlimited Print Foto Instan",
+      "Pilihan Ukuran: 2R Strip atau 4R",
       "Custom Frame Eksklusif dengan Logo Event",
       "Premium Props & Kacamata Unik",
-      "Live Digital Gallery & QR Download",
+      "Download Cloud Semua Foto",
       "2 Kru Profesional RUANGTEMU Standby",
-      "Free 1 Album Foto Kenangan Eksklusif",
+    ],
+  },
+  {
+    id: "55555555-5555-5555-5555-555555555555",
+    slug: "paket-4-jam-photobooth",
+    name: "Paket 4 Jam",
+    badge: "4 Jam Layanan",
+    price: 3000000,
+    price2R: 3000000,
+    price4R: 3500000,
+    duration: 4,
+    durationLabel: "4 Jam Layanan",
+    category: "photobooth",
+    description: "Durasi panjang untuk event besar, resepsi malam, & pesta wisuda meriah.",
+    features: [
+      "4 Jam Layanan Penuh di Venue",
+      "Unlimited Print Foto Instan",
+      "Pilihan Ukuran: 2R Strip atau 4R",
+      "Custom Frame Eksklusif dengan Logo Event",
+      "Premium Props & Kacamata Unik",
+      "Download Cloud Semua Foto",
+      "2 Kru Profesional RUANGTEMU Standby",
+    ],
+  },
+  {
+    id: "66666666-6666-6666-6666-666666666666",
+    slug: "paket-5-jam-photobooth",
+    name: "Paket 5 Jam",
+    badge: "5 Jam Layanan",
+    price: 3500000,
+    price2R: 3500000,
+    price4R: 4000000,
+    duration: 5,
+    durationLabel: "5 Jam Layanan",
+    category: "photobooth",
+    description: "Layanan maksimal seharian penuh tanpa khawatir kehabisan waktu sesi foto.",
+    features: [
+      "5 Jam Layanan Penuh di Venue",
+      "Unlimited Print Foto Instan",
+      "Pilihan Ukuran: 2R Strip atau 4R",
+      "Custom Frame Eksklusif dengan Logo Event",
+      "Premium Props & Kacamata Unik",
+      "Download Cloud Semua Foto",
+      "2 Kru Profesional RUANGTEMU Standby",
     ],
   },
 ];
 
 export const VIRTUAL_PHOTOBOOTH_PACKAGES: PackageOption[] = [
+  {
+    id: "77777777-7777-7777-7777-777777777777",
+    slug: "paket-bronze",
+    name: "Paket Bronze",
+    badge: "7 Hari Akses",
+    price: 250000,
+    duration: 168,
+    durationLabel: "Akses 7 Hari",
+    category: "virtual_photobooth",
+    description: "Virtual Photobooth hemat: foto tanpa batas, 1 desain frame kustom, cetak 100 kartu QR meja.",
+    features: [
+      "Virtual Web Photobooth via HP Tamu",
+      "1 Desain Template Frame Kustom",
+      "Free Cetak 100 Pcs Kartu QR Meja",
+      "Unlimited Akses QR & Foto",
+      "Akses Foto 7 Hari",
+      "Buku Tamu Digital",
+    ],
+  },
   {
     id: "22222222-2222-2222-2222-222222222222",
     slug: "paket-silver",
@@ -112,6 +182,7 @@ interface BookingModalProps {
   onClose: () => void;
   initialPackageId?: string;
   initialCategory?: BookingServiceCategory;
+  initialPrintSize?: "2R" | "4R";
 }
 
 export function BookingModal({
@@ -119,22 +190,31 @@ export function BookingModal({
   onClose,
   initialPackageId,
   initialCategory,
+  initialPrintSize,
 }: BookingModalProps) {
   const modalTitleId = useId();
+
+  const [physicalPrintSize, setPhysicalPrintSize] = useState<"2R" | "4R">(() => initialPrintSize || "2R");
 
   const inferCategoryFromPkg = (pkgKey?: string): BookingServiceCategory | null => {
     if (!pkgKey) return null;
     if (
       pkgKey.includes("basic") ||
       pkgKey.includes("deluxe") ||
+      pkgKey.includes("fisik") ||
+      pkgKey.includes("jam") ||
       pkgKey === "11111111-1111-1111-1111-111111111111" ||
-      pkgKey === "44444444-4444-4444-4444-444444444444"
+      pkgKey === "44444444-4444-4444-4444-444444444444" ||
+      pkgKey === "55555555-5555-5555-5555-555555555555" ||
+      pkgKey === "66666666-6666-6666-6666-666666666666"
     ) {
       return "photobooth";
     }
     if (
+      pkgKey.includes("bronze") ||
       pkgKey.includes("silver") ||
       pkgKey.includes("gold") ||
+      pkgKey === "77777777-7777-7777-7777-777777777777" ||
       pkgKey === "22222222-2222-2222-2222-222222222222" ||
       pkgKey === "33333333-3333-3333-3333-333333333333"
     ) {
@@ -145,10 +225,19 @@ export function BookingModal({
 
   const resolveInitPkgId = (pkgKey?: string, cat: BookingServiceCategory = "virtual_photobooth") => {
     if (cat === "photobooth") {
-      if (pkgKey?.includes("deluxe") || pkgKey === "44444444-4444-4444-4444-444444444444") {
+      if (pkgKey?.includes("5h") || pkgKey?.includes("5-jam") || pkgKey === "66666666-6666-6666-6666-666666666666") {
+        return "66666666-6666-6666-6666-666666666666";
+      }
+      if (pkgKey?.includes("4h") || pkgKey?.includes("4-jam") || pkgKey === "55555555-5555-5555-5555-555555555555") {
+        return "55555555-5555-5555-5555-555555555555";
+      }
+      if (pkgKey?.includes("deluxe") || pkgKey?.includes("3h") || pkgKey?.includes("3-jam") || pkgKey === "44444444-4444-4444-4444-444444444444") {
         return "44444444-4444-4444-4444-444444444444";
       }
       return "11111111-1111-1111-1111-111111111111";
+    }
+    if (pkgKey?.includes("bronze") || pkgKey === "77777777-7777-7777-7777-777777777777") {
+      return "77777777-7777-7777-7777-777777777777";
     }
     if (pkgKey?.includes("gold") || pkgKey === "33333333-3333-3333-3333-333333333333") {
       return "33333333-3333-3333-3333-333333333333";
@@ -175,7 +264,7 @@ export function BookingModal({
     event_type: "wedding" as EventType,
     event_name: "",
     event_date: "",
-    event_time: "18:30",
+    event_time: "13:00",
     event_venue_type: "indoor" as "indoor" | "outdoor",
     location: "",
     city: "Palopo",
@@ -215,9 +304,12 @@ export function BookingModal({
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Sync initial category or package if changed externally
+  // Sync initial category, package, and print size if changed externally
   useEffect(() => {
     if (!isOpen) return;
+    if (initialPrintSize) {
+      setPhysicalPrintSize(initialPrintSize);
+    }
     const cat = initialCategory || inferCategoryFromPkg(initialPackageId);
     if (cat) {
       setServiceCategory(cat);
@@ -229,7 +321,7 @@ export function BookingModal({
     } else {
       setCurrentStep(0);
     }
-  }, [isOpen, initialCategory, initialPackageId]);
+  }, [isOpen, initialCategory, initialPackageId, initialPrintSize]);
 
   // Handle escape key and body scroll lock
   useEffect(() => {
@@ -268,6 +360,13 @@ export function BookingModal({
     setFormData((prev) => ({ ...prev, package_id: defaultPkgId }));
   };
 
+  const getPackagePrice = (pkg: PackageOption, size: "2R" | "4R" = physicalPrintSize) => {
+    if (pkg.category === "photobooth") {
+      return size === "4R" ? (pkg.price4R ?? pkg.price) : (pkg.price2R ?? pkg.price);
+    }
+    return pkg.price;
+  };
+
   if (!isOpen) return null;
 
   const activeCategoryPackages = serviceCategory === "photobooth"
@@ -280,14 +379,21 @@ export function BookingModal({
         p.id === formData.package_id ||
         p.slug === formData.package_id ||
         (serviceCategory === "photobooth" && (
-          (formData.package_id?.includes("deluxe") && p.slug.includes("deluxe")) ||
-          (formData.package_id?.includes("basic") && p.slug.includes("basic"))
+          (formData.package_id?.includes("5") && p.slug.includes("5")) ||
+          (formData.package_id?.includes("4") && p.slug.includes("4")) ||
+          (formData.package_id?.includes("3") && p.slug.includes("3")) ||
+          (formData.package_id?.includes("2") && p.slug.includes("2")) ||
+          (formData.package_id?.includes("deluxe") && p.slug.includes("3")) ||
+          (formData.package_id?.includes("basic") && p.slug.includes("2"))
         )) ||
         (serviceCategory === "virtual_photobooth" && (
+          (formData.package_id?.includes("bronze") && p.slug === "paket-bronze") ||
           (formData.package_id?.includes("gold") && p.slug === "paket-gold") ||
           (formData.package_id?.includes("silver") && p.slug === "paket-silver")
         ))
     ) || activeCategoryPackages[0];
+
+  const selectedPackagePrice = getPackagePrice(selectedPackage, physicalPrintSize);
 
   const getVaNumber = (bank: string) => {
     const rawNumber = invoiceId.replace(/\D/g, "").padEnd(6, "8");
@@ -356,6 +462,10 @@ export function BookingModal({
       const currentInv = invoiceId || `INV-DOKU-${Date.now().toString().slice(-6)}`;
       setInvoiceId(currentInv);
 
+      const resolvedPackageTitle = serviceCategory === "photobooth"
+        ? `${selectedPackage.name} (Cetak ${physicalPrintSize})`
+        : selectedPackage.name;
+
       const payload = {
         customer_name: formData.customer_name.trim(),
         customer_phone: formData.customer_phone.trim(),
@@ -369,12 +479,12 @@ export function BookingModal({
         category: serviceCategory,
         booking_category: serviceCategory,
         package_id: selectedPackage.id,
-        package_name: selectedPackage.name,
-        notes: formData.notes.trim(),
-        total_price: selectedPackage.price,
+        package_name: resolvedPackageTitle,
+        notes: `${formData.notes.trim()}${serviceCategory === "photobooth" ? ` [Ukuran Cetak: ${physicalPrintSize}]` : ""}`.trim(),
+        total_price: selectedPackagePrice,
         payment_status: "PENDING",
         payment_invoice: currentInv,
-        payment_amount: selectedPackage.price,
+        payment_amount: selectedPackagePrice,
       };
 
       const res = await fetch("/api/bookings", {
@@ -422,7 +532,7 @@ export function BookingModal({
             payment_status: "PAID",
             payment_method: method,
             payment_invoice: invoiceId,
-            payment_amount: selectedPackage.price,
+            payment_amount: selectedPackagePrice,
             payment_paid_at: nowIso,
             status: "confirmed",
           }),
@@ -475,35 +585,29 @@ export function BookingModal({
     onClose();
   };
 
-  const formattedDate = new Date().toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedDate = `${formatDate(new Date())} ${formatTime(new Date())}`;
 
   const whatsappMessage = submittedData
     ? encodeURIComponent(
         paymentSuccess
           ? `Halo Admin RUANGTEMU Photobooth Palopo! Saya telah menyelesaikan reservasi dan melunasi pembayaran via DOKU Payment Gateway:\n\n` +
             `• No. Invoice: ${invoiceId}\n` +
-            `• Layanan: ${submittedData.category === "photobooth" ? "Photobooth (Cetak Fisik)" : "Virtual Photobooth"}\n` +
+            `• Layanan: ${submittedData.category === "photobooth" ? `Photobooth (Cetak Fisik ${physicalPrintSize})` : "Virtual Photobooth"}\n` +
             `• Nama: ${submittedData.customer_name}\n` +
             `• Acara: ${submittedData.event_name} (${submittedData.event_type})\n` +
-            `• Tanggal: ${submittedData.event_date} (${submittedData.event_time} WITA)\n` +
+            `• Tanggal: ${formatDate(submittedData.event_date)} (${formatTime(submittedData.event_time)} WITA)\n` +
             `• Lokasi: ${submittedData.location}, ${submittedData.city}\n` +
-            `• Paket: ${selectedPackage.name} (${formatRupiah(selectedPackage.price)})\n` +
+            `• Paket: ${selectedPackage.name}${submittedData.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""} (${formatRupiah(selectedPackagePrice)})\n` +
             `• Status Pembayaran: LUNAS (${activePaymentChannel === "qris" ? "QRIS Instant" : `${selectedBank.toUpperCase()} Virtual Account`})\n\n` +
             `Mohon dicek di dashboard admin RUANGTEMU. Terima kasih!`
           : `Halo Admin RUANGTEMU Photobooth Palopo! Saya sudah mengisi formulir reservasi online:\n\n` +
             `• No. Invoice: ${invoiceId}\n` +
-            `• Layanan: ${submittedData.category === "photobooth" ? "Photobooth (Cetak Fisik)" : "Virtual Photobooth"}\n` +
+            `• Layanan: ${submittedData.category === "photobooth" ? `Photobooth (Cetak Fisik ${physicalPrintSize})` : "Virtual Photobooth"}\n` +
             `• Nama: ${submittedData.customer_name}\n` +
             `• Acara: ${submittedData.event_name} (${submittedData.event_type})\n` +
-            `• Tanggal: ${submittedData.event_date} (${submittedData.event_time} WITA)\n` +
+            `• Tanggal: ${formatDate(submittedData.event_date)} (${formatTime(submittedData.event_time)} WITA)\n` +
             `• Lokasi: ${submittedData.location}, ${submittedData.city}\n` +
-            `• Paket: ${selectedPackage.name} (${formatRupiah(selectedPackage.price)})\n` +
+            `• Paket: ${selectedPackage.name}${submittedData.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""} (${formatRupiah(selectedPackagePrice)})\n` +
             `• Catatan: ${submittedData.notes || "-"}\n\n` +
             `Mohon dicek di dashboard admin dan dikonfirmasi jadwalnya. Terima kasih!`
       )
@@ -800,7 +904,7 @@ export function BookingModal({
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Total Pembayaran</span>
                       <span className="text-2xl sm:text-3xl font-extrabold text-blue-900 font-mono block mt-0.5">
-                        {formatRupiah(selectedPackage.price)}
+                        {formatRupiah(selectedPackagePrice)}
                       </span>
                       <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
@@ -827,12 +931,12 @@ export function BookingModal({
                       <div>
                         <span className="text-slate-400 block text-[10px] uppercase font-mono">Waktu Transaksi</span>
                         <span className="font-mono text-slate-700 text-xs">
-                          {new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WITA, {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                          {formatDate(paidAt || new Date())}, {formatTime(paidAt || new Date())} WITA
                         </span>
                       </div>
                       <div className="col-span-2 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
                         <span className="text-slate-500">Acara: <strong className="text-slate-800">{submittedData?.event_name}</strong></span>
-                        <span className="text-blue-700 font-bold">{selectedPackage.name}</span>
+                        <span className="text-blue-700 font-bold">{selectedPackage.name}{submittedData?.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""}</span>
                       </div>
                     </div>
 
@@ -859,7 +963,7 @@ export function BookingModal({
                       </h3>
                       <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                         Reservasi Anda untuk acara <span className="text-blue-700 font-semibold">{submittedData?.event_name}</span> pada tanggal{" "}
-                        <span className="text-slate-900 font-mono font-medium">{submittedData?.event_date}</span> telah masuk ke sistem RUANGTEMU dengan status <strong className="text-amber-600 font-semibold">Menunggu Konfirmasi</strong>.
+                        <span className="text-slate-900 font-mono font-medium">{formatDate(submittedData?.event_date || "")}</span> telah masuk ke sistem RUANGTEMU dengan status <strong className="text-amber-600 font-semibold">Menunggu Konfirmasi</strong>.
                       </p>
                     </div>
                   </div>
@@ -884,7 +988,7 @@ export function BookingModal({
                       <div>
                         <span className="text-slate-500 block mb-0.5">Acara & Waktu</span>
                         <span className="font-bold text-blue-950 text-sm">{submittedData?.event_name}</span>
-                        <span className="text-slate-500 block font-mono text-xs mt-0.5">{submittedData?.event_date} ({submittedData?.event_time} WITA)</span>
+                        <span className="text-slate-500 block font-mono text-xs mt-0.5">{formatDate(submittedData?.event_date || "")} ({formatTime(submittedData?.event_time || "")} WITA)</span>
                       </div>
                       <div>
                         <span className="text-slate-500 block mb-0.5">Lokasi Gedung</span>
@@ -893,8 +997,8 @@ export function BookingModal({
                       </div>
                       <div>
                         <span className="text-slate-500 block mb-0.5">Paket Photobooth</span>
-                        <span className="font-bold text-blue-700 text-sm">{selectedPackage.name}</span>
-                        <span className="text-blue-950 font-mono font-bold text-sm block mt-0.5">{formatRupiah(selectedPackage.price)}</span>
+                        <span className="font-bold text-blue-700 text-sm">{selectedPackage.name}{submittedData?.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""}</span>
+                        <span className="text-blue-950 font-mono font-bold text-sm block mt-0.5">{formatRupiah(selectedPackagePrice)}</span>
                       </div>
                     </div>
 
@@ -1013,7 +1117,7 @@ export function BookingModal({
                       <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
                         <div>
                           <span className="text-[10px] text-slate-400 block uppercase font-mono font-semibold">Mulai Dari</span>
-                          <span className="font-mono font-black text-amber-700 text-base sm:text-lg">Rp 1.800.000</span>
+                          <span className="font-mono font-black text-amber-700 text-base sm:text-lg">Rp 2.000.000</span>
                         </div>
                         <span className="min-h-[46px] px-5 py-2.5 rounded-xl bg-amber-500 group-hover:bg-amber-600 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all">
                           <span>Pilih Photobooth</span>
@@ -1417,6 +1521,45 @@ export function BookingModal({
                     </button>
                   </div>
 
+                  {/* Print Size Selector (2R vs 4R) for Photobooth Fisik */}
+                  {serviceCategory === "photobooth" && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl">
+                      <div>
+                        <div className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span>Ukuran Kertas Cetak</span>
+                        </div>
+                        <p className="text-[11px] text-amber-900/80 mt-0.5">
+                          Pilih format foto cetak (harga paket otomatis terupdate)
+                        </p>
+                      </div>
+                      <div className="inline-flex p-1 bg-amber-100/80 rounded-xl border border-amber-300/80 self-start sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => setPhysicalPrintSize("2R")}
+                          className={`min-h-[44px] px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            physicalPrintSize === "2R"
+                              ? "bg-amber-500 text-slate-950 shadow-sm"
+                              : "text-amber-900 hover:text-black hover:bg-amber-200/50"
+                          }`}
+                        >
+                          <span>2R (Strip)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPhysicalPrintSize("4R")}
+                          className={`min-h-[44px] px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            physicalPrintSize === "4R"
+                              ? "bg-amber-500 text-slate-950 shadow-sm"
+                              : "text-amber-900 hover:text-black hover:bg-amber-200/50"
+                          }`}
+                        >
+                          <span>4R (Postcard)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Active Category Package Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {activeCategoryPackages.map((pkg) => {
@@ -1467,7 +1610,7 @@ export function BookingModal({
                             <span className={`font-mono text-sm font-bold ${
                               serviceCategory === "photobooth" ? "text-amber-700" : "text-blue-700"
                             }`}>
-                              {formatRupiah(pkg.price)}
+                              {formatRupiah(getPackagePrice(pkg))}
                             </span>
                           </div>
                         </label>
@@ -1508,13 +1651,13 @@ export function BookingModal({
                         <span className="text-slate-500 block mb-0.5">Acara &amp; Tanggal</span>
                         <span className="font-bold text-blue-950 text-sm block">{formData.event_name || "-"}</span>
                         <span className="text-slate-500 text-[11px]">
-                          {formData.event_date} ({formData.event_time} WITA)
+                          {formData.event_date ? formatDate(formData.event_date) : "-"} ({formatTime(formData.event_time)} WITA)
                         </span>
                       </div>
                       <div>
                         <span className="text-slate-500 block mb-0.5">Paket &amp; Estimasi</span>
-                        <span className="font-bold text-blue-700 text-sm block">{selectedPackage.name}</span>
-                        <span className="font-mono text-blue-950 text-xs font-bold">{formatRupiah(selectedPackage.price)}</span>
+                        <span className="font-bold text-blue-700 text-sm block">{selectedPackage.name}{serviceCategory === "photobooth" ? ` (${physicalPrintSize})` : ""}</span>
+                        <span className="font-mono text-blue-950 text-xs font-bold">{formatRupiah(selectedPackagePrice)}</span>
                       </div>
                     </div>
                   </div>
@@ -1581,7 +1724,7 @@ export function BookingModal({
                       <div>
                         <span className="text-[10px] text-white/80 uppercase block">Total Pembayaran</span>
                         <span className="text-xl sm:text-2xl font-black font-mono">
-                          {formatRupiah(selectedPackage.price)}
+                          {formatRupiah(selectedPackagePrice)}
                         </span>
                       </div>
                       <div className="text-right">
@@ -1599,7 +1742,7 @@ export function BookingModal({
                       <span>Invoice: <strong className="font-mono text-slate-800">{invoiceId}</strong></span>
                     </div>
                     <div>
-                      <span>Paket: <strong className="text-blue-700">{selectedPackage.name}</strong></span>
+                      <span>Paket: <strong className="text-blue-700">{selectedPackage.name}{serviceCategory === "photobooth" ? ` (${physicalPrintSize})` : ""}</strong></span>
                     </div>
                   </div>
 

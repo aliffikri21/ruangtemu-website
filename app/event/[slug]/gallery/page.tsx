@@ -11,29 +11,25 @@ interface Props {
 function formatDateCustom(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "08 OKT 2026";
+    if (isNaN(d.getTime())) return "08/10/2026";
     const day = String(d.getDate()).padStart(2, "0");
-    const months = [
-      "JAN", "FEB", "MAR", "APR", "MEI", "JUN",
-      "JULI", "AGU", "SEP", "OKT", "NOV", "DES"
-    ];
-    const month = months[d.getMonth()] || "OKT";
+    const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
-    return `${day} ${month} ${year}`;
+    return `${day}/${month}/${year}`;
   } catch {
-    return "08 OKT 2026";
+    return "08/10/2026";
   }
 }
 
 function formatTimeCustom(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "18.57 WIB";
+    if (isNaN(d.getTime())) return "13:00";
     const hours = String(d.getHours()).padStart(2, "0");
     const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${hours}.${minutes} WIB`;
+    return `${hours}:${minutes}`;
   } catch {
-    return "18.57 WIB";
+    return "13:00";
   }
 }
 

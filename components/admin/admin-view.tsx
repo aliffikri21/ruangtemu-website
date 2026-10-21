@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { EventItem, Booking, Package, GalleryEntry, BookingStatus, FrameItem, FrameType, PhotoSlot, LandingThemeConfig } from "@/types";
-import { formatRupiah, formatDate } from "@/lib/utils";
+import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
 import { detectTransparentRegions } from "@/lib/frame-detect";
 import { LandingUIEditor } from "./landing-ui-editor";
 import { getDefaultThemeConfigForEvent } from "@/lib/theme-config";
@@ -12,6 +12,8 @@ import {
   ADDON_PRICING,
   PHOTOBOOTH_PHYSICAL_PACKAGES,
   PhotoboothPhysicalPackage,
+  PhysicalPackageKey,
+  PhysicalPrintSize,
 } from "@/lib/doku";
 import { DokuPaymentModal } from "./doku-payment-modal";
 
@@ -389,15 +391,12 @@ function formatIndonesianDateTime(dateInput?: string | Date | number) {
   try {
     const d = typeof dateInput === "number" || typeof dateInput === "string" ? new Date(dateInput) : dateInput;
     if (isNaN(d.getTime())) return String(dateInput);
-    return new Intl.DateTimeFormat("id-ID", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }).format(d);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   } catch {
     return String(dateInput);
   }
@@ -570,8 +569,9 @@ export function AdminView({
   });
 
   // Virtual Booth & Physical Photobooth Package & DOKU Payment States
-  const [selectedPackage, setSelectedPackage] = useState<"silver" | "gold">("silver");
-  const [selectedPhysicalPackage, setSelectedPhysicalPackage] = useState<"basic" | "deluxe">("basic");
+  const [selectedPackage, setSelectedPackage] = useState<"bronze" | "silver" | "gold">("silver");
+  const [selectedPhysicalPackage, setSelectedPhysicalPackage] = useState<PhysicalPackageKey>("hours2");
+  const [adminPhysicalPrintSize, setAdminPhysicalPrintSize] = useState<PhysicalPrintSize>("2R");
   const [sourceBooking, setSourceBooking] = useState<Booking | null>(null);
   const [addonQrCards, setAddonQrCards] = useState<number>(0);
   const [showDokuModal, setShowDokuModal] = useState<boolean>(false);
@@ -582,15 +582,16 @@ export function AdminView({
 
   const isNewEventPhysical = newEvent.category === "photobooth";
   const currentVirtualPackage = VIRTUAL_BOOTH_PACKAGES[selectedPackage];
-  const currentPhysicalPackage = PHOTOBOOTH_PHYSICAL_PACKAGES[selectedPhysicalPackage];
+  const currentPhysicalPackage = PHOTOBOOTH_PHYSICAL_PACKAGES[selectedPhysicalPackage] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2;
+  const currentPhysicalPrice = adminPhysicalPrintSize === "4R" ? currentPhysicalPackage.price4R : currentPhysicalPackage.price2R;
 
   const currentPackage = isNewEventPhysical ? currentPhysicalPackage : currentVirtualPackage;
-  const packagePrice = isNewEventPhysical ? currentPhysicalPackage.price : currentVirtualPackage.price;
+  const packagePrice = isNewEventPhysical ? currentPhysicalPrice : currentVirtualPackage.price;
   const qrCardsPrice = isNewEventPhysical ? 0 : (addonQrCards / 100) * ADDON_PRICING.qrCardsPer100;
   const totalPayment = isNewEventPhysical
     ? (sourceBooking && sourceBooking.payment_status === "PAID"
-        ? (sourceBooking.payment_amount || sourceBooking.total_price || currentPhysicalPackage.price)
-        : currentPhysicalPackage.price)
+        ? (sourceBooking.payment_amount || sourceBooking.total_price || currentPhysicalPrice)
+        : currentPhysicalPrice)
     : (sourceBooking && sourceBooking.payment_status === "PAID"
         ? (sourceBooking.payment_amount || sourceBooking.total_price || (packagePrice + qrCardsPrice))
         : (packagePrice + qrCardsPrice));
@@ -628,15 +629,16 @@ export function AdminView({
   }, []);
 
   // Edit Event Payment & Extension States
-  const [editSelectedTier, setEditSelectedTier] = useState<"silver" | "gold">("silver");
-  const [editSelectedPhysicalTier, setEditSelectedPhysicalTier] = useState<"basic" | "deluxe">("basic");
+  const [editSelectedTier, setEditSelectedTier] = useState<"bronze" | "silver" | "gold">("silver");
+  const [editSelectedPhysicalTier, setEditSelectedPhysicalTier] = useState<PhysicalPackageKey>("hours2");
+  const [editPhysicalPrintSize, setEditPhysicalPrintSize] = useState<PhysicalPrintSize>("2R");
   const [editPaymentStatus, setEditPaymentStatus] = useState<"PAID" | "PENDING">("PAID");
   const [showEditDokuModal, setShowEditDokuModal] = useState<boolean>(false);
   const [editDokuInvoiceId, setEditDokuInvoiceId] = useState<string>("");
   const [isProcessingEditDoku, setIsProcessingEditDoku] = useState<boolean>(false);
   const [editDokuPaymentSuccess, setEditDokuPaymentSuccess] = useState<boolean>(false);
   const [showExtendModal, setShowExtendModal] = useState<boolean>(false);
-  const [extendTierChoice, setExtendTierChoice] = useState<"silver" | "gold">("silver");
+  const [extendTierChoice, setExtendTierChoice] = useState<"bronze" | "silver" | "gold">("silver");
   const [isExtendingDuration, setIsExtendingDuration] = useState<boolean>(false);
 
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -647,11 +649,18 @@ export function AdminView({
     setEditingEvent(evt);
     const isPhysical = evt.category === "photobooth";
     if (isPhysical) {
-      const isDeluxe = evt.package_tier === "deluxe" || (evt.package_name || "").toLowerCase().includes("deluxe");
-      setEditSelectedPhysicalTier(isDeluxe ? "deluxe" : "basic");
+      const rawTier = (evt.package_tier as PhysicalPackageKey) || "hours2";
+      if (PHOTOBOOTH_PHYSICAL_PACKAGES[rawTier]) {
+        setEditSelectedPhysicalTier(rawTier);
+      } else {
+        const isDeluxe = (evt.package_name || "").toLowerCase().includes("deluxe") || (evt.package_name || "").includes("3 jam");
+        setEditSelectedPhysicalTier(isDeluxe ? "hours3" : "hours2");
+      }
+      const is4R = (evt.package_name || "").includes("4R");
+      setEditPhysicalPrintSize(is4R ? "4R" : "2R");
     } else {
-      setEditSelectedTier((evt.package_tier as "silver" | "gold") || "silver");
-      setExtendTierChoice((evt.package_tier as "silver" | "gold") || "silver");
+      setEditSelectedTier((evt.package_tier as "bronze" | "silver" | "gold") || "silver");
+      setExtendTierChoice((evt.package_tier as "bronze" | "silver" | "gold") || "silver");
     }
     const isPaid =
       evt.payment_status === "PAID" ||
@@ -889,16 +898,20 @@ export function AdminView({
       }));
 
     const isPhysical = (editForm.category || editingEvent.category) === "photobooth";
-    const physicalTier = editSelectedPhysicalTier || "basic";
+    const physicalTier = editSelectedPhysicalTier || "hours2";
     const virtualTier = editSelectedTier || "silver";
     const chosenPkg = isPhysical
-      ? PHOTOBOOTH_PHYSICAL_PACKAGES[physicalTier]
+      ? (PHOTOBOOTH_PHYSICAL_PACKAGES[physicalTier] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2)
       : VIRTUAL_BOOTH_PACKAGES[virtualTier];
+
+    const packagePrice = isPhysical
+      ? (editPhysicalPrintSize === "4R" ? (chosenPkg as PhotoboothPhysicalPackage).price4R : (chosenPkg as PhotoboothPhysicalPackage).price2R)
+      : chosenPkg.price;
 
     const finalPaymentStatus = editPaymentStatus;
     const finalAmount = finalPaymentStatus === "PAID"
       ? (isPhysical
-          ? (editingEvent.payment_amount && editingEvent.payment_amount >= 1000000 ? editingEvent.payment_amount : chosenPkg.price)
+          ? (editingEvent.payment_amount && editingEvent.payment_amount >= 1000000 ? editingEvent.payment_amount : packagePrice)
           : (editingEvent.payment_amount || chosenPkg.price))
       : editingEvent.payment_amount;
 
@@ -1202,11 +1215,23 @@ export function AdminView({
     });
 
     if (isPhysical) {
-      const isDeluxe = (b.package_name || "").toLowerCase().includes("deluxe");
-      setSelectedPhysicalPackage(isDeluxe ? "deluxe" : "basic");
+      const pkgName = (b.package_name || "").toLowerCase();
+      if (pkgName.includes("5 jam") || pkgName.includes("5h") || b.package_id?.includes("5h")) {
+        setSelectedPhysicalPackage("hours5");
+      } else if (pkgName.includes("4 jam") || pkgName.includes("4h") || b.package_id?.includes("4h")) {
+        setSelectedPhysicalPackage("hours4");
+      } else if (pkgName.includes("3 jam") || pkgName.includes("3h") || pkgName.includes("deluxe") || b.package_id?.includes("3h")) {
+        setSelectedPhysicalPackage("hours3");
+      } else {
+        setSelectedPhysicalPackage("hours2");
+      }
+      const is4R = (b.package_name || "").includes("4R") || (b.notes || "").includes("4R");
+      setAdminPhysicalPrintSize(is4R ? "4R" : "2R");
     } else {
-      const isGold = (b.package_name || "").toLowerCase().includes("gold");
-      setSelectedPackage(isGold ? "gold" : "silver");
+      const pkgLower = (b.package_name || "").toLowerCase();
+      const isBronze = pkgLower.includes("bronze");
+      const isGold = pkgLower.includes("gold");
+      setSelectedPackage(isBronze ? "bronze" : isGold ? "gold" : "silver");
     }
 
     setSelectedBookingDetail(null);
@@ -1335,8 +1360,12 @@ export function AdminView({
 
     const isPhysical = editingEvent.category === "photobooth" || editForm.category === "photobooth";
     const chosenPackage = isPhysical
-      ? PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier]
+      ? (PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2)
       : VIRTUAL_BOOTH_PACKAGES[editSelectedTier];
+
+    const packagePrice = isPhysical
+      ? (editPhysicalPrintSize === "4R" ? (chosenPackage as PhotoboothPhysicalPackage).price4R : (chosenPackage as PhotoboothPhysicalPackage).price2R)
+      : chosenPackage.price;
 
     const durationDays = isPhysical ? 7 : (chosenPackage as any).durationDays;
     const startIso = new Date().toISOString();
@@ -1344,9 +1373,9 @@ export function AdminView({
 
     const paymentUpdates = {
       package_tier: isPhysical ? editSelectedPhysicalTier : editSelectedTier,
-      package_name: chosenPackage.name,
+      package_name: isPhysical ? `${chosenPackage.name} (${editPhysicalPrintSize})` : chosenPackage.name,
       payment_status: "PAID" as const,
-      payment_amount: chosenPackage.price,
+      payment_amount: packagePrice,
       payment_method: methodUsed,
       payment_invoice: editDokuInvoiceId,
       license_start_date: startIso,
@@ -1376,7 +1405,7 @@ export function AdminView({
           setPaymentSuccessToast({
             title: `Pembayaran Berhasil! ${chosenPackage.name} Aktif`,
             subtitle: isPhysical
-              ? `Paket photobooth fisik lunas (${formatRupiah(chosenPackage.price)}) via ${methodUsed}.`
+              ? `Paket photobooth fisik lunas (${formatRupiah(packagePrice)}) via ${methodUsed}.`
               : `Sesi event diaktifkan dengan durasi ${durationDays} hari real-time via ${methodUsed}.`,
           });
           setTimeout(() => setPaymentSuccessToast(null), 6000);
@@ -1396,8 +1425,12 @@ export function AdminView({
     if (!editingEvent) return;
     const isPhysical = editingEvent.category === "photobooth" || editForm.category === "photobooth";
     const chosenPackage = isPhysical
-      ? PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier]
+      ? (PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2)
       : VIRTUAL_BOOTH_PACKAGES[editSelectedTier];
+
+    const packagePrice = isPhysical
+      ? (editPhysicalPrintSize === "4R" ? (chosenPackage as PhotoboothPhysicalPackage).price4R : (chosenPackage as PhotoboothPhysicalPackage).price2R)
+      : chosenPackage.price;
 
     const inv = `INV-PAID-${Math.floor(100000 + Math.random() * 900000)}`;
     const startIso = new Date().toISOString();
@@ -1405,9 +1438,9 @@ export function AdminView({
 
     const paymentUpdates = {
       package_tier: isPhysical ? editSelectedPhysicalTier : editSelectedTier,
-      package_name: chosenPackage.name,
+      package_name: isPhysical ? `${chosenPackage.name} (${editPhysicalPrintSize})` : chosenPackage.name,
       payment_status: "PAID" as const,
-      payment_amount: chosenPackage.price,
+      payment_amount: packagePrice,
       payment_method: "Transfer Bank / Tunai",
       payment_invoice: inv,
       license_start_date: startIso,
@@ -1442,7 +1475,7 @@ export function AdminView({
     }
   };
 
-  const handleExtendPackageDuration = async (tier: "silver" | "gold") => {
+  const handleExtendPackageDuration = async (tier: "bronze" | "silver" | "gold") => {
     if (!editingEvent) return;
     setIsExtendingDuration(true);
 
@@ -1505,12 +1538,16 @@ export function AdminView({
 
     const isPhysical = newEvent.category === "photobooth";
     const chosenPkg = isPhysical
-      ? PHOTOBOOTH_PHYSICAL_PACKAGES[selectedPhysicalPackage]
+      ? (PHOTOBOOTH_PHYSICAL_PACKAGES[selectedPhysicalPackage] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2)
       : VIRTUAL_BOOTH_PACKAGES[selectedPackage];
 
-    const amountPaid = sourceBooking
-      ? (sourceBooking.payment_amount || sourceBooking.total_price || chosenPkg.price)
+    const packagePrice = isPhysical
+      ? (adminPhysicalPrintSize === "4R" ? (chosenPkg as PhotoboothPhysicalPackage).price4R : (chosenPkg as PhotoboothPhysicalPackage).price2R)
       : chosenPkg.price;
+
+    const amountPaid = sourceBooking
+      ? (sourceBooking.payment_amount || sourceBooking.total_price || packagePrice)
+      : packagePrice;
 
     const assigned_frames: FrameItem[] = frameSlots
       .filter((s) => s.previewUrl)
@@ -1556,7 +1593,7 @@ export function AdminView({
       allow_voice_note: true,
       allow_custom_frame: true,
       package_tier: isPhysical ? selectedPhysicalPackage : selectedPackage,
-      package_name: sourceBooking?.package_name || chosenPkg.name,
+      package_name: sourceBooking?.package_name || (isPhysical ? `${chosenPkg.name} (${adminPhysicalPrintSize})` : chosenPkg.name),
       payment_status: "PAID" as const,
       payment_amount: amountPaid,
       payment_method: sourceBooking?.payment_method?.replace("DOKU_", "DOKU ") || "DOKU / Reservasi Terverifikasi",
@@ -1644,7 +1681,7 @@ export function AdminView({
 
     const isPhysical = newEvent.category === "photobooth";
     const chosenPkg = isPhysical
-      ? PHOTOBOOTH_PHYSICAL_PACKAGES[selectedPhysicalPackage]
+      ? (PHOTOBOOTH_PHYSICAL_PACKAGES[selectedPhysicalPackage] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2)
       : VIRTUAL_BOOTH_PACKAGES[selectedPackage];
 
     const assigned_frames: FrameItem[] = frameSlots
@@ -1691,7 +1728,7 @@ export function AdminView({
       allow_voice_note: true,
       allow_custom_frame: true,
       package_tier: isPhysical ? selectedPhysicalPackage : selectedPackage,
-      package_name: chosenPkg.name,
+      package_name: isPhysical ? `${chosenPkg.name} (${adminPhysicalPrintSize})` : chosenPkg.name,
       payment_status: "PAID" as const,
       payment_amount: totalPayment,
       payment_method: methodUsed,
@@ -2959,7 +2996,7 @@ export function AdminView({
                     {isNewEventPhysical ? (
                       /* ─── KATEGORI 1: PHOTOBOOTH CETAK FISIK DI LOKASI ─── */
                       <>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div>
                             <div className="flex items-center gap-2">
                               <h4 className="text-base font-bold text-[#1B2559]">
@@ -2974,151 +3011,114 @@ export function AdminView({
                             </p>
                           </div>
 
+                          {/* Print Size Selector (2R Strip vs 4R Postcard) */}
                           <div className="flex items-center gap-1.5 p-1 bg-[#f4f7fe] rounded-xl self-start sm:self-auto border border-[#e0e5f2]">
-                            <span className="px-3 py-1 bg-white text-amber-700 font-bold text-xs rounded-lg shadow-sm">
-                              2-3 Jam Layanan
-                            </span>
-                            <span className="px-3 py-1 text-[#8F9BBA] text-xs font-medium">
-                              Cetak Fisik Instan
-                            </span>
+                            <span className="text-[11px] font-bold text-[#8F9BBA] px-2">Ukuran Cetak:</span>
+                            <button
+                              type="button"
+                              onClick={() => setAdminPhysicalPrintSize("2R")}
+                              className={`min-h-[44px] px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                adminPhysicalPrintSize === "2R"
+                                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                                  : "text-[#8F9BBA] hover:text-[#1B2559]"
+                              }`}
+                            >
+                              2R Strip
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAdminPhysicalPrintSize("4R")}
+                              className={`min-h-[44px] px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                adminPhysicalPrintSize === "4R"
+                                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                                  : "text-[#8F9BBA] hover:text-[#1B2559]"
+                              }`}
+                            >
+                              4R Postcard
+                            </button>
                           </div>
                         </div>
 
-                        {/* 2 Physical Photobooth Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* 1. BASIC PHOTOBOOTH */}
-                          <div
-                            onClick={() => setSelectedPhysicalPackage("basic")}
-                            className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between ${
-                              selectedPhysicalPackage === "basic"
-                                ? "bg-white border-amber-500 ring-4 ring-amber-500/15 shadow-xl"
-                                : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
-                            }`}
-                          >
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <h5 className="text-lg font-black tracking-wider text-[#1B2559]">
-                                  BASIC PHOTOBOOTH
-                                </h5>
-                                <span className="px-2.5 py-1 bg-amber-500 text-slate-950 text-xs font-black rounded-md shadow-sm">
-                                  1.8M
-                                </span>
+                        {/* 4 Physical Photobooth Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                          {(["hours2", "hours3", "hours4", "hours5"] as const).map((tierKey) => {
+                            const pkg = PHOTOBOOTH_PHYSICAL_PACKAGES[tierKey];
+                            const isSelected = selectedPhysicalPackage === tierKey;
+                            const currentPrice = adminPhysicalPrintSize === "4R" ? pkg.price4R : pkg.price2R;
+                            return (
+                              <div
+                                key={tierKey}
+                                onClick={() => setSelectedPhysicalPackage(tierKey)}
+                                className={`relative rounded-2xl p-4 cursor-pointer transition-all border-2 flex flex-col justify-between overflow-hidden ${
+                                  isSelected
+                                    ? pkg.isRecommended
+                                      ? "bg-white border-[#E52534] ring-4 ring-[#E52534]/15 shadow-xl"
+                                      : "bg-white border-amber-500 ring-4 ring-amber-500/15 shadow-xl"
+                                    : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
+                                }`}
+                              >
+                                {pkg.isRecommended && (
+                                  <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 pointer-events-none">
+                                    <div className="bg-[#E52534] text-white text-[8px] font-black uppercase tracking-widest text-center py-0.5 absolute top-4 -right-7 w-28 rotate-45 shadow-md flex items-center justify-center gap-1">
+                                      <IconStar size={8} /> FAVORIT
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <h5 className="text-base font-black tracking-wider text-[#1B2559]">
+                                      {pkg.name.toUpperCase()}
+                                    </h5>
+                                    <span className={`px-2 py-0.5 text-xs font-black rounded-md shadow-sm ${
+                                      pkg.isRecommended ? "bg-[#E52534] text-white" : "bg-amber-500 text-slate-950"
+                                    }`}>
+                                      {pkg.tag}
+                                    </span>
+                                  </div>
+
+                                  <div className="text-xs text-[#8F9BBA] font-semibold">
+                                    Durasi: <span className="text-[#1B2559] font-bold">{pkg.durationHours} Jam di Venue</span>
+                                  </div>
+
+                                  <ul className="space-y-1.5 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
+                                    <li className="flex items-start gap-1.5">
+                                      <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={12} /></span>
+                                      <span><strong>{pkg.durationHours} Jam Layanan Aktif</strong></span>
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                      <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={12} /></span>
+                                      <span>Unlimited Cetak ({adminPhysicalPrintSize})</span>
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                      <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={12} /></span>
+                                      <span>Custom Frame Logo Event</span>
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                      <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={12} /></span>
+                                      <span>Fun Props &amp; Aksesoris Foto</span>
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                      <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={12} /></span>
+                                      <span>Kru &amp; Operator Mesin Standby</span>
+                                    </li>
+                                  </ul>
+                                </div>
+
+                                <div className="mt-4 pt-2.5 border-t border-[#E0E5F2]">
+                                  <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
+                                    isSelected
+                                      ? pkg.isRecommended
+                                        ? "bg-[#E52534] text-white shadow-sm"
+                                        : "bg-amber-500 text-slate-950 shadow-sm"
+                                      : "bg-[#F4F7FE] text-[#1B2559]"
+                                  }`}>
+                                    TOTAL: {formatRupiah(currentPrice)}
+                                  </div>
+                                </div>
                               </div>
-
-                              <div className="text-xs text-[#8F9BBA] font-semibold">
-                                Durasi Sewa: <span className="text-[#1B2559] font-bold">2 Jam Layanan Cetak di Lokasi</span>
-                              </div>
-
-                              <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span><strong>2 Jam Layanan Aktif</strong> di Lokasi Acara</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Unlimited Print Foto 4R / 2-Strip</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Custom Template Frame Sesuai Tema Acara</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Standard Fun Props &amp; Aksesoris Foto</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Download Semua Foto via Cloud Storage</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>1 Operator Mesin &amp; 1 Asisten Standby</span>
-                                </li>
-                              </ul>
-                            </div>
-
-                            <div className="mt-5 pt-3 border-t border-[#E0E5F2]">
-                              <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
-                                selectedPhysicalPackage === "basic"
-                                  ? "bg-amber-500 text-slate-950 shadow-sm"
-                                  : "bg-[#F4F7FE] text-[#1B2559]"
-                              }`}>
-                                TOTAL: Rp 1.800.000
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 2. STANDARD DELUXE (RECOMMENDED) */}
-                          <div
-                            onClick={() => setSelectedPhysicalPackage("deluxe")}
-                            className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between overflow-hidden ${
-                              selectedPhysicalPackage === "deluxe"
-                                ? "bg-white border-[#E52534] ring-4 ring-[#E52534]/15 shadow-xl"
-                                : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
-                            }`}
-                          >
-                            <div className="absolute top-0 right-0 overflow-hidden w-28 h-28 pointer-events-none">
-                              <div className="bg-[#E52534] text-white text-[9px] font-black uppercase tracking-widest text-center py-1 absolute top-5 -right-7 w-32 rotate-45 shadow-md flex items-center justify-center gap-1">
-                                <IconStar size={9} /> RECOMMENDED
-                              </div>
-                            </div>
-
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <h5 className="text-lg font-black tracking-wider text-[#1B2559]">
-                                  STANDARD DELUXE
-                                </h5>
-                                <span className="px-2.5 py-1 bg-[#E52534] text-white text-xs font-black rounded-md shadow-sm">
-                                  2.5M
-                                </span>
-                              </div>
-
-                              <div className="text-xs text-[#8F9BBA] font-semibold">
-                                Durasi Sewa: <span className="text-[#1B2559] font-bold">3 Jam Layanan Penuh di Lokasi</span>
-                              </div>
-
-                              <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span><strong>3 Jam Layanan Penuh</strong> di Lokasi Acara</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Unlimited Cetak Strip / 4R Glossy Prints</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Custom Frame Eksklusif dengan Logo Event</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Premium Props &amp; Kacamata Unik</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>Live Digital Gallery &amp; QR Download</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span>2 Kru Profesional RUANGTEMU Standby</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
-                                  <span><strong>Free 1 Album Foto Kenangan Eksklusif</strong></span>
-                                </li>
-                              </ul>
-                            </div>
-
-                            <div className="mt-5 pt-3 border-t border-[#E0E5F2]">
-                              <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
-                                selectedPhysicalPackage === "deluxe"
-                                  ? "bg-[#01B574] text-white shadow-sm"
-                                  : "bg-[#F4F7FE] text-[#1B2559]"
-                              }`}>
-                                TOTAL: Rp 2.500.000
-                              </div>
-                            </div>
-                          </div>
+                            );
+                          })}
                         </div>
 
                         {/* Physical Photobooth Notes */}
@@ -3211,9 +3211,69 @@ export function AdminView({
                           </div>
                         </div>
 
-                        {/* 2 Package Cards Virtual */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* 1. SILVER CARD (RECOMMENDED) */}
+                        {/* 3 Package Cards Virtual */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* 1. BRONZE CARD */}
+                          <div
+                            onClick={() => setSelectedPackage("bronze")}
+                            className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between overflow-hidden ${
+                              selectedPackage === "bronze"
+                                ? "bg-white border-[#CD7F32] ring-4 ring-[#CD7F32]/15 shadow-xl"
+                                : "bg-[#FAF8F5]/80 hover:bg-white border-[#E0E5F2] hover:border-[#8F9BBA]"
+                            }`}
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-lg font-black tracking-wider text-[#A05A2C]">BRONZE</h5>
+                                <span className="px-2.5 py-1 bg-[#617344] text-white text-xs font-black rounded-md shadow-sm">
+                                  250K
+                                </span>
+                              </div>
+
+                              <div className="text-xs text-[#8F9BBA] font-semibold">
+                                Durasi Sewa: <span className="text-[#1B2559] font-bold">7 Hari Akses Foto</span>
+                              </div>
+
+                              <ul className="space-y-2 text-xs text-[#1B2559] pt-2 border-t border-[#E0E5F2]">
+                                <li className="flex items-start gap-2">
+                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
+                                  <span>Virtual Photobooth <strong className="text-[#8C4A4A] font-semibold">(Photo Only)</strong></span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
+                                  <span>Free <strong className="text-[#8C4A4A] font-semibold">1 desain</strong> template frame</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
+                                  <span>Free cetak <strong className="text-[#8C4A4A] font-semibold">100 pcs</strong> kartu QR</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
+                                  <span>Unlimited Akses QR Code</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
+                                  <span>Akses foto <strong className="text-[#8C4A4A] font-semibold">7 hari</strong></span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="text-[#01B574] mt-0.5 shrink-0"><IconCheck size={13} /></span>
+                                  <span>Unlimited foto</span>
+                                </li>
+                              </ul>
+                            </div>
+
+                            <div className="mt-5 pt-3 border-t border-[#E0E5F2]">
+                              <div className={`w-full py-2 px-3 rounded-xl text-center text-xs font-bold transition-all ${
+                                selectedPackage === "bronze"
+                                  ? "bg-[#01B574] text-white shadow-sm"
+                                  : "bg-[#F4F7FE] text-[#1B2559]"
+                              }`}>
+                                TOTAL: Rp 250.000
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 2. SILVER CARD (RECOMMENDED) */}
                           <div
                             onClick={() => setSelectedPackage("silver")}
                             className={`relative rounded-2xl p-5 cursor-pointer transition-all border-2 flex flex-col justify-between overflow-hidden ${
@@ -3842,17 +3902,15 @@ export function AdminView({
                   {(() => {
                     const isPhysical = (editForm.category || editingEvent.category) === "photobooth";
 
-                    const activePhysicalTier: "basic" | "deluxe" =
-                      (editSelectedPhysicalTier === "deluxe" ||
-                        editingEvent.package_tier === "deluxe" ||
-                        editingEvent.package_name?.toLowerCase().includes("deluxe"))
-                        ? "deluxe"
-                        : "basic";
+                    const activePhysicalTier: PhysicalPackageKey =
+                      (PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier]
+                        ? editSelectedPhysicalTier
+                        : (editingEvent.package_tier as PhysicalPackageKey)) || "hours2";
 
                     const activeVirtualTier =
-                      (editingEvent.package_tier as "silver" | "gold") || editSelectedTier || "silver";
+                      (editingEvent.package_tier as "bronze" | "silver" | "gold") || editSelectedTier || "silver";
 
-                    const physicalPkgInfo = PHOTOBOOTH_PHYSICAL_PACKAGES[activePhysicalTier];
+                    const physicalPkgInfo = PHOTOBOOTH_PHYSICAL_PACKAGES[activePhysicalTier] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2;
                     const virtualPkgInfo = VIRTUAL_BOOTH_PACKAGES[activeVirtualTier] || VIRTUAL_BOOTH_PACKAGES.silver;
 
                     const pkgInfo = isPhysical ? physicalPkgInfo : virtualPkgInfo;
@@ -4175,50 +4233,78 @@ export function AdminView({
                                   onClick={handleOpenEditDokuPayment}
                                   className="h-10 px-5 bg-[#4318FF] hover:bg-[#3311DB] text-white text-xs font-bold rounded-xl transition-colors shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
                                 >
-                                  Bayar via DOKU ({formatRupiah(isPhysical ? PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier].price : VIRTUAL_BOOTH_PACKAGES[editSelectedTier].price)})
+                                  Bayar via DOKU ({formatRupiah(isPhysical ? (editPhysicalPrintSize === "4R" ? (PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2).price4R : (PHOTOBOOTH_PHYSICAL_PACKAGES[editSelectedPhysicalTier] || PHOTOBOOTH_PHYSICAL_PACKAGES.hours2).price2R) : VIRTUAL_BOOTH_PACKAGES[editSelectedTier].price)})
                                 </button>
                               </div>
                             </div>
 
                             {/* Package Choice Cards for Unpaid */}
                             {isPhysical ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                {(["basic", "deluxe"] as const).map((tierKey) => {
-                                  const pkg = PHOTOBOOTH_PHYSICAL_PACKAGES[tierKey];
-                                  const isSelected = editSelectedPhysicalTier === tierKey;
-                                  return (
-                                    <div
-                                      key={tierKey}
-                                      onClick={() => setEditSelectedPhysicalTier(tierKey)}
-                                      className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                                        isSelected
-                                          ? "bg-white border-amber-500 shadow-sm ring-2 ring-amber-500/20"
-                                          : "bg-white/70 border-[#e0e5f2] hover:border-amber-500/50"
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-xs font-bold text-[#1B2559] uppercase">
-                                          {pkg.name}
-                                        </span>
-                                        <span className="text-[11px] font-bold text-amber-700">
-                                          {pkg.durationHours} Jam
-                                        </span>
+                              <div className="space-y-2.5 pt-1">
+                                <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-[#e0e5f2] w-fit">
+                                  <span className="text-[11px] font-bold text-[#8F9BBA] px-2">Ukuran:</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditPhysicalPrintSize("2R")}
+                                    className={`min-h-[44px] px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                      editPhysicalPrintSize === "2R"
+                                        ? "bg-amber-500 text-slate-950 shadow-sm"
+                                        : "text-[#8F9BBA] hover:text-[#1B2559]"
+                                    }`}
+                                  >
+                                    2R Strip
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditPhysicalPrintSize("4R")}
+                                    className={`min-h-[44px] px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                      editPhysicalPrintSize === "4R"
+                                        ? "bg-amber-500 text-slate-950 shadow-sm"
+                                        : "text-[#8F9BBA] hover:text-[#1B2559]"
+                                    }`}
+                                  >
+                                    4R Postcard
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                  {(["hours2", "hours3", "hours4", "hours5"] as const).map((tierKey) => {
+                                    const pkg = PHOTOBOOTH_PHYSICAL_PACKAGES[tierKey];
+                                    const isSelected = editSelectedPhysicalTier === tierKey;
+                                    const currentPrice = editPhysicalPrintSize === "4R" ? pkg.price4R : pkg.price2R;
+                                    return (
+                                      <div
+                                        key={tierKey}
+                                        onClick={() => setEditSelectedPhysicalTier(tierKey)}
+                                        className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                                          isSelected
+                                            ? "bg-white border-amber-500 shadow-sm ring-2 ring-amber-500/20"
+                                            : "bg-white/70 border-[#e0e5f2] hover:border-amber-500/50"
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <span className="text-xs font-bold text-[#1B2559] uppercase">
+                                            {pkg.name}
+                                          </span>
+                                          <span className="text-[11px] font-bold text-amber-700">
+                                            {pkg.durationHours} Jam
+                                          </span>
+                                        </div>
+                                        <div className="text-base font-extrabold text-[#1B2559] mb-2 font-mono">
+                                          {formatRupiah(currentPrice)}
+                                        </div>
+                                        <ul className="text-[11px] text-[#8F9BBA] space-y-1">
+                                          <li>• {pkg.durationHours} Jam Layanan di Venue</li>
+                                          <li>• Unlimited Print ({editPhysicalPrintSize})</li>
+                                          <li>• Frame &amp; Props</li>
+                                        </ul>
                                       </div>
-                                      <div className="text-base font-extrabold text-[#1B2559] mb-2 font-mono">
-                                        {formatRupiah(pkg.price)}
-                                      </div>
-                                      <ul className="text-[11px] text-[#8F9BBA] space-y-1">
-                                        <li>• {pkg.durationHours} Jam Layanan Aktif di Venue</li>
-                                        <li>• {pkg.printsIncluded}</li>
-                                        <li>• Custom Template Frame &amp; Props</li>
-                                      </ul>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  })}
+                                </div>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                {(["silver", "gold"] as const).map((tierKey) => {
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                                {(["bronze", "silver", "gold"] as const).map((tierKey) => {
                                   const pkg = VIRTUAL_BOOTH_PACKAGES[tierKey];
                                   const isSelected = editSelectedTier === tierKey;
                                   return (
@@ -4292,7 +4378,7 @@ export function AdminView({
                               <div className="text-[11px] font-bold text-[#1B2559] mb-1">
                                 Fasilitas Paket Termasuk:
                               </div>
-                              {pkgInfo.features.map((feat, idx) => (
+                              {pkgInfo.features.map((feat: string, idx: number) => (
                                 <div key={idx} className="flex items-center gap-2 text-xs text-[#1B2559]">
                                   <span className="text-[#01B574] shrink-0 font-bold">✓</span>
                                   <span>{feat}</span>
@@ -4419,36 +4505,71 @@ export function AdminView({
                             Pilihan Paket {editForm.category === "photobooth" ? "Photobooth Fisik" : "Virtual Photobooth"}
                           </label>
                           {editForm.category === "photobooth" ? (
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setEditSelectedPhysicalTier("basic")}
-                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                                  editSelectedPhysicalTier === "basic"
-                                    ? "bg-white border-amber-500 ring-2 ring-amber-500/20 shadow-sm"
-                                    : "bg-white/60 border-[#e0e5f2] hover:bg-white"
-                                }`}
-                              >
-                                <div className="text-xs font-bold text-[#1B2559]">Basic Photobooth</div>
-                                <div className="text-xs font-mono font-black text-amber-700 mt-0.5">Rp 1.800.000</div>
-                                <div className="text-[10px] text-[#8F9BBA] mt-0.5">2 Jam Layanan di Venue</div>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditSelectedPhysicalTier("deluxe")}
-                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                                  editSelectedPhysicalTier === "deluxe"
-                                    ? "bg-white border-[#E52534] ring-2 ring-[#E52534]/20 shadow-sm"
-                                    : "bg-white/60 border-[#e0e5f2] hover:bg-white"
-                                }`}
-                              >
-                                <div className="text-xs font-bold text-[#1B2559]">Standard Deluxe</div>
-                                <div className="text-xs font-mono font-black text-[#E52534] mt-0.5">Rp 2.500.000</div>
-                                <div className="text-[10px] text-[#8F9BBA] mt-0.5">3 Jam Layanan Penuh</div>
-                              </button>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-[#e0e5f2] w-fit">
+                                <span className="text-[11px] font-bold text-[#8F9BBA] px-2">Cetak:</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditPhysicalPrintSize("2R")}
+                                  className={`min-h-[44px] px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                                    editPhysicalPrintSize === "2R"
+                                      ? "bg-amber-500 text-slate-950 shadow-sm"
+                                      : "text-[#8F9BBA] hover:text-[#1B2559]"
+                                  }`}
+                                >
+                                  2R Strip
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditPhysicalPrintSize("4R")}
+                                  className={`min-h-[44px] px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                                    editPhysicalPrintSize === "4R"
+                                      ? "bg-amber-500 text-slate-950 shadow-sm"
+                                      : "text-[#8F9BBA] hover:text-[#1B2559]"
+                                  }`}
+                                >
+                                  4R Postcard
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                {(["hours2", "hours3", "hours4", "hours5"] as const).map((tierKey) => {
+                                  const pkg = PHOTOBOOTH_PHYSICAL_PACKAGES[tierKey];
+                                  const isSelected = editSelectedPhysicalTier === tierKey;
+                                  const currentPrice = editPhysicalPrintSize === "4R" ? pkg.price4R : pkg.price2R;
+                                  return (
+                                    <button
+                                      key={tierKey}
+                                      type="button"
+                                      onClick={() => setEditSelectedPhysicalTier(tierKey)}
+                                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer min-h-[44px] ${
+                                        isSelected
+                                          ? "bg-white border-amber-500 ring-2 ring-amber-500/20 shadow-sm"
+                                          : "bg-white/60 border-[#e0e5f2] hover:bg-white"
+                                      }`}
+                                    >
+                                      <div className="text-xs font-bold text-[#1B2559]">{pkg.name}</div>
+                                      <div className="text-xs font-mono font-black text-amber-700 mt-0.5">{formatRupiah(currentPrice)}</div>
+                                      <div className="text-[10px] text-[#8F9BBA] mt-0.5">{pkg.durationHours} Jam di Venue</div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
                           ) : (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditSelectedTier("bronze")}
+                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                  editSelectedTier === "bronze"
+                                    ? "bg-white border-[#4318FF] ring-2 ring-[#4318FF]/20 shadow-sm"
+                                    : "bg-white/60 border-[#e0e5f2] hover:bg-white"
+                                }`}
+                              >
+                                <div className="text-xs font-bold text-[#1B2559]">Bronze 250K</div>
+                                <div className="text-xs font-mono font-black text-[#4318FF] mt-0.5">Rp 250.000</div>
+                                <div className="text-[10px] text-[#8F9BBA] mt-0.5">7 Hari Akses</div>
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => setEditSelectedTier("silver")}
@@ -4739,7 +4860,7 @@ export function AdminView({
                           </label>
 
                           <div className="space-y-2.5">
-                            {(["silver", "gold"] as const).map((tierKey) => {
+                            {(["bronze", "silver", "gold"] as const).map((tierKey) => {
                               const pkg = VIRTUAL_BOOTH_PACKAGES[tierKey];
                               const isSelected = extendTierChoice === tierKey;
                               return (
@@ -5005,7 +5126,7 @@ export function AdminView({
                                     Buka Detail
                                   </span>
                                 </div>
-                                <div className="text-xs text-[#a3aed0] mt-0.5">{b.event_date} ({b.event_time} WITA)</div>
+                                <div className="text-xs text-[#a3aed0] mt-0.5">{formatDate(b.event_date)} ({formatTime(b.event_time)} WITA)</div>
                                 <div className="text-xs text-[#a3aed0]">{b.location}, {b.city}</div>
                               </button>
                             </td>
@@ -5237,7 +5358,7 @@ export function AdminView({
                         <div className="flex items-center justify-between">
                           <span className="text-slate-500">Tanggal Acara</span>
                           <span className="font-mono text-slate-800">
-                            {selectedBookingProof.event_date} ({selectedBookingProof.event_time} WITA)
+                            {formatDate(selectedBookingProof.event_date)} ({formatTime(selectedBookingProof.event_time)} WITA)
                           </span>
                         </div>
                       </div>
@@ -5364,12 +5485,12 @@ export function AdminView({
                           <div className="space-y-2 text-xs">
                             <div className="flex justify-between py-1 border-b border-[#E0E5F2]/60">
                               <span className="text-[#8F9BBA]">Tanggal Acara:</span>
-                              <span className="font-semibold text-[#1B2559]">{selectedBookingDetail.event_date}</span>
+                              <span className="font-semibold text-[#1B2559]">{formatDate(selectedBookingDetail.event_date)}</span>
                             </div>
                             <div className="flex justify-between py-1 border-b border-[#E0E5F2]/60">
                               <span className="text-[#8F9BBA]">Waktu / Jam:</span>
                               <span className="font-semibold text-[#1B2559]">
-                                {selectedBookingDetail.event_time ? `${selectedBookingDetail.event_time} WITA` : "Sesuai Jadwal"}
+                                {selectedBookingDetail.event_time ? `${formatTime(selectedBookingDetail.event_time)} WITA` : "Sesuai Jadwal"}
                               </span>
                             </div>
                             <div className="flex justify-between py-1 border-b border-[#E0E5F2]/60">
@@ -5828,7 +5949,7 @@ export function AdminView({
                                 setNewEvent((prev) => ({ ...prev, category: "photobooth" }));
                               } else {
                                 setNewEvent((prev) => ({ ...prev, category: "virtual_photobooth" }));
-                                const matchingKey = pkg.slug.includes("gold") ? "gold" : "silver";
+                                const matchingKey = pkg.slug.includes("bronze") ? "bronze" : pkg.slug.includes("gold") ? "gold" : "silver";
                                 setSelectedPackage(matchingKey);
                               }
                             }}

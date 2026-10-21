@@ -22,7 +22,7 @@ export const DOKU_CONFIG: DokuConfig = {
 };
 
 export interface VirtualBoothPackage {
-  id: "silver" | "gold";
+  id: "bronze" | "silver" | "gold";
   name: string;
   tag: string;
   price: number;
@@ -33,7 +33,24 @@ export interface VirtualBoothPackage {
   features: string[];
 }
 
-export const VIRTUAL_BOOTH_PACKAGES: Record<"silver" | "gold", VirtualBoothPackage> = {
+export const VIRTUAL_BOOTH_PACKAGES: Record<"bronze" | "silver" | "gold", VirtualBoothPackage> = {
+  bronze: {
+    id: "bronze",
+    name: "BRONZE",
+    tag: "250K",
+    price: 250000,
+    durationDays: 7,
+    freeFrames: 1,
+    freeQrCards: 100,
+    isRecommended: false,
+    features: [
+      "Virtual Photobooth (Photo Only)",
+      "Free 1 desain template frame (Strip/4R/Polaroid)",
+      "Free cetak 100 pcs kartu QR code",
+      "Akses foto 7 hari",
+      "Unlimited foto",
+    ],
+  },
   silver: {
     id: "silver",
     name: "SILVER",
@@ -76,52 +93,109 @@ export const ADDON_PRICING = {
   qrCardsPer100: 50000, // +50K/100pcs
 };
 
+export type PhysicalPrintSize = "2R" | "4R";
+export type PhysicalPackageKey = "hours2" | "hours3" | "hours4" | "hours5" | "basic" | "deluxe";
+
 export interface PhotoboothPhysicalPackage {
-  id: "basic" | "deluxe";
+  id: PhysicalPackageKey;
   name: string;
   tag: string;
-  price: number;
+  price: number; // default price (2R)
+  price2R: number;
+  price4R: number;
   durationHours: number;
   printsIncluded: string;
   isRecommended: boolean;
   features: string[];
 }
 
-export const PHOTOBOOTH_PHYSICAL_PACKAGES: Record<"basic" | "deluxe", PhotoboothPhysicalPackage> = {
-  basic: {
-    id: "basic",
-    name: "Paket Basic Photobooth",
-    tag: "1.8M",
-    price: 1800000,
+export const PHOTOBOOTH_PHYSICAL_PACKAGES: Record<PhysicalPackageKey, PhotoboothPhysicalPackage> = {
+  hours2: {
+    id: "hours2",
+    name: "Paket 2 Jam",
+    tag: "2 Jam",
+    price: 2000000,
+    price2R: 2000000,
+    price4R: 2500000,
     durationHours: 2,
-    printsIncluded: "Unlimited Cetak 4R / 2-Strip",
+    printsIncluded: "Unlimited Print 2R Strip / 4R",
     isRecommended: false,
     features: [
-      "2 Jam Layanan Aktif di Lokasi Acara",
-      "Unlimited Print Foto 4R / 2-Strip",
+      "2 Jam Layanan Penuh di Lokasi Acara",
+      "Unlimited Print Foto Instan di Lokasi",
+      "Pilihan Ukuran Cetak: 2R Strip / 4R",
       "Custom Template Frame Sesuai Tema Acara",
-      "Standard Fun Props & Aksesoris Foto",
-      "Download Semua Foto via Cloud Storage",
+      "Kamera Profesional, Lighting Studio, & Fun Props",
       "1 Operator Mesin & 1 Asisten Standby",
+      "Download Softcopy Semua Foto via Google Drive",
     ],
   },
-  deluxe: {
-    id: "deluxe",
-    name: "Paket Standard Deluxe",
-    tag: "2.5M",
+  hours3: {
+    id: "hours3",
+    name: "Paket 3 Jam",
+    tag: "3 Jam",
     price: 2500000,
+    price2R: 2500000,
+    price4R: 3000000,
     durationHours: 3,
-    printsIncluded: "Unlimited Cetak Strip / 4R Glossy",
+    printsIncluded: "Unlimited Print 2R Strip / 4R",
     isRecommended: true,
     features: [
       "3 Jam Layanan Penuh di Lokasi Acara",
-      "Unlimited Cetak Strip / 4R Glossy Prints",
-      "Custom Frame Eksklusif dengan Logo Event",
-      "Premium Props & Kacamata Unik",
-      "Live Digital Gallery & QR Download",
+      "Unlimited Print Foto Instan di Lokasi",
+      "Pilihan Ukuran Cetak: 2R Strip / 4R",
+      "Custom Template Frame Eksklusif dengan Logo Event",
+      "Kamera Profesional, Lighting Studio, & Fun Props",
       "2 Kru Profesional RUANGTEMU Standby",
-      "Free 1 Album Foto Kenangan Eksklusif",
+      "Download Softcopy Semua Foto via Google Drive",
     ],
+  },
+  hours4: {
+    id: "hours4",
+    name: "Paket 4 Jam",
+    tag: "4 Jam",
+    price: 3000000,
+    price2R: 3000000,
+    price4R: 3500000,
+    durationHours: 4,
+    printsIncluded: "Unlimited Print 2R Strip / 4R",
+    isRecommended: false,
+    features: [
+      "4 Jam Layanan Penuh di Lokasi Acara",
+      "Unlimited Print Foto Instan di Lokasi",
+      "Pilihan Ukuran Cetak: 2R Strip / 4R",
+      "Custom Template Frame Eksklusif dengan Logo Event",
+      "Kamera Profesional, Lighting Studio, & Fun Props",
+      "2 Kru Profesional RUANGTEMU Standby",
+      "Download Softcopy Semua Foto via Google Drive",
+    ],
+  },
+  hours5: {
+    id: "hours5",
+    name: "Paket 5 Jam",
+    tag: "5 Jam",
+    price: 3500000,
+    price2R: 3500000,
+    price4R: 4000000,
+    durationHours: 5,
+    printsIncluded: "Unlimited Print 2R Strip / 4R",
+    isRecommended: false,
+    features: [
+      "5 Jam Layanan Penuh di Lokasi Acara",
+      "Unlimited Print Foto Instan di Lokasi",
+      "Pilihan Ukuran Cetak: 2R Strip / 4R",
+      "Custom Template Frame Eksklusif dengan Logo Event",
+      "Kamera Profesional, Lighting Studio, & Fun Props",
+      "2 Kru Profesional RUANGTEMU Standby",
+      "Download Softcopy Semua Foto via Google Drive",
+    ],
+  },
+  // Aliases for backwards compatibility
+  get basic() {
+    return this.hours2;
+  },
+  get deluxe() {
+    return this.hours3;
   },
 };
 
