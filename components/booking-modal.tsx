@@ -33,13 +33,13 @@ export const PHOTOBOOTH_PACKAGES: PackageOption[] = [
     duration: 2,
     durationLabel: "2 Jam Layanan",
     category: "photobooth",
-    description: "Cetak fisik unlimited di lokasi acara, custom frame, fun props, dan operator standby.",
+    description: "Cetak fisik unlimited di lokasi acara, custom frame, studio lighting, dan operator standby.",
     features: [
       "2 Jam Layanan Aktif di Venue",
       "Unlimited Print Foto Instan",
       "Pilihan Ukuran: 2R Strip atau 4R",
       "Custom Template Frame Sesuai Tema",
-      "Standard Fun Props & Aksesoris",
+      "Studio Lighting & Kamera Profesional",
       "Download Cloud Semua Foto",
       "1 Operator & 1 Asisten Standby",
     ],
@@ -61,7 +61,7 @@ export const PHOTOBOOTH_PACKAGES: PackageOption[] = [
       "Unlimited Print Foto Instan",
       "Pilihan Ukuran: 2R Strip atau 4R",
       "Custom Frame Eksklusif dengan Logo Event",
-      "Premium Props & Kacamata Unik",
+      "Studio Lighting & Kamera Profesional",
       "Download Cloud Semua Foto",
       "2 Kru Profesional RUANGTEMU Standby",
     ],
@@ -83,7 +83,7 @@ export const PHOTOBOOTH_PACKAGES: PackageOption[] = [
       "Unlimited Print Foto Instan",
       "Pilihan Ukuran: 2R Strip atau 4R",
       "Custom Frame Eksklusif dengan Logo Event",
-      "Premium Props & Kacamata Unik",
+      "Studio Lighting & Kamera Profesional",
       "Download Cloud Semua Foto",
       "2 Kru Profesional RUANGTEMU Standby",
     ],
@@ -105,7 +105,7 @@ export const PHOTOBOOTH_PACKAGES: PackageOption[] = [
       "Unlimited Print Foto Instan",
       "Pilihan Ukuran: 2R Strip atau 4R",
       "Custom Frame Eksklusif dengan Logo Event",
-      "Premium Props & Kacamata Unik",
+      "Studio Lighting & Kamera Profesional",
       "Download Cloud Semua Foto",
       "2 Kru Profesional RUANGTEMU Standby",
     ],
@@ -122,11 +122,11 @@ export const VIRTUAL_PHOTOBOOTH_PACKAGES: PackageOption[] = [
     duration: 168,
     durationLabel: "Akses 7 Hari",
     category: "virtual_photobooth",
-    description: "Virtual Photobooth hemat: foto tanpa batas, 1 desain frame kustom, cetak 100 kartu QR meja.",
+    description: "Virtual Photobooth hemat: foto dan voice message ucapan, 1 desain frame kustom, scan QR langsung via HP tamu.",
     features: [
-      "Virtual Web Photobooth via HP Tamu",
+      "Foto dan voice message ucapan",
       "1 Desain Template Frame Kustom",
-      "Free Cetak 100 Pcs Kartu QR Meja",
+      "Scan QR Code Tamu Tanpa Batas",
       "Unlimited Akses QR & Foto",
       "Akses Foto 7 Hari",
       "Buku Tamu Digital",
@@ -136,18 +136,18 @@ export const VIRTUAL_PHOTOBOOTH_PACKAGES: PackageOption[] = [
     id: "22222222-2222-2222-2222-222222222222",
     slug: "paket-silver",
     name: "Paket Silver",
-    badge: "Rekomendasi (10 Hari)",
+    badge: "Rekomendasi (14 Hari)",
     price: 350000,
-    duration: 240,
-    durationLabel: "Akses 10 Hari",
+    duration: 336,
+    durationLabel: "Akses 14 Hari",
     category: "virtual_photobooth",
-    description: "Foto dan voice message, 2 desain frame kustom, cetak 200 kartu QR meja, tanpa aplikasi.",
+    description: "Foto dan voice message, 2 desain frame kustom, scan QR langsung via HP tamu, tanpa aplikasi.",
     features: [
       "Virtual Web Photobooth via HP Tamu",
       "2 Desain Template Frame Kustom",
-      "Free Cetak 200 Pcs Kartu QR Meja",
+      "Scan QR Code Tamu Tanpa Batas",
       "Unlimited Akses QR & Foto",
-      "Akses Foto 10 Hari",
+      "Akses Foto 14 Hari",
       "Buku Tamu Digital & Rekam Voice Note",
     ],
   },
@@ -155,18 +155,18 @@ export const VIRTUAL_PHOTOBOOTH_PACKAGES: PackageOption[] = [
     id: "33333333-3333-3333-3333-333333333333",
     slug: "paket-gold",
     name: "Paket Gold",
-    badge: "14 Hari Akses",
+    badge: "30 Hari Akses",
     price: 450000,
-    duration: 336,
-    durationLabel: "Akses 14 Hari",
+    duration: 720,
+    durationLabel: "Akses 30 Hari",
     category: "virtual_photobooth",
-    description: "Foto dan voice message, 3 desain frame kustom, cetak 300 kartu QR meja, tanpa aplikasi.",
+    description: "Foto dan voice message, 3 desain frame kustom, scan QR langsung via HP tamu, tanpa aplikasi.",
     features: [
       "Virtual Web Photobooth via HP Tamu",
       "3 Desain Template Frame Kustom",
-      "Free Cetak 300 Pcs Kartu QR Meja",
+      "Scan QR Code Tamu Tanpa Batas",
       "Unlimited Akses QR & Foto",
-      "Akses Foto 14 Hari",
+      "Akses Foto 30 Hari",
       "Buku Tamu Digital & Rekam Voice Note",
     ],
   },
@@ -249,8 +249,8 @@ export function BookingModal({
     return initialCategory || inferCategoryFromPkg(initialPackageId) || "virtual_photobooth";
   });
 
-  // Multi-step state: 0 = Pilih Kategori, 1 = Basic Details, 2 = Event Details, 3 = Package & Verification, 4 = Pembayaran DOKU
-  const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3 | 4>(() => {
+  // Multi-step state: 0 = Pilih Kategori, 1 = Basic Details, 2 = Event Details, 3 = Package & Verification
+  const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3>(() => {
     if (initialCategory || inferCategoryFromPkg(initialPackageId)) {
       return 1;
     }
@@ -277,32 +277,8 @@ export function BookingModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [submittedData, setSubmittedData] = useState<(typeof formData & { category: BookingServiceCategory }) | null>(null);
 
-  // DOKU Payment States
   const [bookingId, setBookingId] = useState<string | null>(null);
-  const [invoiceId, setInvoiceId] = useState<string>(() => `INV-DOKU-${Date.now().toString().slice(-6)}`);
-  const [activePaymentChannel, setActivePaymentChannel] = useState<"qris" | "va">("qris");
-  const [selectedBank, setSelectedBank] = useState<"bca" | "mandiri" | "bri" | "bni">("bca");
-  const [copiedVa, setCopiedVa] = useState(false);
-  const [paymentCountdown, setPaymentCountdown] = useState(899); // 14:59
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [paidAt, setPaidAt] = useState<string | null>(null);
-  const [checkingPaymentStatus, setCheckingPaymentStatus] = useState(false);
-  const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (currentStep !== 4 || paymentSuccess) return;
-    const timer = setInterval(() => {
-      setPaymentCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [currentStep, paymentSuccess]);
-
-  const formatTimer = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
+  const [invoiceId, setInvoiceId] = useState<string>(() => `INV-RT-${Date.now().toString().slice(-6)}`);
 
   // Sync initial category, package, and print size if changed externally
   useEffect(() => {
@@ -395,29 +371,6 @@ export function BookingModal({
 
   const selectedPackagePrice = getPackagePrice(selectedPackage, physicalPrintSize);
 
-  const getVaNumber = (bank: string) => {
-    const rawNumber = invoiceId.replace(/\D/g, "").padEnd(6, "8");
-    switch (bank) {
-      case "bca":
-        return `8921 0822 ${rawNumber.slice(0, 4)} ${rawNumber.slice(4, 6)}1`;
-      case "mandiri":
-        return `8892 1082 ${rawNumber.slice(0, 4)} ${rawNumber.slice(4, 6)}2`;
-      case "bri":
-        return `1029 4821 ${rawNumber.slice(0, 4)} ${rawNumber.slice(4, 6)}3`;
-      case "bni":
-        return `9881 2026 ${rawNumber.slice(0, 4)} ${rawNumber.slice(4, 6)}4`;
-      default:
-        return `8921 0822 ${rawNumber.slice(0, 6)}`;
-    }
-  };
-
-  const handleCopyVa = (va: string) => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(va.replace(/\s/g, ""));
-    }
-    setCopiedVa(true);
-    setTimeout(() => setCopiedVa(false), 2000);
-  };
 
   // Validation before proceeding to next step
   const handleNextToStep2 = (e: React.FormEvent) => {
@@ -452,14 +405,14 @@ export function BookingModal({
     setCurrentStep(3);
   };
 
-  // Submit Step 3 and proceed to DOKU Payment (Step 4)
-  const handleSubmitToPayment = async (e: React.FormEvent) => {
+  // Submit Step 3 and proceed to WhatsApp Transfer Confirmation
+  const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
-      const currentInv = invoiceId || `INV-DOKU-${Date.now().toString().slice(-6)}`;
+      const currentInv = invoiceId || `INV-RT-${Date.now().toString().slice(-6)}`;
       setInvoiceId(currentInv);
 
       const resolvedPackageTitle = serviceCategory === "photobooth"
@@ -483,6 +436,7 @@ export function BookingModal({
         notes: `${formData.notes.trim()}${serviceCategory === "photobooth" ? ` [Ukuran Cetak: ${physicalPrintSize}]` : ""}`.trim(),
         total_price: selectedPackagePrice,
         payment_status: "PENDING",
+        payment_method: "WHATSAPP_TRANSFER",
         payment_invoice: currentInv,
         payment_amount: selectedPackagePrice,
       };
@@ -509,8 +463,29 @@ export function BookingModal({
           } catch {}
         }
       }
+
       setSubmittedData({ ...formData, category: serviceCategory });
-      setCurrentStep(4);
+      setIsSuccess(true);
+
+      // Otomatis arahkan ke WhatsApp Admin untuk transfer pembayaran
+      const waMsg = encodeURIComponent(
+        `Halo Admin RUANGTEMU Photobooth Palopo! Saya telah mengisi formulir reservasi dan ingin transfer pembayaran:\n\n` +
+          `• No. Reservasi: ${currentInv}\n` +
+          `• Layanan: ${serviceCategory === "photobooth" ? `Photobooth (Cetak Fisik ${physicalPrintSize})` : "Virtual Photobooth"}\n` +
+          `• Nama Pemesan: ${formData.customer_name.trim()}\n` +
+          `• WhatsApp: ${formData.customer_phone.trim()}\n` +
+          `• Acara: ${formData.event_name.trim()} (${formData.event_type})\n` +
+          `• Tanggal: ${formatDate(formData.event_date)} (${formatTime(formData.event_time)} WITA)\n` +
+          `• Lokasi: ${formData.location.trim()} (${formData.event_venue_type === "indoor" ? "Indoor" : "Outdoor"}), ${formData.city}\n` +
+          `• Paket: ${resolvedPackageTitle} (${formatRupiah(selectedPackagePrice)})\n` +
+          `• Total Pembayaran: ${formatRupiah(selectedPackagePrice)}\n` +
+          `• Catatan: ${formData.notes.trim() || "-"}\n\n` +
+          `Saya ingin melakukan transfer pembayaran. Mohon informasi nomor rekening transfer RUANGTEMU untuk konfirmasi pembayaran ini. Terima kasih!`
+      );
+      const waUrl = `https://wa.me/6282244866088?text=${waMsg}`;
+      if (typeof window !== "undefined") {
+        window.open(waUrl, "_blank");
+      }
     } catch (err: any) {
       setErrorMessage(err?.message || "Terjadi kendala jaringan saat mengajukan reservasi.");
     } finally {
@@ -518,77 +493,12 @@ export function BookingModal({
     }
   };
 
-  // Confirm payment made by customer
-  const handleConfirmPayment = async () => {
-    setIsProcessingPayment(true);
-    setErrorMessage(null);
-
-    try {
-      const method =
-        activePaymentChannel === "qris"
-          ? "DOKU_QRIS"
-          : `DOKU_VA_${selectedBank.toUpperCase()}`;
-      const nowIso = new Date().toISOString();
-
-      if (bookingId) {
-        await fetch("/api/bookings", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: bookingId,
-            payment_status: "PAID",
-            payment_method: method,
-            payment_invoice: invoiceId,
-            payment_amount: selectedPackagePrice,
-            payment_paid_at: nowIso,
-            status: "confirmed",
-          }),
-        });
-      }
-
-      setPaymentSuccess(true);
-      setPaidAt(nowIso);
-      setIsSuccess(true);
-    } catch (err: any) {
-      setErrorMessage(err?.message || "Gagal memverifikasi status pembayaran. Silakan coba lagi.");
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
-  const handleCheckPaymentStatus = async () => {
-    setCheckingPaymentStatus(true);
-    setStatusFeedback("Menghubungi gateway DOKU...");
-    try {
-      const res = await fetch(`/api/payment/doku/status?invoiceId=${encodeURIComponent(invoiceId)}`);
-      const data = await res.json();
-      if (data.paid) {
-        await handleConfirmPayment();
-      } else {
-        setStatusFeedback("Mutasi belum terdeteksi. Silakan klik 'Saya Sudah Transfer / Bayar' jika sudah menyelesaikan pembayaran.");
-        setTimeout(() => setStatusFeedback(null), 4000);
-      }
-    } catch {
-      setStatusFeedback("Koneksi ke gateway DOKU Sandbox. Silakan klik 'Saya Sudah Transfer / Bayar'.");
-      setTimeout(() => setStatusFeedback(null), 4000);
-    } finally {
-      setCheckingPaymentStatus(false);
-    }
-  };
-
-  const handleSkipPayment = () => {
-    setPaymentSuccess(false);
-    setIsSuccess(true);
-  };
-
   const handleResetAndClose = () => {
     setIsSuccess(false);
-    setPaymentSuccess(false);
     setCurrentStep(initialCategory ? 1 : 0);
     setBookingId(null);
-    setInvoiceId(`INV-DOKU-${Date.now().toString().slice(-6)}`);
+    setInvoiceId(`INV-RT-${Date.now().toString().slice(-6)}`);
     setErrorMessage(null);
-    setStatusFeedback(null);
     onClose();
   };
 
@@ -596,27 +506,18 @@ export function BookingModal({
 
   const whatsappMessage = submittedData
     ? encodeURIComponent(
-        paymentSuccess
-          ? `Halo Admin RUANGTEMU Photobooth Palopo! Saya telah menyelesaikan reservasi dan melunasi pembayaran via DOKU Payment Gateway:\n\n` +
-            `• No. Invoice: ${invoiceId}\n` +
-            `• Layanan: ${submittedData.category === "photobooth" ? `Photobooth (Cetak Fisik ${physicalPrintSize})` : "Virtual Photobooth"}\n` +
-            `• Nama: ${submittedData.customer_name}\n` +
-            `• Acara: ${submittedData.event_name} (${submittedData.event_type})\n` +
-            `• Tanggal: ${formatDate(submittedData.event_date)} (${formatTime(submittedData.event_time)} WITA)\n` +
-            `• Lokasi: ${submittedData.location}, ${submittedData.city}\n` +
-            `• Paket: ${selectedPackage.name}${submittedData.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""} (${formatRupiah(selectedPackagePrice)})\n` +
-            `• Status Pembayaran: LUNAS (${activePaymentChannel === "qris" ? "QRIS Instant" : `${selectedBank.toUpperCase()} Virtual Account`})\n\n` +
-            `Mohon dicek di dashboard admin RUANGTEMU. Terima kasih!`
-          : `Halo Admin RUANGTEMU Photobooth Palopo! Saya sudah mengisi formulir reservasi online:\n\n` +
-            `• No. Invoice: ${invoiceId}\n` +
-            `• Layanan: ${submittedData.category === "photobooth" ? `Photobooth (Cetak Fisik ${physicalPrintSize})` : "Virtual Photobooth"}\n` +
-            `• Nama: ${submittedData.customer_name}\n` +
-            `• Acara: ${submittedData.event_name} (${submittedData.event_type})\n` +
-            `• Tanggal: ${formatDate(submittedData.event_date)} (${formatTime(submittedData.event_time)} WITA)\n` +
-            `• Lokasi: ${submittedData.location}, ${submittedData.city}\n` +
-            `• Paket: ${selectedPackage.name}${submittedData.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""} (${formatRupiah(selectedPackagePrice)})\n` +
-            `• Catatan: ${submittedData.notes || "-"}\n\n` +
-            `Mohon dicek di dashboard admin dan dikonfirmasi jadwalnya. Terima kasih!`
+        `Halo Admin RUANGTEMU Photobooth Palopo! Saya telah mengisi formulir reservasi dan ingin transfer pembayaran:\n\n` +
+          `• No. Reservasi: ${invoiceId}\n` +
+          `• Layanan: ${submittedData.category === "photobooth" ? `Photobooth (Cetak Fisik ${physicalPrintSize})` : "Virtual Photobooth"}\n` +
+          `• Nama Pemesan: ${submittedData.customer_name}\n` +
+          `• WhatsApp: ${submittedData.customer_phone}\n` +
+          `• Acara: ${submittedData.event_name} (${submittedData.event_type})\n` +
+          `• Tanggal: ${formatDate(submittedData.event_date)} (${formatTime(submittedData.event_time)} WITA)\n` +
+          `• Lokasi: ${submittedData.location}, ${submittedData.city}\n` +
+          `• Paket: ${selectedPackage.name}${submittedData.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""} (${formatRupiah(selectedPackagePrice)})\n` +
+          `• Total Pembayaran: ${formatRupiah(selectedPackagePrice)}\n` +
+          `• Catatan: ${submittedData.notes || "-"}\n\n` +
+          `Saya ingin melakukan transfer pembayaran. Mohon informasi nomor rekening transfer RUANGTEMU untuk konfirmasi pembayaran ini. Terima kasih!`
       )
     : "";
 
@@ -704,9 +605,7 @@ export function BookingModal({
                       currentStep === 1
                         ? "0%"
                         : currentStep === 2
-                        ? "33%"
-                        : currentStep === 3
-                        ? "66%"
+                        ? "50%"
                         : "100%",
                   }}
                 />
@@ -793,18 +692,10 @@ export function BookingModal({
                     className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
                       currentStep === 3
                         ? "bg-blue-600 text-white shadow-md ring-4 ring-blue-100 scale-105"
-                        : currentStep > 3
-                        ? "bg-blue-600 text-white"
                         : "bg-slate-100 border border-slate-300 text-slate-500"
                     }`}
                   >
-                    {currentStep > 3 ? (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : (
-                      "3"
-                    )}
+                    3
                   </div>
                   <span
                     className={`text-[11px] font-semibold mt-1.5 transition-colors ${
@@ -812,37 +703,6 @@ export function BookingModal({
                     }`}
                   >
                     Pilihan Paket
-                  </span>
-                </button>
-
-                {/* Step 4: Pembayaran DOKU */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (bookingId) {
-                      setCurrentStep(4);
-                    }
-                  }}
-                  disabled={!bookingId && currentStep < 4}
-                  className="relative z-10 flex flex-col items-center group cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                      currentStep === 4
-                        ? "bg-blue-600 text-white shadow-md ring-4 ring-blue-100 scale-105"
-                        : bookingId
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-100 border border-slate-300 text-slate-500"
-                    }`}
-                  >
-                    4
-                  </div>
-                  <span
-                    className={`text-[11px] font-semibold mt-1.5 transition-colors ${
-                      currentStep === 4 ? "text-blue-700 font-bold" : "text-slate-500"
-                    }`}
-                  >
-                    Pembayaran
                   </span>
                 </button>
               </div>
@@ -865,185 +725,115 @@ export function BookingModal({
 
           {/* SUCCESS SCREEN */}
           {isSuccess ? (
-            <div className="space-y-5 py-2">
-              {paymentSuccess ? (
-                /* SCREENSHOT TRANSAKSI DOKU / BUKTI PEMBAYARAN RESMI */
-                <div className="rounded-2xl border-2 border-emerald-500/40 bg-white overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-200">
-                  {/* DOKU Header Banner */}
-                  <div className="bg-gradient-to-r from-[#D9222A] via-[#E52534] to-[#C01B22] p-4 text-white flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="bg-white text-[#D9222A] font-black px-2 py-0.5 rounded text-xs tracking-wider shadow-sm">
-                        DOKU
-                      </div>
-                      <div>
-                        <div className="text-xs uppercase font-extrabold tracking-wider">
-                          BUKTI PEMBAYARAN RESMI
-                        </div>
-                        <div className="text-[10px] text-white/80">RUANGTEMU Official Merchant</div>
-                      </div>
-                    </div>
-                    <div className="bg-emerald-400 text-emerald-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-950 animate-ping" />
-                      Lunas / Settled
-                    </div>
-                  </div>
-
-                  {/* Receipt Body */}
-                  <div className="p-6 text-center space-y-4">
-                    <div className="relative w-16 h-16 mx-auto">
-                      <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                        Pembayaran Berhasil!
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Transaksi telah terverifikasi sukses via DOKU Payment Gateway
-                      </p>
-                    </div>
-
-                    {/* Total Bayar Box */}
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Total Pembayaran</span>
-                      <span className="text-2xl sm:text-3xl font-extrabold text-blue-900 font-mono block mt-0.5">
-                        {formatRupiah(selectedPackagePrice)}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                        Status: SETTLED / LUNAS
-                      </span>
-                    </div>
-
-                    {/* Transaction Details Grid */}
-                    <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-2xl grid grid-cols-2 gap-3 text-left text-xs">
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-mono">No. Invoice DOKU</span>
-                        <span className="font-mono font-bold text-slate-800 text-xs">{invoiceId}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Metode Bayar</span>
-                        <span className="font-semibold text-slate-800 text-xs">
-                          {activePaymentChannel === "qris" ? "QRIS Instant" : `Virtual Account ${selectedBank.toUpperCase()}`}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Nama Pemesan</span>
-                        <span className="font-semibold text-slate-800 text-xs">{submittedData?.customer_name}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Waktu Transaksi</span>
-                        <span className="font-mono text-slate-700 text-xs">
-                          {formatDate(paidAt || new Date())}, {formatTime(paidAt || new Date())} WITA
-                        </span>
-                      </div>
-                      <div className="col-span-2 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
-                        <span className="text-slate-500">Acara: <strong className="text-slate-800">{submittedData?.event_name}</strong></span>
-                        <span className="text-blue-700 font-bold">{selectedPackage.name}{submittedData?.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 font-mono">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-emerald-600">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      </svg>
-                      <span>Struk transaksi resmi terverifikasi sistem RUANGTEMU</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* PENDING APPROVAL IF USER SKIPPED PAYMENT */
-                <>
-                  <div className="p-5 rounded-2xl bg-blue-50/60 border border-blue-200 flex items-start gap-4 shadow-sm">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-blue-950 text-lg">
-                        Terima kasih, {submittedData?.customer_name}!
-                      </h3>
-                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                        Reservasi Anda untuk acara <span className="text-blue-700 font-semibold">{submittedData?.event_name}</span> pada tanggal{" "}
-                        <span className="text-slate-900 font-mono font-medium">{formatDate(submittedData?.event_date || "")}</span> telah masuk ke sistem RUANGTEMU dengan status <strong className="text-amber-600 font-semibold">Menunggu Konfirmasi</strong>.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Booking Summary Box */}
-                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                      <span className="font-mono text-xs uppercase tracking-wider text-blue-700 font-bold">
-                        Ringkasan Pemesanan
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                        Pending Approval
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Nama Pemesan</span>
-                        <span className="font-bold text-blue-950 text-sm">{submittedData?.customer_name}</span>
-                        <span className="text-slate-500 block font-mono text-xs mt-0.5">{submittedData?.customer_phone}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Acara & Waktu</span>
-                        <span className="font-bold text-blue-950 text-sm">{submittedData?.event_name}</span>
-                        <span className="text-slate-500 block font-mono text-xs mt-0.5">{formatDate(submittedData?.event_date || "")} ({formatTime(submittedData?.event_time || "")} WITA)</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Lokasi Gedung</span>
-                        <span className="font-bold text-blue-950 text-sm">{submittedData?.location}</span>
-                        <span className="text-slate-500 block text-xs mt-0.5">{submittedData?.city}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Paket Photobooth</span>
-                        <span className="font-bold text-blue-700 text-sm">{selectedPackage.name}{submittedData?.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""}</span>
-                        <span className="text-blue-950 font-mono font-bold text-sm block mt-0.5">{formatRupiah(selectedPackagePrice)}</span>
-                      </div>
-                    </div>
-
-                    {submittedData?.notes && (
-                      <div className="pt-3 border-t border-slate-200 text-xs">
-                        <span className="text-slate-500 block mb-1">Catatan Khusus:</span>
-                        <p className="text-slate-700 italic bg-white p-3 rounded-xl border border-slate-200">
-                          &quot;{submittedData.notes}&quot;
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* ACTION BUTTONS (SELESAI & KONFIRMASI) */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleResetAndClose}
-                  className="min-h-[46px] px-6 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs tracking-wide shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer flex-1"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <div className="space-y-5 py-2 animate-in fade-in">
+              <div className="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-start gap-4 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span>Selesai &amp; Tutup</span>
-                </button>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-lg">
+                    Reservasi Berhasil Diajukan!
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Terima kasih, <strong className="text-slate-900">{submittedData?.customer_name}</strong>. Detail acara Anda untuk <span className="text-blue-700 font-semibold">{submittedData?.event_name}</span> pada tanggal{" "}
+                    <span className="text-slate-900 font-mono font-medium">{formatDate(submittedData?.event_date || "")}</span> telah berhasil masuk ke sistem RUANGTEMU.
+                  </p>
+                </div>
+              </div>
+
+              {/* Payment Instructions Card */}
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/40 to-slate-50 border border-emerald-200 shadow-sm space-y-3">
+                <div className="flex items-center justify-between pb-2.5 border-b border-emerald-200/60">
+                  <span className="font-mono text-xs uppercase tracking-wider text-emerald-800 font-bold flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-600">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <line x1="2" y1="10" x2="22" y2="10" />
+                    </svg>
+                    Instruksi Transfer Pembayaran
+                  </span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    Menunggu Transfer
+                  </span>
+                </div>
+
+                <div className="flex items-baseline justify-between pt-1">
+                  <span className="text-xs text-slate-600">Total Biaya Pembayaran:</span>
+                  <span className="text-2xl sm:text-3xl font-black text-blue-950 font-mono">
+                    {formatRupiah(selectedPackagePrice)}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-600 leading-relaxed bg-white/80 p-3 rounded-xl border border-emerald-100">
+                  Untuk mengunci tanggal acara dan memproses reservasi, silakan lanjutkan chat WhatsApp dengan Admin RUANGTEMU. Admin akan memberikan rekening transfer resmi (BCA / Mandiri / BRI / BNI / QRIS).
+                </p>
+              </div>
+
+              {/* Booking Summary Box */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                  <span className="font-mono text-xs uppercase tracking-wider text-blue-700 font-bold">
+                    Ringkasan Reservasi
+                  </span>
+                  <span className="text-xs font-mono text-slate-600 font-bold">
+                    {invoiceId}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-500 block mb-0.5">Nama Pemesan</span>
+                    <span className="font-bold text-blue-950 text-sm">{submittedData?.customer_name}</span>
+                    <span className="text-slate-500 block font-mono text-xs mt-0.5">{submittedData?.customer_phone}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block mb-0.5">Acara &amp; Waktu</span>
+                    <span className="font-bold text-blue-950 text-sm">{submittedData?.event_name}</span>
+                    <span className="text-slate-500 block font-mono text-xs mt-0.5">{formatDate(submittedData?.event_date || "")} ({formatTime(submittedData?.event_time || "")} WITA)</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block mb-0.5">Lokasi Gedung</span>
+                    <span className="font-bold text-blue-950 text-sm">{submittedData?.location}</span>
+                    <span className="text-slate-500 block text-xs mt-0.5">{submittedData?.city}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block mb-0.5">Paket Photobooth</span>
+                    <span className="font-bold text-blue-700 text-sm">{selectedPackage.name}{submittedData?.category === "photobooth" ? ` (Cetak ${physicalPrintSize})` : ""}</span>
+                    <span className="text-blue-950 font-mono font-bold text-sm block mt-0.5">{formatRupiah(selectedPackagePrice)}</span>
+                  </div>
+                </div>
+
+                {submittedData?.notes && (
+                  <div className="pt-3 border-t border-slate-200 text-xs">
+                    <span className="text-slate-500 block mb-1">Catatan Khusus:</span>
+                    <p className="text-slate-700 italic bg-white p-3 rounded-xl border border-slate-200">
+                      &quot;{submittedData.notes}&quot;
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <a
                   href={`https://wa.me/6282244866088?text=${whatsappMessage}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-h-[46px] px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide flex items-center justify-center gap-2 shadow-md transition-colors"
+                  className="min-h-[48px] px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all flex-1"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                   </svg>
-                  <span>Konfirmasi WhatsApp Admin</span>
+                  <span>Chat WhatsApp Admin (Transfer Sekarang)</span>
                 </a>
+                <button
+                  type="button"
+                  onClick={handleResetAndClose}
+                  className="min-h-[48px] px-6 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs tracking-wide transition-colors flex items-center justify-center gap-2 cursor-pointer sm:flex-initial"
+                >
+                  <span>Selesai &amp; Tutup</span>
+                </button>
               </div>
             </div>
           ) : (
@@ -1053,7 +843,7 @@ export function BookingModal({
                 <div className="space-y-6 py-2">
                   <div className="text-center pb-2">
                     <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                      Langkah 1 dari 4: Tentukan Format Layanan
+                      Langkah Awal: Tentukan Format Layanan
                     </span>
                     <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 mt-2.5 tracking-tight">
                       Pilih Jenis Layanan yang Ingin Dipesan
@@ -1108,7 +898,7 @@ export function BookingModal({
                           </div>
                           <div className="flex items-center gap-2.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                            <span>Studio lighting &amp; aneka properti seru</span>
+                            <span>Studio lighting profesional &amp; kamera HD</span>
                           </div>
                           <div className="flex items-center gap-2.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
@@ -1488,7 +1278,7 @@ export function BookingModal({
 
               {/* STEP 3: PILIHAN PAKET & TINJAUAN */}
               {currentStep === 3 && (
-                <form onSubmit={handleSubmitToPayment} className="space-y-4">
+                <form onSubmit={handleSubmitBooking} className="space-y-4">
                   {/* Header */}
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
@@ -1681,7 +1471,7 @@ export function BookingModal({
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="min-h-[46px] px-8 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="min-h-[46px] px-6 sm:px-8 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {isSubmitting ? (
                         <>
@@ -1689,14 +1479,14 @@ export function BookingModal({
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Menyimpan Data...
+                          <span>Menyimpan &amp; Menghubungi Admin...</span>
                         </>
                       ) : (
                         <>
-                          <span>Lanjut ke Pembayaran</span>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                            <polyline points="9 18 15 12 9 6" />
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                           </svg>
+                          <span>Kirim Reservasi &amp; Bayar via WhatsApp</span>
                         </>
                       )}
                     </button>
@@ -1704,261 +1494,6 @@ export function BookingModal({
                 </form>
               )}
 
-              {/* STEP 4: PEMBAYARAN DOKU GATEWAY */}
-              {currentStep === 4 && (
-                <div className="space-y-4">
-                  {/* DOKU Header Banner */}
-                  <div className="bg-gradient-to-r from-[#D9222A] via-[#E52534] to-[#C01B22] p-4 rounded-2xl text-white shadow-md">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="bg-white text-[#D9222A] font-black px-2 py-0.5 rounded text-xs tracking-wider shadow-sm">
-                          DOKU
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase font-extrabold tracking-wider">
-                            Payment Gateway
-                          </div>
-                          <div className="text-[10px] text-white/80">RUANGTEMU Official Merchant</div>
-                        </div>
-                      </div>
-                      <div className="bg-amber-400 text-stone-900 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-stone-900 animate-ping" />
-                        Sandbox Active
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-white/80 uppercase block">Total Pembayaran</span>
-                        <span className="text-xl sm:text-2xl font-black font-mono">
-                          {formatRupiah(selectedPackagePrice)}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-white/80 uppercase block">Sisa Waktu Bayar</span>
-                        <span className="text-xs font-mono font-bold bg-white/20 px-2 py-0.5 rounded">
-                          {formatTimer(paymentCountdown)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Order Short Recap */}
-                  <div className="px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between text-slate-600">
-                    <div>
-                      <span>Invoice: <strong className="font-mono text-slate-800">{invoiceId}</strong></span>
-                    </div>
-                    <div>
-                      <span>Paket: <strong className="text-blue-700">{selectedPackage.name}{serviceCategory === "photobooth" ? ` (${physicalPrintSize})` : ""}</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Payment Method Switcher (QRIS vs VA) */}
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
-                    <button
-                      type="button"
-                      onClick={() => setActivePaymentChannel("qris")}
-                      className={`py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        activePaymentChannel === "qris"
-                          ? "bg-white text-blue-900 shadow-sm border border-slate-200"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      <span>QRIS Instant</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivePaymentChannel("va")}
-                      className={`py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        activePaymentChannel === "va"
-                          ? "bg-white text-blue-900 shadow-sm border border-slate-200"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      <span>Virtual Account</span>
-                    </button>
-                  </div>
-
-                  {/* QRIS Channel Content */}
-                  {activePaymentChannel === "qris" && (
-                    <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 text-center">
-                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                        <span>QRIS Standar Bank Indonesia</span>
-                      </div>
-
-                      {/* QR Representation Box */}
-                      <div className="w-48 h-48 sm:w-52 sm:h-52 mx-auto p-3 bg-white border-2 border-slate-800 rounded-2xl shadow-md flex flex-col items-center justify-between">
-                        <div className="text-[10px] font-bold font-mono tracking-widest text-slate-600 uppercase border-b border-slate-200 w-full pb-1">
-                          QRIS RUANGTEMU DIGITAL
-                        </div>
-                        {/* SVG QR Code Illustration */}
-                        <div className="w-32 h-32 relative flex items-center justify-center">
-                          <svg viewBox="0 0 100 100" className="w-full h-full text-slate-900" fill="currentColor">
-                            <rect x="0" y="0" width="30" height="30" rx="4" />
-                            <rect x="6" y="6" width="18" height="18" rx="2" fill="white" />
-                            <rect x="10" y="10" width="10" height="10" rx="1" />
-
-                            <rect x="70" y="0" width="30" height="30" rx="4" />
-                            <rect x="76" y="6" width="18" height="18" rx="2" fill="white" />
-                            <rect x="80" y="10" width="10" height="10" rx="1" />
-
-                            <rect x="0" y="70" width="30" height="30" rx="4" />
-                            <rect x="6" y="76" width="18" height="18" rx="2" fill="white" />
-                            <rect x="10" y="80" width="10" height="10" rx="1" />
-
-                            <rect x="36" y="6" width="6" height="6" />
-                            <rect x="46" y="12" width="6" height="6" />
-                            <rect x="56" y="6" width="6" height="6" />
-                            <rect x="36" y="22" width="10" height="6" />
-                            <rect x="10" y="36" width="6" height="6" />
-                            <rect x="20" y="44" width="6" height="12" />
-                            <rect x="36" y="36" width="28" height="28" rx="4" fill="#D9222A" />
-                            <text x="50" y="54" fill="white" fontSize="9" fontWeight="900" textAnchor="middle" fontFamily="sans-serif">DOKU</text>
-                            <rect x="72" y="36" width="6" height="10" />
-                            <rect x="84" y="44" width="10" height="6" />
-                            <rect x="40" y="72" width="6" height="14" />
-                            <rect x="52" y="78" width="14" height="6" />
-                            <rect x="74" y="72" width="20" height="6" />
-                            <rect x="80" y="84" width="12" height="10" />
-                          </svg>
-                        </div>
-                        <div className="text-[10px] font-mono text-slate-500">
-                          NMID: ID1020268844866
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-                        Buka BCA Mobile, Livin&apos; Mandiri, BRImo, BNI, GoPay, OVO, Dana, atau ShopeePay dan scan kode QR di atas.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Virtual Account Channel Content */}
-                  {activePaymentChannel === "va" && (
-                    <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-4">
-                      {/* Bank selector */}
-                      <div>
-                        <span className="text-xs font-semibold text-slate-700 block mb-2">Pilih Bank Virtual Account:</span>
-                        <div className="grid grid-cols-4 gap-2">
-                          {(["bca", "mandiri", "bri", "bni"] as const).map((b) => (
-                            <button
-                              key={b}
-                              type="button"
-                              onClick={() => setSelectedBank(b)}
-                              className={`py-2 px-1 rounded-xl text-xs font-bold uppercase transition-all cursor-pointer border ${
-                                selectedBank === b
-                                  ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                              }`}
-                            >
-                              {b}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* VA Details Box */}
-                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-slate-500 font-medium">Nomor Virtual Account {selectedBank.toUpperCase()}</span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700">Otomatis Terverifikasi</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <span className="text-lg sm:text-xl font-bold font-mono text-slate-900 tracking-wider">
-                            {getVaNumber(selectedBank)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyVa(getVaNumber(selectedBank))}
-                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer shrink-0"
-                          >
-                            {copiedVa ? "Tersalin!" : "Salin"}
-                          </button>
-                        </div>
-                        <div className="pt-2 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
-                          <span>Nama Akun: <strong className="text-slate-800">RUANGTEMU - {formData.customer_name}</strong></span>
-                          <span>Batas: <strong className="text-slate-800">24 Jam</strong></span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Feedback or Loading Message */}
-                  {statusFeedback && (
-                    <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs flex items-center gap-2">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0 text-blue-600">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
-                      <span>{statusFeedback}</span>
-                    </div>
-                  )}
-
-                  {/* Primary & Secondary Action Buttons */}
-                  <div className="space-y-2 pt-1 pb-3">
-                    {/* Primary: Confirm Payment */}
-                    <button
-                      type="button"
-                      onClick={handleConfirmPayment}
-                      disabled={isProcessingPayment}
-                      className="w-full min-h-[48px] px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      {isProcessingPayment ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span>Memverifikasi Pembayaran DOKU...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          <span>Saya Sudah Transfer / Bayar</span>
-                        </>
-                      )}
-                    </button>
-
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      {/* Check Status */}
-                      <button
-                        type="button"
-                        onClick={handleCheckPaymentStatus}
-                        disabled={checkingPaymentStatus}
-                        className="min-h-[42px] px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-3.5 h-3.5 ${checkingPaymentStatus ? "animate-spin" : ""}`}>
-                          <polyline points="23 4 23 10 17 10" />
-                          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                        </svg>
-                        <span>{checkingPaymentStatus ? "Mengecek..." : "Cek Status DOKU"}</span>
-                      </button>
-
-                      {/* Skip / Bayar Nanti */}
-                      <button
-                        type="button"
-                        onClick={handleSkipPayment}
-                        className="min-h-[42px] px-4 py-2 rounded-full bg-white hover:bg-slate-50 text-slate-600 font-semibold text-xs border border-slate-200 transition-colors cursor-pointer"
-                      >
-                        Bayar Nanti (Konfirmasi Manual)
-                      </button>
-                    </div>
-
-                    <div className="text-center pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep(3)}
-                        className="text-xs text-blue-600 hover:underline font-semibold cursor-pointer"
-                      >
-                        ← Ubah Paket / Detail Pemesanan
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

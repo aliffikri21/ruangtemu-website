@@ -674,7 +674,7 @@ export default function HomePage() {
                 Layanan utama <em>RUANGTEMU</em>
               </h2>
               <p className="lead" data-rv="">
-                Dari kartu cetak di tangan tamu sampai galeri realtime di layar acara. Semuanya terhubung lewat satu QR Code.
+                Dari hasil cetak foto di venue sampai galeri realtime di layar acara. Semuanya terhubung lewat satu QR Code.
               </p>
             </div>
             <div className="svc-grid">
@@ -705,13 +705,13 @@ export default function HomePage() {
               <article className="svc tilt relative" style={{ overflow: "visible" }} data-rv="">
                 <div className="svc-ic">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="12" rx="2" />
-                    <path d="M10 8.5v3.2l3-1.6zM8 20h8M12 16v4" />
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
                   </svg>
                 </div>
-                <span className="tag">Layar</span>
-                <h3>Live Videotron</h3>
-                <p>Slideshow otomatis untuk proyektor atau videotron. Foto dan doa dari tamu tampil bergantian.</p>
+                <span className="tag">Fisik</span>
+                <h3>Photobooth Fisik</h3>
+                <p>Setup studio booth di lokasi acara dengan lighting profesional, kru operator standby, dan cetak foto instan tanpa batas.</p>
 
                 <div className="hidden md:block absolute -top-8 sm:-right-12 lg:-top-10 lg:-right-24 pointer-events-auto z-10 select-none scale-90 sm:scale-100 origin-center">
                   <CircularText
@@ -907,9 +907,9 @@ export default function HomePage() {
                     Rp 250.000<small>per event</small>
                   </div>
                   <ul>
-                    <li>Virtual Web Photobooth (Photo Only)</li>
+                    <li>Foto dan voice message ucapan</li>
                     <li>1 pilihan desain frame kustom</li>
-                    <li>Cetak 100 kartu QR eksklusif</li>
+                    <li>Akses web photobooth via HP tamu</li>
                     <li>Scan QR dan unduhan tanpa batas</li>
                     <li>Akses galeri digital 7 hari</li>
                   </ul>
@@ -928,7 +928,7 @@ export default function HomePage() {
                 </article>
                 <article className="pk hot tilt" data-rv="">
                   <div className="pk-top">
-                    <span>Akses 10 hari</span>
+                    <span>Akses 14 hari</span>
                     <span className="badge">Rekomendasi</span>
                   </div>
                   <h3>Silver</h3>
@@ -938,7 +938,7 @@ export default function HomePage() {
                   <ul>
                     <li>Foto dan voice message ucapan</li>
                     <li>2 pilihan desain frame kustom</li>
-                    <li>Cetak 200 kartu QR eksklusif</li>
+                    <li>Akses web photobooth via HP tamu</li>
                     <li>Scan QR dan unduhan tanpa batas</li>
                     <li>Live gallery slideshow untuk proyektor</li>
                   </ul>
@@ -957,7 +957,7 @@ export default function HomePage() {
                 </article>
                 <article className="pk tilt" data-rv="">
                   <div className="pk-top">
-                    <span>Akses 14 hari</span>
+                    <span>Akses 30 hari</span>
                   </div>
                   <h3>Gold</h3>
                   <div className="price">
@@ -966,7 +966,7 @@ export default function HomePage() {
                   <ul>
                     <li>Foto dan voice message ucapan</li>
                     <li>3 pilihan desain frame kustom</li>
-                    <li>Cetak 300 kartu QR eksklusif</li>
+                    <li>Akses web photobooth via HP tamu</li>
                     <li>Scan QR dan unduhan tanpa batas</li>
                     <li>Live gallery real-time &amp; prioritas support</li>
                   </ul>
@@ -1032,7 +1032,7 @@ export default function HomePage() {
                     <ul>
                       <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
                       <li>Kamera profesional &amp; lighting studio</li>
-                      <li>Aneka properti foto seru &amp; fun props</li>
+                      <li>Desain template frame kustom acara</li>
                       <li>2 kru operator ramah standby</li>
                       <li>Link Google Drive soft copy seluruh foto</li>
                     </ul>
@@ -1064,7 +1064,7 @@ export default function HomePage() {
                     <ul>
                       <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
                       <li>Kustom frame template eksklusif sesuai tema</li>
-                      <li>Lighting studio, backdrop, &amp; properti tematik</li>
+                      <li>Lighting studio &amp; backdrop venue elegan</li>
                       <li>2 kru profesional RUANGTEMU standby</li>
                       <li>Link Google Drive soft copy seluruh foto</li>
                     </ul>
@@ -1097,7 +1097,7 @@ export default function HomePage() {
                       <li>4 jam penuh layanan mesin &amp; kru di lokasi</li>
                       <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
                       <li>Kustom frame template eksklusif sesuai tema</li>
-                      <li>Lighting studio &amp; properti tematik lengkap</li>
+                      <li>Setup studio lighting profesional &amp; kamera HD</li>
                       <li>2 kru profesional RUANGTEMU standby</li>
                       <li>Link Google Drive soft copy seluruh foto</li>
                     </ul>
@@ -1130,7 +1130,7 @@ export default function HomePage() {
                       <li>5 jam penuh layanan mesin &amp; kru di lokasi</li>
                       <li>Unlimited print foto {physicalPrintSize === "2R" ? "2R (Strip)" : "4R (Postcard)"}</li>
                       <li>Kustom frame template eksklusif sesuai tema</li>
-                      <li>Lighting studio &amp; properti tematik lengkap</li>
+                      <li>Setup studio lighting profesional &amp; kamera HD</li>
                       <li>2 kru profesional RUANGTEMU standby</li>
                       <li>Link Google Drive soft copy seluruh foto</li>
                     </ul>

@@ -28,7 +28,7 @@ export interface VirtualBoothPackage {
   price: number;
   durationDays: number;
   freeFrames: number;
-  freeQrCards: number;
+  freeQrCards?: number;
   isRecommended: boolean;
   features: string[];
 }
@@ -41,12 +41,12 @@ export const VIRTUAL_BOOTH_PACKAGES: Record<"bronze" | "silver" | "gold", Virtua
     price: 250000,
     durationDays: 7,
     freeFrames: 1,
-    freeQrCards: 100,
+    freeQrCards: 0,
     isRecommended: false,
     features: [
-      "Virtual Photobooth (Photo Only)",
+      "Foto dan voice message ucapan",
       "Free 1 desain template frame (Strip/4R/Polaroid)",
-      "Free cetak 100 pcs kartu QR code",
+      "Akses Web Photobooth Tanpa Aplikasi",
       "Akses foto 7 hari",
       "Unlimited foto",
     ],
@@ -56,16 +56,16 @@ export const VIRTUAL_BOOTH_PACKAGES: Record<"bronze" | "silver" | "gold", Virtua
     name: "SILVER",
     tag: "350K",
     price: 350000,
-    durationDays: 10,
+    durationDays: 14,
     freeFrames: 2,
-    freeQrCards: 200,
+    freeQrCards: 0,
     isRecommended: true,
     features: [
       "Virtual Photobooth (Photo & Voice Message)",
       "Free 2 desain template frame (Strip/4R/Polaroid)",
-      "Free cetak 200 pcs kartu QR code",
+      "Akses Web Photobooth Tanpa Aplikasi",
       "Unlimited Akses QR Code",
-      "Akses foto 10 hari",
+      "Akses foto 14 hari",
       "Unlimited foto",
     ],
   },
@@ -74,23 +74,23 @@ export const VIRTUAL_BOOTH_PACKAGES: Record<"bronze" | "silver" | "gold", Virtua
     name: "GOLD",
     tag: "450K",
     price: 450000,
-    durationDays: 14,
+    durationDays: 30,
     freeFrames: 3,
-    freeQrCards: 300,
+    freeQrCards: 0,
     isRecommended: false,
     features: [
       "Virtual Photobooth (Photo & Voice Message)",
       "Free 3 desain template frame (Strip/4R/Polaroid)",
-      "Free cetak 300 pcs kartu QR code",
+      "Akses Web Photobooth Tanpa Aplikasi",
       "Unlimited Akses QR Code",
-      "Akses foto 14 hari",
+      "Akses foto 30 hari",
       "Unlimited foto",
     ],
   },
 };
 
 export const ADDON_PRICING = {
-  qrCardsPer100: 50000, // +50K/100pcs
+  qrCardsPer100: 0,
 };
 
 export type PhysicalPrintSize = "2R" | "4R";
@@ -125,7 +125,7 @@ export const PHOTOBOOTH_PHYSICAL_PACKAGES: Record<PhysicalPackageKey, Photobooth
       "Unlimited Print Foto Instan di Lokasi",
       "Pilihan Ukuran Cetak: 2R Strip / 4R",
       "Custom Template Frame Sesuai Tema Acara",
-      "Kamera Profesional, Lighting Studio, & Fun Props",
+      "Kamera Profesional & Lighting Studio",
       "1 Operator Mesin & 1 Asisten Standby",
       "Download Softcopy Semua Foto via Google Drive",
     ],
@@ -145,7 +145,7 @@ export const PHOTOBOOTH_PHYSICAL_PACKAGES: Record<PhysicalPackageKey, Photobooth
       "Unlimited Print Foto Instan di Lokasi",
       "Pilihan Ukuran Cetak: 2R Strip / 4R",
       "Custom Template Frame Eksklusif dengan Logo Event",
-      "Kamera Profesional, Lighting Studio, & Fun Props",
+      "Kamera Profesional & Lighting Studio",
       "2 Kru Profesional RUANGTEMU Standby",
       "Download Softcopy Semua Foto via Google Drive",
     ],
@@ -165,7 +165,7 @@ export const PHOTOBOOTH_PHYSICAL_PACKAGES: Record<PhysicalPackageKey, Photobooth
       "Unlimited Print Foto Instan di Lokasi",
       "Pilihan Ukuran Cetak: 2R Strip / 4R",
       "Custom Template Frame Eksklusif dengan Logo Event",
-      "Kamera Profesional, Lighting Studio, & Fun Props",
+      "Kamera Profesional & Lighting Studio",
       "2 Kru Profesional RUANGTEMU Standby",
       "Download Softcopy Semua Foto via Google Drive",
     ],
@@ -185,7 +185,7 @@ export const PHOTOBOOTH_PHYSICAL_PACKAGES: Record<PhysicalPackageKey, Photobooth
       "Unlimited Print Foto Instan di Lokasi",
       "Pilihan Ukuran Cetak: 2R Strip / 4R",
       "Custom Template Frame Eksklusif dengan Logo Event",
-      "Kamera Profesional, Lighting Studio, & Fun Props",
+      "Kamera Profesional & Lighting Studio",
       "2 Kru Profesional RUANGTEMU Standby",
       "Download Softcopy Semua Foto via Google Drive",
     ],

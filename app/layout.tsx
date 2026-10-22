@@ -33,7 +33,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "RUANGTEMU Digital: Platform Photobooth Modern Palopo",
   description:
-    "Platform photobooth modern di Kota Palopo dan Tana Luwu. Layanan cetak fisik kilat, Virtual Web Photobooth dari HP tamu, live projection videotron, dan audio guestbook.",
+    "Platform photobooth modern di Kota Palopo dan Tana Luwu. Layanan Photobooth Fisik cetak instan, Virtual Web Photobooth dari HP tamu, dan audio guestbook.",
   keywords: [
     "photobooth palopo",
     "sewa photobooth palopo",

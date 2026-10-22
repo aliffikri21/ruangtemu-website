@@ -34,8 +34,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/event/wedding-andi-sarah/projection" className="text-stone-500 hover:text-zinc-950 transition-colors">
-                  Live Videotron
+                <Link href="/#paket" className="text-stone-500 hover:text-zinc-950 transition-colors">
+                  Photobooth Fisik
                 </Link>
               </li>
               <li>
