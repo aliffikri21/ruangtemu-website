@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEvents, createEvent } from "@/lib/db";
+import { getEvents, createEvent, deleteBooking } from "@/lib/db";
 import { EventItem } from "@/types";
 import { saveFrameImage } from "@/lib/save-frame";
 
@@ -107,6 +107,15 @@ export async function POST(req: NextRequest) {
     };
 
     const newEvent = await createEvent(eventPayload);
+
+    if (body.booking_id) {
+      try {
+        await deleteBooking(body.booking_id);
+      } catch (delErr) {
+        console.warn("[Events API] Failed to delete linked booking:", delErr);
+      }
+    }
+
     return NextResponse.json({ success: true, event: newEvent }, { status: 201 });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Server error";

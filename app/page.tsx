@@ -18,6 +18,17 @@ export default function HomePage() {
   const [bookingPackageId, setBookingPackageId] = useState<string | undefined>(undefined);
   const [bookingInitialCategory, setBookingInitialCategory] = useState<"photobooth" | "virtual_photobooth" | undefined>(undefined);
 
+  const [activeBoothCard, setActiveBoothCard] = useState<"virtual" | "fisik">("virtual");
+  const [isBoothHovered, setIsBoothHovered] = useState(false);
+
+  useEffect(() => {
+    if (isBoothHovered) return;
+    const timer = setInterval(() => {
+      setActiveBoothCard((prev) => (prev === "virtual" ? "fisik" : "virtual"));
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [isBoothHovered]);
+
   const handleOpenBooking = (packageId?: string, category?: "photobooth" | "virtual_photobooth") => {
     setBookingPackageId(packageId);
     setBookingInitialCategory(category);
@@ -600,21 +611,48 @@ export default function HomePage() {
               <p className="hint">Gerakkan kursor: foto 3D ikut bereaksi</p>
             </div>
             <div className="hero-foot">
-              <div className="booth glass tilt" data-rv="">
-                <div className="booth-top">
-                  <span className="dot"></span>Virtual Booth · tanpa aplikasi
+              <div
+                className="booth-stack tilt"
+                data-rv=""
+                onMouseEnter={() => setIsBoothHovered(true)}
+                onMouseLeave={() => setIsBoothHovered(false)}
+                onClick={() => setActiveBoothCard((prev) => (prev === "virtual" ? "fisik" : "virtual"))}
+                role="region"
+                aria-label="Pilihan Photobooth"
+                title="Klik untuk berganti tampilan booth"
+              >
+                <div className={`booth-card booth-card--virtual glass ${activeBoothCard === "virtual" ? "is-front" : "is-back"}`}>
+                  <div className="booth-top">
+                    <span className="dot"></span>Virtual Booth · tanpa aplikasi
+                  </div>
+                  <ol className="booth-steps">
+                    <li>
+                      <b>Scan</b>QR di meja
+                    </li>
+                    <li>
+                      <b>Pilih</b>frame event
+                    </li>
+                    <li>
+                      <b>Foto</b>unduh HD
+                    </li>
+                  </ol>
                 </div>
-                <ol className="booth-steps">
-                  <li>
-                    <b>Scan</b>QR di meja
-                  </li>
-                  <li>
-                    <b>Pilih</b>frame event
-                  </li>
-                  <li>
-                    <b>Foto</b>unduh HD
-                  </li>
-                </ol>
+                <div className={`booth-card booth-card--fisik glass ${activeBoothCard === "fisik" ? "is-front" : "is-back"}`}>
+                  <div className="booth-top">
+                    <span className="dot dot--amber"></span>Photobooth Fisik · cetak di tempat
+                  </div>
+                  <ol className="booth-steps">
+                    <li>
+                      <b>Datang</b>ke booth
+                    </li>
+                    <li>
+                      <b>Pose</b>depan kamera
+                    </li>
+                    <li>
+                      <b>Cetak</b>bawa pulang
+                    </li>
+                  </ol>
+                </div>
               </div>
             </div>
           </div>
@@ -711,7 +749,7 @@ export default function HomePage() {
                 </div>
                 <span className="tag">Desain</span>
                 <h3>Frame Kustom</h3>
-                <p>Strip 3-Foto, 4-Grid, Polaroid, dan Deluxe, dengan font, warna, dan logo yang disesuaikan acara.</p>
+                <p>Strip 3-Foto, 4-Grid, dan Polaroid, dengan font, warna, dan logo yang disesuaikan acara.</p>
               </article>
               <article className="svc tilt" data-rv="">
                 <div className="svc-ic">
@@ -745,7 +783,7 @@ export default function HomePage() {
                 Satu acara, <em>satu frame</em> yang khas
               </h2>
               <p className="lead" data-rv="">
-                Tim desainer menyiapkan bingkai sesuai tema acara. Coba ganti warna frame di bawah dan geser untuk melihat empat format yang tersedia.
+                Tim desainer menyiapkan bingkai sesuai tema acara. Coba ganti warna frame di bawah untuk melihat pilihan format yang tersedia.
               </p>
             </div>
             <div className="frame-bar" data-rv="">
@@ -756,18 +794,6 @@ export default function HomePage() {
                 <button className="sw" style={{ ["--c" as string]: "#38bdf8" }} data-bg="#0c1938" data-fg="#38bdf8" aria-pressed="false" aria-label="Biru elektrik"></button>
                 <button className="sw" style={{ ["--c" as string]: "#cfe3d3" }} data-bg="#cfe3d3" data-fg="#24503a" aria-pressed="false" aria-label="Hijau sage"></button>
                 <button className="sw" style={{ ["--c" as string]: "#dbeafe" }} data-bg="#dbeafe" data-fg="#1d4ed8" aria-pressed="false" aria-label="Biru muda"></button>
-              </div>
-              <div className="arrows">
-                <button className="arr" id="prev" aria-label="Frame sebelumnya">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 5l-7 7 7 7" />
-                  </svg>
-                </button>
-                <button className="arr" id="next" aria-label="Frame berikutnya">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
@@ -818,22 +844,6 @@ export default function HomePage() {
               </div>
               <h3>Polaroid</h3>
               <p>Satu foto besar dengan ruang di bawah untuk nama dan tanggal acara.</p>
-            </article>
-            <article className="fcard">
-              <div className="fstage">
-                <div className="fm deluxe">
-                  <div className="ph p3"></div>
-                  <div className="ph p1"></div>
-                  <div className="ph p2"></div>
-                  <div className="cap">RUANGTEMU</div>
-                </div>
-              </div>
-              <div className="meta">
-                <span>3 foto</span>
-                <span>Berornamen</span>
-              </div>
-              <h3>Deluxe</h3>
-              <p>Bingkai berornamen untuk pernikahan dan acara resmi yang butuh kesan lebih.</p>
             </article>
           </div>
         </section>

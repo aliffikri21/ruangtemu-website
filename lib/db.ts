@@ -549,7 +549,7 @@ function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { t
     payment_invoice: row.payment_invoice || pkgMeta.payment_invoice || undefined,
     license_start_date: row.license_start_date || pkgMeta.license_start_date || undefined,
     license_end_date: row.license_end_date || pkgMeta.license_end_date || undefined,
-    theme_config: row.theme_config ? parseJsonField(row.theme_config, undefined) : undefined,
+    theme_config: row.theme_config ? parseJsonField(row.theme_config, undefined) : ((parsedFrameConfig as any)?._theme_config || (pkgMeta as any)?.theme_config || undefined),
     created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
     stats: computedStats || {
       total_photos: Number(row.total_photos || 0),
@@ -841,6 +841,41 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
   const client = getDbClient();
   if (client) {
     try {
+      // 1. Pastikan slug unik di Supabase
+      let finalSlug = newEvent.slug;
+      try {
+        const { data: existingSlug } = await client
+          .from("events")
+          .select("id")
+          .eq("slug", finalSlug)
+          .maybeSingle();
+
+        if (existingSlug) {
+          finalSlug = `${finalSlug}-${Date.now().toString().slice(-4)}`;
+          newEvent.slug = finalSlug;
+        }
+      } catch (sErr) {
+        console.warn("[Supabase] Slug check skipped:", sErr);
+      }
+
+      // 2. Kemas metadata ke default_frame_config (karena schema events Supabase menyimpan category & package info di sini)
+      const default_frame_config = {
+        ...(newEvent.default_frame_config || {}),
+        ...(newEvent.theme_config ? { _theme_config: newEvent.theme_config } : {}),
+        _package_info: {
+          category: newEvent.category || "virtual_photobooth",
+          package_tier: newEvent.package_tier,
+          package_name: newEvent.package_name,
+          payment_status: newEvent.payment_status || "PAID",
+          payment_amount: newEvent.payment_amount,
+          payment_method: newEvent.payment_method,
+          payment_invoice: newEvent.payment_invoice,
+          license_start_date: newEvent.license_start_date,
+          license_end_date: newEvent.license_end_date,
+        },
+      };
+
+      // 3. Masukkan hanya kolom-kolom yang valid pada tabel events Supabase
       const { error: evErr } = await client.from("events").insert({
         id: newEvent.id,
         slug: newEvent.slug,
@@ -855,33 +890,21 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
         description: newEvent.description || "",
         cover_image: newEvent.cover_image || "",
         cover_image_url: newEvent.cover_image_url || newEvent.cover_image || "",
-        category: newEvent.category || "virtual_photobooth",
         status: newEvent.status || "ACTIVE",
         is_active: newEvent.is_active ?? true,
         allow_guestbook: newEvent.allow_guestbook ?? true,
         allow_voice_note: newEvent.allow_voice_note ?? true,
         allow_custom_frame: newEvent.allow_custom_frame ?? true,
         gallery_visibility: newEvent.gallery_visibility || "PUBLIC",
-        default_frame_config: {
-          ...(newEvent.default_frame_config || {}),
-          _package_info: {
-            category: newEvent.category || "virtual_photobooth",
-            package_tier: newEvent.package_tier,
-            package_name: newEvent.package_name,
-            payment_status: newEvent.payment_status,
-            payment_amount: newEvent.payment_amount,
-            payment_method: newEvent.payment_method,
-            payment_invoice: newEvent.payment_invoice,
-            license_start_date: newEvent.license_start_date,
-            license_end_date: newEvent.license_end_date,
-          },
-        },
+        default_frame_config: default_frame_config,
       });
 
       if (evErr) {
+        console.error("[Supabase] createEvent error:", evErr.message);
         throw new Error(evErr.message);
       }
 
+      // 4. Masukkan frame yang ditugaskan jika ada
       if (newEvent.assigned_frames && newEvent.assigned_frames.length > 0) {
         for (let i = 0; i < newEvent.assigned_frames.length; i++) {
           const fr = newEvent.assigned_frames[i];
@@ -889,14 +912,14 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
             await client.from("frames").upsert({
               id: fr.id,
               name: fr.name,
-              slug: fr.slug,
+              slug: fr.slug || `frame-${newEvent.id}-${i + 1}`,
               template_type: fr.template_type || "custom",
               preview_url: fr.preview_url || null,
               config_json: fr.config_json || {},
               is_active: true,
             });
 
-            await client.from("event_frames").upsert({
+            await client.from("event_frames").insert({
               id: randomUUID(),
               event_id: newEvent.id,
               frame_id: fr.id,
@@ -908,9 +931,11 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
         }
       }
 
+      mockEvents.unshift(newEvent);
       return newEvent;
     } catch (err: any) {
-      console.warn("[Supabase] createEvent fallback to memory:", err?.message);
+      console.error("[Supabase] createEvent failed:", err?.message);
+      throw err;
     }
   }
 
@@ -940,14 +965,13 @@ export async function updateEvent(
         updatePayload.cover_image = updates.cover_image;
         updatePayload.cover_image_url = updates.cover_image;
       }
-      if (updates.category !== undefined) updatePayload.category = updates.category;
+      // Note: category dan theme_config dikemas ke default_frame_config karena tidak ada kolom fisik terpisah di tabel events
       if (updates.status !== undefined) updatePayload.status = updates.status;
       if (updates.is_active !== undefined) updatePayload.is_active = updates.is_active;
       if (updates.allow_guestbook !== undefined) updatePayload.allow_guestbook = updates.allow_guestbook;
       if (updates.allow_voice_note !== undefined) updatePayload.allow_voice_note = updates.allow_voice_note;
       if (updates.allow_custom_frame !== undefined) updatePayload.allow_custom_frame = updates.allow_custom_frame;
       if (updates.default_frame_config !== undefined) updatePayload.default_frame_config = updates.default_frame_config;
-      if (updates.theme_config !== undefined) updatePayload.theme_config = updates.theme_config;
 
       if (
         updates.category !== undefined ||
@@ -958,7 +982,8 @@ export async function updateEvent(
         updates.payment_method !== undefined ||
         updates.payment_invoice !== undefined ||
         updates.license_start_date !== undefined ||
-        updates.license_end_date !== undefined
+        updates.license_end_date !== undefined ||
+        updates.theme_config !== undefined
       ) {
         let baseConfig: any = updates.default_frame_config;
         if (!baseConfig) {
@@ -968,6 +993,7 @@ export async function updateEvent(
         const existingMeta = (baseConfig as any)?._package_info || {};
         updatePayload.default_frame_config = {
           ...(typeof baseConfig === "object" ? baseConfig : {}),
+          ...(updates.theme_config !== undefined ? { _theme_config: updates.theme_config } : {}),
           _package_info: {
             ...existingMeta,
             ...(updates.category !== undefined ? { category: updates.category } : {}),

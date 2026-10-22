@@ -501,6 +501,13 @@ export function BookingModal({
 
       if (json.booking?.id) {
         setBookingId(json.booking.id);
+        if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+          try {
+            const bc = new BroadcastChannel("ruangtemu_bookings");
+            bc.postMessage({ type: "NEW_BOOKING", booking: json.booking });
+            bc.close();
+          } catch {}
+        }
       }
       setSubmittedData({ ...formData, category: serviceCategory });
       setCurrentStep(4);
@@ -1051,7 +1058,7 @@ export function BookingModal({
                     <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 mt-2.5 tracking-tight">
                       Pilih Jenis Layanan yang Ingin Dipesan
                     </h3>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-xl mx-auto">
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-xl mx-auto text-center" style={{ marginLeft: "auto", marginRight: "auto" }}>
                       Silakan pilih antara booth fisik dengan cetak instan di lokasi, atau photobooth virtual berbasis QR smartphone tamu.
                     </p>
                   </div>

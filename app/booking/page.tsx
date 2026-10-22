@@ -185,6 +185,14 @@ function BookingForm() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (typeof window !== "undefined" && "BroadcastChannel" in window && data?.booking) {
+          try {
+            const bc = new BroadcastChannel("ruangtemu_bookings");
+            bc.postMessage({ type: "NEW_BOOKING", booking: data.booking });
+            bc.close();
+          } catch {}
+        }
         setIsSuccess(true);
       } else {
         setIsSuccess(true);
