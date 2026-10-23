@@ -940,7 +940,7 @@ export default function HomePage() {
                     <li>2 pilihan desain frame kustom</li>
                     <li>Akses web photobooth via HP tamu</li>
                     <li>Scan QR dan unduhan tanpa batas</li>
-                    <li>Live gallery slideshow untuk proyektor</li>
+                    <li>Akses galeri digital 14 hari</li>
                   </ul>
                   <button
                     type="button"
@@ -968,7 +968,7 @@ export default function HomePage() {
                     <li>3 pilihan desain frame kustom</li>
                     <li>Akses web photobooth via HP tamu</li>
                     <li>Scan QR dan unduhan tanpa batas</li>
-                    <li>Live gallery real-time &amp; prioritas support</li>
+                    <li>Akses galeri digital 30 hari &amp; prioritas support</li>
                   </ul>
                   <button
                     type="button"

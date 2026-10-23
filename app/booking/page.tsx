@@ -80,7 +80,7 @@ const packageOptions: PackageOption[] = [
     category: "virtual_photobooth",
     price: 350000,
     duration: 336,
-    description: "Foto dan voice message ucapan, 2 desain frame kustom, scan QR tanpa batas, live feed proyektor",
+    description: "Foto dan voice message ucapan, 2 desain frame kustom, scan QR tanpa batas, akses galeri digital 14 hari",
   },
   {
     id: "pkg-gold",
@@ -89,7 +89,7 @@ const packageOptions: PackageOption[] = [
     category: "virtual_photobooth",
     price: 450000,
     duration: 720,
-    description: "Foto dan voice message ucapan, 3 desain frame kustom, scan QR tanpa batas, prioritas support",
+    description: "Foto dan voice message ucapan, 3 desain frame kustom, scan QR tanpa batas, akses galeri digital 30 hari & prioritas support",
   },
 ];
 
