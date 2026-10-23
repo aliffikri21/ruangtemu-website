@@ -3,7 +3,7 @@
 > **Versi Dokumen:** 3.0 (Updated October 2026)
 > **Status:** Development - Production Preparation
 > **Mitra:** RUANGTEMU PHOTOBOOTH - Palopo & Tana Luwu, Sulawesi Selatan
-> **Referensi Utama:** README_RUANGTEMU_V3.md (Product Specification)
+> **Referensi Utama:** README.md (Product Specification)
 
 ---
 
@@ -502,7 +502,7 @@ NEXT_PUBLIC_RUANGTEMU_INSTAGRAM=ruangtemuphotobooth
 
 ## 14. Development Phase Roadmap
 
-Berdasarkan README_RUANGTEMU_V3.md:
+Berdasarkan README.md:
 
 | Phase | Scope | Status |
 |---|---|---|

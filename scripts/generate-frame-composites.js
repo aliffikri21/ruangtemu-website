@@ -84,7 +84,7 @@ async function run() {
     ]
   );
   const p1Buf = await sharp(Buffer.from(svg1)).resize(W1, H1).png().toBuffer();
-  const f1Buf = await sharp('frame1-3d.webp').resize(W1, H1).png().toBuffer();
+  const f1Buf = await sharp(path.join(outDir, 'frame1-3d.webp')).resize(W1, H1).png().toBuffer();
   const comp1 = await sharp(f1Buf)
     .composite([{ input: p1Buf, blend: 'dest-over', top: 0, left: 0 }])
     .png()
@@ -113,7 +113,7 @@ async function run() {
     ]
   );
   const p2Buf = await sharp(Buffer.from(svg2)).resize(W2, H2).png().toBuffer();
-  const f2Buf = await sharp('frame2-3d.webp').resize(W2, H2).png().toBuffer();
+  const f2Buf = await sharp(path.join(outDir, 'frame2-3d.webp')).resize(W2, H2).png().toBuffer();
   const comp2 = await sharp(f2Buf)
     .composite([{ input: p2Buf, blend: 'dest-over', top: 0, left: 0 }])
     .png()
@@ -140,7 +140,7 @@ async function run() {
     ]
   );
   const p3Buf = await sharp(Buffer.from(svg3)).resize(W3, H3).png().toBuffer();
-  const f3Buf = await sharp('frame3-3d.webp').resize(W3, H3).png().toBuffer();
+  const f3Buf = await sharp(path.join(outDir, 'frame3-3d.webp')).resize(W3, H3).png().toBuffer();
   const comp3 = await sharp(f3Buf)
     .composite([{ input: p3Buf, blend: 'dest-over', top: 0, left: 0 }])
     .png()
