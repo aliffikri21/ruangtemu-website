@@ -285,7 +285,6 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=your-secure-admin-password
 
-
 # Kontak WhatsApp & Sosial Media RUANGTEMU
 NEXT_PUBLIC_RUANGTEMU_WA=6282244866088
 NEXT_PUBLIC_RUANGTEMU_INSTAGRAM=ruangtemuphotobooth
