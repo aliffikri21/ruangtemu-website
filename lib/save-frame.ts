@@ -261,3 +261,84 @@ export async function saveVoiceNote(
     return dataUrlOrBase64;
   }
 }
+
+/**
+ * Saves an event landing page background image (base64 data-URL or Buffer).
+ * Prefers Supabase Storage; falls back to public uploads directory for local dev.
+ */
+export async function saveLandingBgImage(
+  dataUrlOrBuffer: string | Buffer,
+  filenameHint?: string
+): Promise<string> {
+  if (typeof dataUrlOrBuffer === "string") {
+    if (
+      dataUrlOrBuffer.startsWith("/") ||
+      dataUrlOrBuffer.startsWith("http://") ||
+      dataUrlOrBuffer.startsWith("https://")
+    ) {
+      return dataUrlOrBuffer;
+    }
+
+    if (dataUrlOrBuffer.startsWith("data:image/")) {
+      const match = dataUrlOrBuffer.match(/^data:image\/(\w+);base64,/);
+      const ext = match ? (match[1] === "jpeg" ? "jpg" : match[1]) : "jpg";
+      const contentType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+      const cleanHint = (filenameHint || "landing-bg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .slice(0, 30);
+      const filename = `${cleanHint || "bg"}-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
+
+      const base64Data = dataUrlOrBuffer.includes(";base64,")
+        ? dataUrlOrBuffer.split(";base64,")[1]
+        : dataUrlOrBuffer;
+      const buffer = Buffer.from(base64Data, "base64");
+
+      // 1. Try Supabase Storage (Preferred for Vercel)
+      const supabaseUrl = await uploadToSupabase(buffer, `backgrounds/${filename}`, contentType);
+      if (supabaseUrl) return supabaseUrl;
+
+      // 2. Local fallback
+      try {
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "backgrounds");
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        const filePath = path.join(uploadDir, filename);
+        fs.writeFileSync(filePath, buffer);
+        return `/uploads/backgrounds/${filename}`;
+      } catch (fsErr) {
+        console.warn("[saveLandingBgImage] Local filesystem write failed:", fsErr);
+        return dataUrlOrBuffer;
+      }
+    }
+
+    return dataUrlOrBuffer;
+  }
+
+  // If buffer
+  const cleanHint = (filenameHint || "landing-bg")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 30);
+  const filename = `${cleanHint || "bg"}-${Date.now()}-${randomUUID().slice(0, 8)}.jpg`;
+
+  const supabaseUrl = await uploadToSupabase(dataUrlOrBuffer, `backgrounds/${filename}`, "image/jpeg");
+  if (supabaseUrl) return supabaseUrl;
+
+  try {
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "backgrounds");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, dataUrlOrBuffer);
+    return `/uploads/backgrounds/${filename}`;
+  } catch (fsErr) {
+    console.warn("[saveLandingBgImage] Local filesystem write failed:", fsErr);
+    return `/uploads/backgrounds/${filename}`;
+  }
+}
+

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateEvent, deleteEvent, getEvents, getEventBySlug } from "@/lib/db";
 import { FrameItem } from "@/types";
-import { saveFrameImage } from "@/lib/save-frame";
+import { saveFrameImage, saveLandingBgImage } from "@/lib/save-frame";
 
 export async function GET(
   _req: NextRequest,
@@ -88,7 +88,13 @@ export async function PUT(
     if (body.venue !== undefined) updates.venue = body.venue;
     if (body.city !== undefined) updates.city = body.city;
     if (body.description !== undefined) updates.description = body.description;
-    if (body.cover_image !== undefined) updates.cover_image = body.cover_image;
+    if (body.cover_image !== undefined) {
+      if (typeof body.cover_image === "string" && body.cover_image.startsWith("data:image/")) {
+        updates.cover_image = await saveLandingBgImage(body.cover_image, `${slug}-cover`);
+      } else {
+        updates.cover_image = body.cover_image;
+      }
+    }
     if (body.category !== undefined) updates.category = body.category;
     if (body.status !== undefined) updates.status = body.status;
     if (body.is_active !== undefined) updates.is_active = body.is_active;
@@ -98,8 +104,27 @@ export async function PUT(
       updates.allow_voice_note = body.allow_voice_note;
     if (body.default_frame_config !== undefined)
       updates.default_frame_config = body.default_frame_config;
-    if (body.theme_config !== undefined)
-      updates.theme_config = body.theme_config;
+    if (body.theme_config !== undefined) {
+      let safeThemeConfig = body.theme_config;
+      if (
+        safeThemeConfig &&
+        typeof safeThemeConfig.background?.image === "string" &&
+        safeThemeConfig.background.image.startsWith("data:image/")
+      ) {
+        const savedBg = await saveLandingBgImage(
+          safeThemeConfig.background.image,
+          `${slug}-bg`
+        );
+        safeThemeConfig = {
+          ...safeThemeConfig,
+          background: {
+            ...safeThemeConfig.background,
+            image: savedBg,
+          },
+        };
+      }
+      updates.theme_config = safeThemeConfig;
+    }
     if (body.package_tier !== undefined)
       updates.package_tier = body.package_tier;
     if (body.package_name !== undefined)

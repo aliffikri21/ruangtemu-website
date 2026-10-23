@@ -57,6 +57,7 @@ export function LandingUIEditor({
   ]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [isUploadingBg, setIsUploadingBg] = useState(false);
   const [flashedSection, setFlashedSection] = useState<string | null>(null);
   const [showJsonDrawer, setShowJsonDrawer] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
@@ -211,19 +212,99 @@ export function LandingUIEditor({
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File, maxDimension = 1600, quality = 0.85): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else resolve(file);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Gagal membaca file gambar"));
+      };
+      img.src = objectUrl;
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const updated = structuredClone(config);
-      updated.background.image = dataUrl;
-      updateConfig(updated);
-      showToast("Foto background berhasil diunggah");
-    };
-    reader.readAsDataURL(file);
+    setIsUploadingBg(true);
+    showToast("Mengompres & mengunggah foto...");
+
+    try {
+      // 1. Compress client-side so a 15MB camera photo becomes ~200KB
+      const compressedBlob = await compressImage(file, 1600, 0.85).catch(() => file);
+
+      // 2. Upload to server via FormData
+      const formData = new FormData();
+      formData.append("file", compressedBlob, file.name.replace(/\.[^.]+$/, ".jpg"));
+      if (eventSlug) formData.append("slug", eventSlug);
+
+      const res = await fetch("/api/events/upload-bg", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success && data.url) {
+        const updated = structuredClone(config);
+        updated.background.image = data.url;
+        updateConfig(updated);
+        showToast("Foto background berhasil disimpan!");
+      } else {
+        throw new Error(data.error || "Gagal mengunggah foto ke server");
+      }
+    } catch (err: any) {
+      console.warn("Background upload to API failed, using compressed fallback:", err);
+      // Fallback: Use compressed blob as data URL so it's only ~200KB instead of 15MB
+      try {
+        const compressedBlob = await compressImage(file, 1200, 0.8).catch(() => file);
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          const updated = structuredClone(config);
+          updated.background.image = dataUrl;
+          updateConfig(updated);
+          showToast("Foto background diterapkan!");
+        };
+        reader.readAsDataURL(compressedBlob);
+      } catch {
+        showToast("Gagal memproses gambar.");
+      }
+    } finally {
+      setIsUploadingBg(false);
+      e.target.value = "";
+    }
   };
 
   const setNestedVal = (path: string, val: any) => {
@@ -371,16 +452,28 @@ export function LandingUIEditor({
                       className="w-full px-2.5 py-1.5 border border-stone-200 rounded text-xs outline-none focus:border-stone-900 mb-1.5"
                     />
                     <div className="flex gap-2 items-center">
-                      <label className="px-2.5 py-1 border border-stone-300 rounded text-[11px] font-mono cursor-pointer hover:bg-stone-50">
-                        <span>Pilih Gambar File...</span>
+                      <label
+                        className={`px-2.5 py-1 border border-stone-300 rounded text-[11px] font-mono cursor-pointer hover:bg-stone-50 flex items-center gap-1.5 ${
+                          isUploadingBg ? "opacity-60 cursor-not-allowed bg-stone-100" : ""
+                        }`}
+                      >
+                        {isUploadingBg ? (
+                          <>
+                            <span className="w-3 h-3 border-2 border-stone-400 border-t-stone-900 rounded-full animate-spin" />
+                            <span>Mengunggah...</span>
+                          </>
+                        ) : (
+                          <span>Pilih Gambar File...</span>
+                        )}
                         <input
                           type="file"
                           accept="image/*"
+                          disabled={isUploadingBg}
                           onChange={handleFileUpload}
                           className="hidden"
                         />
                       </label>
-                      {config.background.image && (
+                      {config.background.image && !isUploadingBg && (
                         <button
                           type="button"
                           onClick={() => setNestedVal("background.image", "")}

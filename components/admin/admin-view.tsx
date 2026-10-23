@@ -1215,12 +1215,53 @@ export function AdminView({
     };
 
     try {
+      // If editThemeConfig has a raw base64 background image, upload it first to storage
+      let safeThemeConfig = editThemeConfig;
+      if (safeThemeConfig?.background?.image?.startsWith("data:image/")) {
+        try {
+          const upRes = await fetch("/api/events/upload-bg", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              dataUrl: safeThemeConfig.background.image,
+              fileName: `${editForm.slug || "event"}-bg.jpg`,
+            }),
+          });
+          const upData = await upRes.json();
+          if (upData.success && upData.url) {
+            safeThemeConfig = {
+              ...safeThemeConfig,
+              background: {
+                ...safeThemeConfig.background,
+                image: upData.url,
+              },
+            };
+            setEditThemeConfig(safeThemeConfig);
+            updatePayload.theme_config = safeThemeConfig;
+          }
+        } catch (uErr) {
+          console.warn("Pre-save background upload fallback:", uErr);
+        }
+      }
+
       const res = await fetch(`/api/events/${editingEvent.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatePayload),
       });
-      const data = await res.json();
+
+      let data: any = null;
+      const cType = res.headers.get("content-type") || "";
+      if (cType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text().catch(() => "");
+        if (res.status === 413) {
+          throw new Error("Ukuran foto atau data terlalu besar untuk server. Gunakan file foto yang lebih kecil.");
+        }
+        throw new Error(text || `Server error (${res.status})`);
+      }
+
       if (data.success && data.event) {
         setEvents((prev) =>
           prev.map((ev) => (ev.id === data.event.id ? data.event : ev))
@@ -1230,9 +1271,9 @@ export function AdminView({
       } else {
         setEditErrorMsg(data.error || "Gagal memperbarui event.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error updating event:", err);
-      setEditErrorMsg("Koneksi ke server gagal. Coba lagi.");
+      setEditErrorMsg(err?.message || "Koneksi ke server gagal. Coba lagi.");
     } finally {
       setIsSavingEdit(false);
     }

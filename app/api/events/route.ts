@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEvents, createEvent, deleteBooking } from "@/lib/db";
 import { EventItem } from "@/types";
-import { saveFrameImage } from "@/lib/save-frame";
+import { saveFrameImage, saveLandingBgImage } from "@/lib/save-frame";
 
 export async function GET() {
   try {
@@ -74,7 +74,10 @@ export async function POST(req: NextRequest) {
       venue: body.venue || "Palopo",
       city: body.city || "Palopo",
       description: body.description || "",
-      cover_image: body.cover_image || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
+      cover_image:
+        typeof body.cover_image === "string" && body.cover_image.startsWith("data:image/")
+          ? await saveLandingBgImage(body.cover_image, `${slug}-cover`)
+          : body.cover_image || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
       category: body.category || "virtual_photobooth",
       status: "ACTIVE",
       is_active: true,
@@ -104,6 +107,19 @@ export async function POST(req: NextRequest) {
             borderRadius: 12,
             sticker: "✦",
           },
+      theme_config: body.theme_config
+        ? {
+            ...body.theme_config,
+            background: {
+              ...body.theme_config.background,
+              image:
+                typeof body.theme_config.background?.image === "string" &&
+                body.theme_config.background.image.startsWith("data:image/")
+                  ? await saveLandingBgImage(body.theme_config.background.image, `${slug}-bg`)
+                  : body.theme_config.background?.image,
+            },
+          }
+        : undefined,
     };
 
     const newEvent = await createEvent(eventPayload);
