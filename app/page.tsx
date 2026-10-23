@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import * as THREE from "three";
 import { CurvedLoop } from "@/components/reactbits/CurvedLoop";
@@ -8,6 +8,57 @@ import CircularText from "@/components/reactbits/CircularText";
 import { BookingModal } from "@/components/booking-modal";
 import "./landing.css";
 import { span } from "motion/react-m";
+
+interface ClientReviewItem {
+  clientName: string;
+  venue: string;
+  eventType: string;
+  quote: string;
+}
+
+const INITIAL_CLIENT_REVIEWS: ClientReviewItem[] = [
+  {
+    clientName: "Ilva & Ricky",
+    venue: "Gedung Opu Daeng Risadju, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.",
+  },
+  {
+    clientName: "Jaya & Rika",
+    venue: "D'Twins Cafe, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.",
+  },
+  {
+    clientName: "Nurul & Iqra",
+    venue: "Gedung Merdeka Convention Centre, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Menilai layanan rapi, tepat waktu, dan interaktif berkat live projection di lokasi.",
+  },
+  {
+    clientName: "Andi Pratama & Sarah Wijaya",
+    venue: "Banua Subur Convention Hall, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Kualitas cetakan foto tajam, warna akurat, dan prosesnya cepat sehingga tidak ada antrean panjang.",
+  },
+  {
+    clientName: "Komunitas Kreatif Palopo",
+    venue: "Gedung Kesenian Palopo",
+    eventType: "GATHERING",
+    quote: "Tamu undangan sangat antusias mencoba virtual photobooth langsung lewat smartphone masing-masing.",
+  },
+];
+
+const DUMMY_QUOTES_POOL = [
+  "Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.",
+  "Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.",
+  "Menilai layanan rapi, tepat waktu, dan interaktif berkat live projection di lokasi.",
+  "Kualitas cetakan foto tajam, warna akurat, dan prosesnya cepat sehingga tidak ada antrean panjang.",
+  "Tamu undangan sangat antusias mencoba virtual photobooth langsung lewat smartphone masing-masing.",
+  "Pelayanan sangat ramah dan responsif dari awal konsultasi sampai hari H. Tamu-tamu kami sangat puas!",
+  "Desain frame custom sangat elegan dan cocok dengan tema acara kami. Hasilnya jadi kenangan berharga.",
+  "Fitur galeri digital memudahkan keluarga besar mengunduh foto kapan saja dengan resolusi tinggi.",
+];
 
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -34,6 +85,73 @@ export default function HomePage() {
     setBookingInitialCategory(category);
     setIsBookingOpen(true);
   };
+
+  const [clientReviews, setClientReviews] = useState<ClientReviewItem[]>(INITIAL_CLIENT_REVIEWS);
+  const [isMarqueePaused, setIsMarqueePaused] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/events")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted || !data.success || !Array.isArray(data.events)) return;
+
+        const realEvents = data.events.filter(
+          (e: any) =>
+            e.slug !== "__system_maintenance__" &&
+            e.category !== "system" &&
+            (e.client_name || e.host_name || e.title)
+        );
+
+        if (realEvents.length > 0) {
+          const mapped: ClientReviewItem[] = realEvents.map((evt: any, idx: number) => {
+            let name = evt.client_name || evt.host_name || evt.title || "Klien RUANGTEMU";
+            name = name.replace(/^The Wedding of\s+/i, "").trim();
+
+            const venue = evt.venue || "";
+            const city = evt.city || "Palopo";
+            const location = venue ? `${venue}, ${city}` : city;
+
+            let eventType = "PERNIKAHAN";
+            if (evt.event_type) {
+              const t = String(evt.event_type).toLowerCase();
+              if (t.includes("wedding") || t.includes("nikah")) eventType = "PERNIKAHAN";
+              else if (t.includes("birthday") || t.includes("ulang")) eventType = "ULANG TAHUN";
+              else if (t.includes("gathering")) eventType = "GATHERING";
+              else if (t.includes("corporate")) eventType = "CORPORATE";
+              else eventType = String(evt.event_type).toUpperCase();
+            }
+
+            const quote = DUMMY_QUOTES_POOL[idx % DUMMY_QUOTES_POOL.length];
+
+            return {
+              clientName: name,
+              venue: location,
+              eventType,
+              quote,
+            };
+          });
+
+          setClientReviews(mapped);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch real events for reviews:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const marqueeReviews = useMemo(() => {
+    if (clientReviews.length === 0) return [];
+    let baseList = [...clientReviews];
+    while (baseList.length < 6) {
+      baseList = [...baseList, ...clientReviews];
+    }
+    return [...baseList, ...baseList];
+  }, [clientReviews]);
 
   useEffect(() => {
     const updateFontSize = () => {
@@ -1219,66 +1337,70 @@ export default function HomePage() {
           </div>
 
           <div className="wrap">
-            <div className="sec-head rv-head">
-              <p className="eyebrow" data-rv="">
-                Ulasan klien
-              </p>
-              <h2 data-rv="">
-                Kata klien <em>tentang kami</em>
-              </h2>
+            <div className="sec-head rv-head flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <div>
+                <p className="eyebrow" data-rv="">
+                  Ulasan klien
+                </p>
+                <h2 data-rv="">
+                  Kata klien <em>tentang kami</em>
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMarqueePaused((prev) => !prev)}
+                className="rv-pause-btn"
+                aria-label={isMarqueePaused ? "Lanjutkan scroll otomatis ulasan" : "Jeda scroll otomatis ulasan"}
+              >
+                {isMarqueePaused ? (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    <span>Lanjutkan scroll</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                    <span>Jeda scroll</span>
+                  </>
+                )}
+              </button>
             </div>
-            <div className="rv-grid">
-              <article className="rv" data-rv="">
-                <svg
-                  className="rv-quote-icon"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 18 14"
+          </div>
+
+          <div
+            className="rv-marquee-wrapper"
+            data-rv=""
+            aria-label="Koleksi ulasan klien RUANGTEMU yang bergulir otomatis ke kiri"
+          >
+            <div
+              className={`rv-marquee-track ${isMarqueePaused ? "is-paused" : ""}`}
+            >
+              {marqueeReviews.map((item, idx) => (
+                <article
+                  key={`${item.clientName}-${idx}`}
+                  className="rv rv-marquee-card"
                 >
-                  <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z" />
-                </svg>
-                <p>Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.</p>
-                <footer>
-                  <b>Ilva &amp; Ricky</b>
-                  <span>Gedung Opu Daeng Risadju, Palopo</span>
-                  <i>PERNIKAHAN</i>
-                </footer>
-              </article>
-              <article className="rv" data-rv="">
-                <svg
-                  className="rv-quote-icon"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 18 14"
-                >
-                  <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z" />
-                </svg>
-                <p>Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.</p>
-                <footer>
-                  <b>Jaya &amp; Rika</b>
-                  <span>D&apos;Twins Cafe, Palopo</span>
-                  <i>PERNIKAHAN</i>
-                </footer>
-              </article>
-              <article className="rv" data-rv="">
-                <svg
-                  className="rv-quote-icon"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 18 14"
-                >
-                  <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z" />
-                </svg>
-                <p>Menilai layanan rapi, tepat waktu, dan interaktif berkat live projection di lokasi.</p>
-                <footer>
-                  <b>Nurul &amp; Iqra</b>
-                  <span>Gedung Merdeka Convention Centre, Palopo</span>
-                  <i>PERNIKAHAN</i>
-                </footer>
-              </article>
+                  <svg
+                    className="rv-quote-icon"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 18 14"
+                  >
+                    <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z" />
+                  </svg>
+                  <p>{item.quote}</p>
+                  <footer>
+                    <b>{item.clientName}</b>
+                    <span>{item.venue}</span>
+                    <i>{item.eventType}</i>
+                  </footer>
+                </article>
+              ))}
             </div>
           </div>
         </section>
