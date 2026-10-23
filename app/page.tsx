@@ -7,7 +7,6 @@ import { CurvedLoop } from "@/components/reactbits/CurvedLoop";
 import CircularText from "@/components/reactbits/CircularText";
 import { BookingModal } from "@/components/booking-modal";
 import "./landing.css";
-import { span } from "motion/react-m";
 
 interface ClientReviewItem {
   clientName: string;
