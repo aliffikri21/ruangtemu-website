@@ -223,6 +223,49 @@ export interface LandingThemeConfig {
     bottomPadding: number;
     footerGap: number;
   };
+  guest_name?: GuestNameThemeConfig;
+}
+
+export interface GuestNameThemeConfig {
+  background: {
+    image: string;
+    color: string;
+    overlay: number;
+    topGradient: boolean;
+    bottomGradient: boolean;
+  };
+  header: {
+    show: boolean;
+    badge: string;
+    title: string;
+    font: string;
+    color: string;
+    size: number;
+  };
+  content: {
+    headline: string;
+    headlineColor: string;
+    headlineSize: number;
+    nameLabel: string;
+    nameLabelColor: string;
+    placeholder: string;
+    underlineColor: string;
+    textColor: string;
+  };
+  button: {
+    text: string;
+    bg: string;
+    color: string;
+    iconBg: string;
+    iconColor: string;
+    icon: string;
+  };
+  footer: {
+    show: boolean;
+    text: string;
+    color: string;
+    showLogo: boolean;
+  };
 }
 
 export type EventData = EventItem;

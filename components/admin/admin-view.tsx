@@ -6,6 +6,7 @@ import { EventItem, Booking, Package, GalleryEntry, BookingStatus, FrameItem, Fr
 import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
 import { detectTransparentRegions } from "@/lib/frame-detect";
 import { LandingUIEditor } from "./landing-ui-editor";
+import { GuestNameUIEditor } from "./guest-name-ui-editor";
 import { getDefaultThemeConfigForEvent } from "@/lib/theme-config";
 import {
   VIRTUAL_BOOTH_PACKAGES,
@@ -892,6 +893,7 @@ export function AdminView({
   });
   const [editFrames, setEditFrames] = useState<FrameUploadSlot[]>([]);
   const [editThemeConfig, setEditThemeConfig] = useState<LandingThemeConfig | undefined>(undefined);
+  const [editUiEditorTab, setEditUiEditorTab] = useState<"landing" | "guest_name">("landing");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editSuccessMsg, setEditSuccessMsg] = useState("");
   const [editErrorMsg, setEditErrorMsg] = useState("");
@@ -5231,14 +5233,71 @@ export function AdminView({
                       </div>
                     )}
 
-                    {/* Section 3: Landing UI Editor (Hanya untuk Virtual Photobooth, disembunyikan untuk Photobooth Fisik) */}
+                    {/* Section 3: Visual UI Editors (Virtual Photobooth) */}
                     {editForm.category !== "photobooth" && (
-                      <div>
-                        <LandingUIEditor
-                          initialConfig={editThemeConfig}
-                          onChange={(newConfig) => setEditThemeConfig(newConfig)}
-                          eventSlug={editForm.slug}
-                        />
+                      <div className="space-y-4 pt-2">
+                        <div className="bg-white border border-[#e0e5f2] rounded-3xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div>
+                            <div className="text-sm font-bold text-[#1B2559] flex items-center gap-2">
+                              <span>Kustomisasi Tampilan Tamu (Visual UI Editor)</span>
+                              <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-[#4318FF]/10 text-[#4318FF]">
+                                Live Mobile Preview
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#8F9BBA] mt-1">
+                              Pilih halaman yang ingin dikustomisasi untuk acara Virtual Photobooth ini:
+                            </p>
+                          </div>
+
+                          {/* Tab Navigation */}
+                          <div className="flex items-center gap-1.5 bg-[#f4f7fe] p-1.5 rounded-2xl border border-[#e0e5f2] self-start md:self-auto">
+                            <button
+                              type="button"
+                              onClick={() => setEditUiEditorTab("landing")}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                                editUiEditorTab === "landing"
+                                  ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
+                                  : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
+                              }`}
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
+                              <span>1. Landing Page / Poster</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditUiEditorTab("guest_name")}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                                editUiEditorTab === "guest_name"
+                                  ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
+                                  : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
+                              }`}
+                            >
+                              <IconUser size={15} />
+                              <span>2. Halaman Input Nama Tamu</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Active Tab View */}
+                        {editUiEditorTab === "landing" ? (
+                          <LandingUIEditor
+                            initialConfig={editThemeConfig}
+                            onChange={(newConfig) => setEditThemeConfig(newConfig)}
+                            eventSlug={editForm.slug}
+                          />
+                        ) : (
+                          <GuestNameUIEditor
+                            initialConfig={editThemeConfig?.guest_name}
+                            event={editForm as any}
+                            eventSlug={editForm.slug}
+                            onChange={(newGuestConfig) => {
+                              setEditThemeConfig((prev) => ({
+                                ...(prev || {}),
+                                guest_name: newGuestConfig,
+                              } as any));
+                            }}
+                          />
+                        )}
                       </div>
                     )}
 

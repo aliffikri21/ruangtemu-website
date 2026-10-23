@@ -1,5 +1,5 @@
 import React from "react";
-import { LandingThemeConfig, EventItem } from "@/types";
+import { LandingThemeConfig, GuestNameThemeConfig, EventItem } from "@/types";
 import { formatDate } from "@/lib/utils";
 
 export const ICONS: Record<string, React.ReactNode> = {
@@ -739,4 +739,392 @@ export function LandingPageView({
         </div>
       );
   }
+}
+
+// ============================================================================
+// GUEST NAME INPUT SCREEN THEME & VIEW
+// ============================================================================
+
+export const DEFAULT_GUEST_NAME_CONFIG: GuestNameThemeConfig = {
+  background: {
+    image: "",
+    color: "#030712",
+    overlay: 0.5,
+    topGradient: true,
+    bottomGradient: true,
+  },
+  header: {
+    show: true,
+    badge: "The Wedding of",
+    title: "",
+    font: "Great Vibes",
+    color: "#ffffff",
+    size: 24,
+  },
+  content: {
+    headline: "Dari Siapa\nKenangan Ini?",
+    headlineColor: "#ffffff",
+    headlineSize: 34,
+    nameLabel: "Nama Tamu",
+    nameLabelColor: "#ffffff",
+    placeholder: "Ketik di Sini.......",
+    underlineColor: "#78716c",
+    textColor: "#ffffff",
+  },
+  button: {
+    text: "Selanjutnya",
+    bg: "#ffffff",
+    color: "#09090b",
+    iconBg: "#224DA5",
+    iconColor: "#ffffff",
+    icon: "arrow",
+  },
+  footer: {
+    show: true,
+    text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH",
+    color: "#ffffff",
+    showLogo: true,
+  },
+};
+
+export function resolveGuestNameConfig(
+  customConfig?: Partial<GuestNameThemeConfig> | null,
+  event?: EventItem
+): GuestNameThemeConfig {
+  const base = DEFAULT_GUEST_NAME_CONFIG;
+  const c = customConfig || {};
+
+  const isJayaRika =
+    event?.slug === "jayarika-wedding" ||
+    event?.slug?.toLowerCase().includes("jaya") ||
+    event?.title?.toLowerCase().includes("jaya");
+
+  const isIlvaRicky =
+    event?.slug === "ilvaricky-wedding" ||
+    event?.slug?.toLowerCase().includes("ilva") ||
+    event?.title?.toLowerCase().includes("ilva");
+
+  const isNurulIqra =
+    event?.slug === "iqranurul-wedding" ||
+    event?.slug?.toLowerCase().includes("iqra") ||
+    event?.title?.toLowerCase().includes("nurul");
+
+  const fallbackCouple = isJayaRika
+    ? "Jaya & Rika"
+    : isIlvaRicky
+    ? "Ilva & Ricky"
+    : isNurulIqra
+    ? "Nurul & Iqra"
+    : (event?.host_name || event?.title || "Jaya & Rika");
+
+  const fallbackBg = isJayaRika
+    ? "/images/events/bg-jayarika.png"
+    : isIlvaRicky
+    ? "/images/events/ilvaricky-bg.jpeg"
+    : isNurulIqra
+    ? "/images/events/nurul-iqra-real.jpg"
+    : (event?.cover_image_url || event?.cover_image || "/images/events/bg-jayarika.png");
+
+  const fallbackAccent = isJayaRika
+    ? "#224DA5"
+    : isIlvaRicky
+    ? "#3a716c"
+    : isNurulIqra
+    ? "#c51d24"
+    : "#224DA5";
+
+  return {
+    background: {
+      image: c.background?.image || fallbackBg,
+      color: c.background?.color || base.background.color,
+      overlay: c.background?.overlay ?? base.background.overlay,
+      topGradient: c.background?.topGradient ?? base.background.topGradient,
+      bottomGradient: c.background?.bottomGradient ?? base.background.bottomGradient,
+    },
+    header: {
+      show: c.header?.show ?? base.header.show,
+      badge: c.header?.badge ?? base.header.badge,
+      title: c.header?.title || fallbackCouple,
+      font: c.header?.font || base.header.font,
+      color: c.header?.color || base.header.color,
+      size: c.header?.size ?? base.header.size,
+    },
+    content: {
+      headline: c.content?.headline || base.content.headline,
+      headlineColor: c.content?.headlineColor || base.content.headlineColor,
+      headlineSize: c.content?.headlineSize ?? base.content.headlineSize,
+      nameLabel: c.content?.nameLabel || base.content.nameLabel,
+      nameLabelColor: c.content?.nameLabelColor || base.content.nameLabelColor,
+      placeholder: c.content?.placeholder || base.content.placeholder,
+      underlineColor: c.content?.underlineColor || base.content.underlineColor,
+      textColor: c.content?.textColor || base.content.textColor,
+    },
+    button: {
+      text: c.button?.text || base.button.text,
+      bg: c.button?.bg || base.button.bg,
+      color: c.button?.color || base.button.color,
+      iconBg: c.button?.iconBg || fallbackAccent,
+      iconColor: c.button?.iconColor || base.button.iconColor,
+      icon: c.button?.icon || base.button.icon,
+    },
+    footer: {
+      show: c.footer?.show ?? base.footer.show,
+      text: c.footer?.text || base.footer.text,
+      color: c.footer?.color || base.footer.color,
+      showLogo: c.footer?.showLogo ?? base.footer.showLogo,
+    },
+  };
+}
+
+export interface GuestNamePageViewProps {
+  config?: Partial<GuestNameThemeConfig>;
+  event: EventItem;
+  guestName?: string;
+  onGuestNameChange?: (name: string) => void;
+  onSubmit?: () => void;
+  onBack?: () => void;
+  onSectionClick?: (sectionId: string) => void;
+  interactive?: boolean;
+}
+
+export function GuestNamePageView({
+  config: customConfig,
+  event,
+  guestName = "",
+  onGuestNameChange,
+  onSubmit,
+  onBack,
+  onSectionClick,
+  interactive = true,
+}: GuestNamePageViewProps) {
+  const cfg = resolveGuestNameConfig(customConfig, event);
+
+  const handleSection = (e: React.MouseEvent, secId: string) => {
+    if (!interactive) return;
+    if (onSectionClick) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSectionClick(secId);
+    }
+  };
+
+  const bgImg = cfg.background.image ? `url("${cfg.background.image}")` : "none";
+
+  return (
+    <div
+      className="w-full h-full min-h-[100dvh] relative flex flex-col justify-between overflow-hidden select-none"
+      style={{
+        backgroundColor: cfg.background.color,
+        paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
+        paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      {/* Background with Opacity and Gradient Overlays */}
+      <div
+        data-sec="background"
+        onClick={(e) => handleSection(e, "background")}
+        aria-hidden="true"
+        className={`absolute inset-0 z-0 overflow-hidden ${onSectionClick ? "cursor-pointer" : "pointer-events-none"}`}
+      >
+        <div
+          className="w-full h-full bg-cover bg-center transition-all duration-300"
+          style={{
+            backgroundImage: bgImg,
+            opacity: cfg.background.overlay,
+          }}
+        />
+        {cfg.background.topGradient && (
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none" />
+        )}
+        {cfg.background.bottomGradient && (
+          <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
+        )}
+      </div>
+
+      {/* Top Bar: Back Button & Event Badge */}
+      <div className="w-full max-w-sm mx-auto relative z-10 flex items-center justify-between px-6 pt-1">
+        <button
+          type="button"
+          onClick={onBack}
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 text-white/70 active:text-white transition-colors cursor-pointer"
+          aria-label="Kembali"
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+
+        {cfg.header.show && (
+          <div
+            data-sec="header"
+            onClick={(e) => handleSection(e, "header")}
+            className={`text-right ${onSectionClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+          >
+            {cfg.header.badge && (
+              <span
+                className="block text-[11px] font-normal tracking-wide drop-shadow-sm"
+                style={{ color: `${cfg.header.color}b3` }}
+              >
+                {cfg.header.badge}
+              </span>
+            )}
+            <span
+              className="block leading-none drop-shadow-md"
+              style={{
+                fontFamily: `'${cfg.header.font}', cursive, serif`,
+                fontSize: `${cfg.header.size}px`,
+                color: cfg.header.color,
+              }}
+            >
+              {cfg.header.title}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Middle-lower Content Area: Headline + Input field */}
+      <div
+        data-sec="content"
+        onClick={(e) => handleSection(e, "content")}
+        className={`w-full max-w-sm mx-auto relative z-10 flex flex-col justify-end px-6 mt-auto mb-6 ${
+          onSectionClick ? "cursor-pointer" : ""
+        }`}
+      >
+        <h2
+          className="font-bold tracking-tight leading-[1.14] drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] whitespace-pre-line"
+          style={{
+            fontSize: `${cfg.content.headlineSize}px`,
+            color: cfg.content.headlineColor,
+          }}
+        >
+          {cfg.content.headline}
+        </h2>
+
+        <div className="mt-5">
+          <label
+            htmlFor="guest-name-input-field"
+            className="block text-base sm:text-lg font-medium tracking-normal mb-1 drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]"
+            style={{ color: cfg.content.nameLabelColor }}
+          >
+            {cfg.content.nameLabel}
+          </label>
+          <div className="relative">
+            <input
+              id="guest-name-input-field"
+              type="text"
+              autoFocus
+              autoComplete="name"
+              inputMode="text"
+              placeholder={cfg.content.placeholder}
+              value={guestName}
+              onChange={(e) => onGuestNameChange?.(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (!guestName.trim()) {
+                    e.currentTarget.focus();
+                  } else {
+                    onSubmit?.();
+                  }
+                }
+              }}
+              className="w-full bg-transparent text-lg font-normal py-2 pb-2.5 outline-none transition-colors placeholder:opacity-60"
+              style={{
+                borderBottom: `1.5px solid ${cfg.content.underlineColor}`,
+                color: cfg.content.textColor,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Action Area: 'Selanjutnya' pill button + footer */}
+      <div className="w-full max-w-sm mx-auto relative z-10 flex flex-col items-center space-y-2.5 px-6 pb-2">
+        <button
+          data-sec="button"
+          type="button"
+          onClick={(e) => {
+            if (onSectionClick) {
+              handleSection(e, "button");
+            } else {
+              if (!guestName.trim()) {
+                document.getElementById("guest-name-input-field")?.focus();
+                return;
+              }
+              onSubmit?.();
+            }
+          }}
+          className="w-full min-h-[52px] px-5 py-2.5 rounded-full font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
+          style={{
+            backgroundColor: cfg.button.bg,
+            color: cfg.button.color,
+          }}
+        >
+          <span className="tracking-tight pl-1 font-semibold">{cfg.button.text}</span>
+          <span
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm ml-2"
+            style={{
+              backgroundColor: cfg.button.iconBg,
+              color: cfg.button.iconColor,
+            }}
+          >
+            {cfg.button.icon === "none" ? null : cfg.button.icon === "camera" ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                <circle cx="12" cy="13" r="3" />
+              </svg>
+            ) : cfg.button.icon === "heart" ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="7" y1="17" x2="17" y2="7" />
+                <polyline points="7 7 17 7 17 17" />
+              </svg>
+            )}
+          </span>
+        </button>
+
+        {cfg.footer.show && (
+          <div
+            data-sec="footer"
+            onClick={(e) => handleSection(e, "footer")}
+            className={`w-full flex items-center justify-center gap-1.5 py-1 text-center select-none ${
+              onSectionClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""
+            }`}
+          >
+            {cfg.footer.showLogo && (
+              <div className="w-5 h-5 rounded-full bg-black/90 border border-white/20 flex items-center justify-center text-[10px] font-black text-white shrink-0 shadow-sm">
+                N
+              </div>
+            )}
+            <span
+              className="text-[11px] font-medium tracking-tight drop-shadow-sm opacity-85"
+              style={{ color: cfg.footer.color }}
+            >
+              {cfg.footer.text}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
