@@ -324,13 +324,13 @@ export function LandingPageView({
 
   /* Header Piece */
   const renderHeader = (withBorder = false) => {
-    if (!c.header?.show) return <div style={{ height: `${L.topPadding}px` }} />;
+    if (!c.header?.show) return <div style={{ height: `max(${L.topPadding}px, env(safe-area-inset-top, 0px))` }} />;
     return (
       <div
         data-sec="header"
         onClick={(e) => handleSec(e, "header")}
         className={interactive ? "cursor-pointer transition-opacity hover:opacity-85 select-none" : "select-none"}
-        style={{ padding: `${L.topPadding}px ${side}px 0` }}
+        style={{ padding: `max(${L.topPadding}px, env(safe-area-inset-top, 0px)) ${side}px 0` }}
       >
         <div
           className="flex justify-between items-center font-medium"
@@ -528,7 +528,9 @@ export function LandingPageView({
     );
   };
 
-  const renderBottomSpacer = () => <div style={{ height: `${L.bottomPadding}px`, flexShrink: 0 }} />;
+  const renderBottomSpacer = () => (
+    <div style={{ height: `max(${L.bottomPadding}px, env(safe-area-inset-bottom, 0px))`, flexShrink: 0 }} />
+  );
 
   /* Background & Gradient Overlay Piece */
   const renderShade = (mode: "bottom" | "top" | "flat") => {
@@ -568,6 +570,8 @@ export function LandingPageView({
     position: "relative",
     width: "100%",
     height: "100%",
+    minHeight: "100%",
+    flex: "1 1 0%",
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",

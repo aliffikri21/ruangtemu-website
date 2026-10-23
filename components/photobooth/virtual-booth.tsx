@@ -872,8 +872,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         </div>
       )}
 
-      {/* Minimal Top Bar (hidden for custom wedding themes, and during camera/welcome/name_input) */}
-      {!isCustomWedding && ((!isNurulIqraWedding) || (currentStep !== "welcome" && currentStep !== "name_input")) && currentStep !== "camera" && (
+      {/* Minimal Top Bar (hidden during camera, welcome, and name_input screens) */}
+      {!isCustomWedding && currentStep !== "welcome" && currentStep !== "name_input" && currentStep !== "camera" && (
         <header
           className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${isNurulIqraWedding
             ? "border-red-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
@@ -901,7 +901,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
       {/* ─── STEP 1: WELCOME SCREEN (DYNAMIC FROM THEME_CONFIG IF CONFIGURED) ─── */}
       {currentStep === "welcome" && event.theme_config && (
-        <main className="flex-1 w-full min-h-[100dvh] relative overflow-hidden select-none">
+        <main className="flex-1 w-full h-[100dvh] min-h-[100dvh] flex flex-col relative overflow-hidden select-none">
           <LandingPageView
             config={event.theme_config}
             onCta1Click={handleProceedToNameInput}
@@ -1530,7 +1530,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   </p>
                 </div>
                 <button
-                  onClick={() => setCurrentStep(isNurulIqraWedding || isCustomWedding ? "name_input" : "welcome")}
+                  onClick={() => setCurrentStep(isNurulIqraWedding || isCustomWedding || !!event.theme_config ? "name_input" : "welcome")}
                   className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border border-red-100 shadow-sm" : "text-stone-400 active:text-white"
                     }`}
                 >
