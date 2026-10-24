@@ -278,6 +278,15 @@ export function getDefaultThemeConfigForEvent(event?: Partial<EventItem>): Landi
   };
 }
 
+export function resolveLandingThemeConfig(
+  customConfig?: Partial<LandingThemeConfig> | null,
+  event?: Partial<EventItem>
+): LandingThemeConfig {
+  const base = getDefaultThemeConfigForEvent(event);
+  if (!customConfig) return base;
+  return mergeThemeConfig(base, customConfig);
+}
+
 const BUTTON_RADIUS_MAP: Record<string, string> = {
   pill: "999px",
   rounded: "20px",
@@ -324,7 +333,15 @@ export function LandingPageView({
 
   /* Header Piece */
   const renderHeader = (withBorder = false) => {
-    if (!c.header?.show) return <div style={{ height: `max(${L.topPadding}px, env(safe-area-inset-top, 0px))` }} />;
+    if (!c.header?.show) {
+      return (
+        <div
+          onClick={(e) => handleSec(e, "background")}
+          className={interactive ? "cursor-pointer" : ""}
+          style={{ height: `max(${L.topPadding}px, env(safe-area-inset-top, 0px))` }}
+        />
+      );
+    }
     return (
       <div
         data-sec="header"
@@ -529,7 +546,11 @@ export function LandingPageView({
   };
 
   const renderBottomSpacer = () => (
-    <div style={{ height: `max(${L.bottomPadding}px, env(safe-area-inset-bottom, 0px))`, flexShrink: 0 }} />
+    <div
+      onClick={(e) => handleSec(e, "background")}
+      className={interactive ? "cursor-pointer" : ""}
+      style={{ height: `max(${L.bottomPadding}px, env(safe-area-inset-bottom, 0px))`, flexShrink: 0 }}
+    />
   );
 
   /* Background & Gradient Overlay Piece */
@@ -555,7 +576,7 @@ export function LandingPageView({
       <div
         data-sec="background"
         onClick={(e) => handleSec(e, "background")}
-        className="absolute inset-0 bg-cover bg-no-repeat pointer-events-auto"
+        className={`absolute inset-0 bg-cover bg-no-repeat pointer-events-auto ${interactive ? "cursor-pointer" : ""}`}
         style={{
           backgroundImage: bgImg,
           backgroundPosition: `center ${bg.posY}%`,
@@ -586,12 +607,23 @@ export function LandingPageView({
       return (
         <div style={{ ...containerStyle, backgroundColor: bg.color }}>
           {renderPhoto("bottom")}
-          <div className="relative z-10 flex-1 flex flex-col min-h-0 justify-between">
+          <div
+            className="relative z-10 flex-1 flex flex-col min-h-0 justify-between"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleSec(e, "background");
+            }}
+          >
             {renderHeader()}
-            <div className="flex-1" />
+            <div
+              className={interactive ? "flex-1 cursor-pointer" : "flex-1"}
+              onClick={(e) => handleSec(e, "background")}
+            />
             {renderTitle("center", 0)}
             {renderInfo("center")}
-            <div className="flex-1" />
+            <div
+              className={interactive ? "flex-1 cursor-pointer" : "flex-1"}
+              onClick={(e) => handleSec(e, "background")}
+            />
             {renderButtons()}
             {renderFooter()}
             {renderBottomSpacer()}
@@ -703,9 +735,17 @@ export function LandingPageView({
       return (
         <div style={{ ...containerStyle, backgroundColor: bg.color }}>
           {renderPhoto("bottom")}
-          <div className="relative z-10 flex-1 flex flex-col min-h-0 justify-between">
+          <div
+            className="relative z-10 flex-1 flex flex-col min-h-0 justify-between"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleSec(e, "background");
+            }}
+          >
             {renderHeader(true)}
-            <div className="flex-1" />
+            <div
+              className={interactive ? "flex-1 cursor-pointer" : "flex-1"}
+              onClick={(e) => handleSec(e, "background")}
+            />
             <div
               className="w-11 h-[3px] shrink-0 mb-3"
               style={{
@@ -727,11 +767,19 @@ export function LandingPageView({
       return (
         <div style={{ ...containerStyle, backgroundColor: bg.color }}>
           {renderPhoto("bottom")}
-          <div className="relative z-10 flex-1 flex flex-col min-h-0 justify-between">
+          <div
+            className="relative z-10 flex-1 flex flex-col min-h-0 justify-between"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleSec(e, "background");
+            }}
+          >
             {renderHeader()}
             {renderTitle(c.title.align, c.title.top)}
             {renderInfo(c.info.align)}
-            <div className="flex-1" />
+            <div
+              className={interactive ? "flex-1 cursor-pointer" : "flex-1"}
+              onClick={(e) => handleSec(e, "background")}
+            />
             {renderButtons()}
             {renderFooter()}
             {renderBottomSpacer()}
@@ -912,6 +960,9 @@ export function GuestNamePageView({
 
   return (
     <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleSection(e, "background");
+      }}
       className="w-full h-full min-h-[100dvh] relative flex flex-col justify-between overflow-hidden select-none"
       style={{
         backgroundColor: cfg.background.color,
@@ -991,11 +1042,17 @@ export function GuestNamePageView({
         )}
       </div>
 
+      {/* Spacer linking to background edit */}
+      <div
+        className={onSectionClick ? "flex-1 cursor-pointer" : "flex-1"}
+        onClick={(e) => handleSection(e, "background")}
+      />
+
       {/* Middle-lower Content Area: Headline + Input field */}
       <div
         data-sec="content"
         onClick={(e) => handleSection(e, "content")}
-        className={`w-full max-w-sm mx-auto relative z-10 flex flex-col justify-end px-6 mt-auto mb-6 ${
+        className={`w-full max-w-sm mx-auto relative z-10 flex flex-col justify-end px-6 mb-6 ${
           onSectionClick ? "cursor-pointer" : ""
         }`}
       >

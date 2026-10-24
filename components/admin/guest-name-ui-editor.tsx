@@ -242,6 +242,7 @@ export function GuestNameUIEditor({
   });
 
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
 
   // Pan & Zoom Stage State
   const [zoom, setZoom] = useState(1);
@@ -250,6 +251,7 @@ export function GuestNameUIEditor({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const dragDistanceRef = useRef(0);
+  const isPointerDownRef = useRef(false);
 
   // Wheel zoom on preview stage
   useEffect(() => {
@@ -271,7 +273,7 @@ export function GuestNameUIEditor({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.button !== 1) return;
-    setIsPanning(true);
+    isPointerDownRef.current = true;
     dragDistanceRef.current = 0;
     panStartRef.current = {
       x: e.clientX,
@@ -279,24 +281,41 @@ export function GuestNameUIEditor({
       panX: pan.x,
       panY: pan.y,
     };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPanning) return;
+    if (!isPointerDownRef.current) return;
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
-    dragDistanceRef.current = Math.hypot(dx, dy);
-    setPan({
-      x: panStartRef.current.panX + dx,
-      y: panStartRef.current.panY + dy,
-    });
+    const dist = Math.hypot(dx, dy);
+    dragDistanceRef.current = dist;
+
+    // Only initiate canvas panning when user genuinely drags (> 5px)
+    if (dist > 5) {
+      if (!isPanning) {
+        setIsPanning(true);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch { }
+      }
+      setPan({
+        x: Math.round(panStartRef.current.panX + dx),
+        y: Math.round(panStartRef.current.panY + dy),
+      });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPanning) return;
-    setIsPanning(false);
-    (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    isPointerDownRef.current = false;
+    if (isPanning) {
+      setIsPanning(false);
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch { }
+    }
+    setTimeout(() => {
+      dragDistanceRef.current = 0;
+    }, 60);
   };
 
   const showToast = useCallback((msg: string) => {
@@ -361,12 +380,30 @@ export function GuestNameUIEditor({
   const handleSectionClickInPreview = (secId: string) => {
     if (dragDistanceRef.current > 5) return;
     setOpenSections((prev) => ({ ...prev, [secId]: true }));
-    const targetEl = sectionRefs.current[secId];
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      setFlashedSection(secId);
-      setTimeout(() => setFlashedSection(null), 1200);
-    }
+
+    // Wait for React to expand the section DOM before scrolling into view
+    setTimeout(() => {
+      const targetEl = sectionRefs.current[secId];
+      const containerEl = sidebarRef.current;
+
+      if (targetEl && containerEl) {
+        const targetRect = targetEl.getBoundingClientRect();
+        const containerRect = containerEl.getBoundingClientRect();
+        const relativeTop = targetRect.top - containerRect.top + containerEl.scrollTop;
+
+        containerEl.scrollTo({
+          top: Math.max(0, relativeTop - 12),
+          behavior: "smooth",
+        });
+
+        setFlashedSection(secId);
+        setTimeout(() => setFlashedSection(null), 1500);
+      } else if (targetEl) {
+        targetEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        setFlashedSection(secId);
+        setTimeout(() => setFlashedSection(null), 1500);
+      }
+    }, 60);
   };
 
   const toggleSection = (id: string) => {
@@ -549,7 +586,7 @@ export function GuestNameUIEditor({
       {/* Main Workspace (Split: Left Controls, Right Live Preview) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[680px]">
         {/* LEFT COLUMN: Controls & Settings Form */}
-        <div className="lg:col-span-6 xl:col-span-5 bg-white border-r border-[#e0e5f2] p-5 overflow-y-auto max-h-[780px] space-y-4">
+        <div ref={sidebarRef} className="lg:col-span-6 xl:col-span-5 bg-white border-r border-[#e0e5f2] p-5 overflow-y-auto max-h-[780px] space-y-4">
           {/* Section 1: Latar Belakang */}
           <div
             ref={(el) => { sectionRefs.current.background = el; }}
@@ -1428,6 +1465,9 @@ export function GuestNameUIEditor({
             }`}
           >
             <div
+              onPointerDown={() => {
+                dragDistanceRef.current = 0;
+              }}
               style={{
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transformOrigin: "center center",

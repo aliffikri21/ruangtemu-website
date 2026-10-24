@@ -2304,10 +2304,10 @@ export function AdminView({
                 type="button"
                 onClick={() => setIsNotifOpen((prev) => !prev)}
                 className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer border ${isNotifOpen
-                    ? "bg-[#4318FF] text-white border-[#4318FF] shadow-md shadow-[#4318FF]/25"
-                    : isDarkMode
-                      ? "bg-[#25262B] text-slate-200 border-white/10 hover:bg-[#2C2E33]"
-                      : "bg-[#F4F7FE] text-[#1B2559] border-[#E0E5F2] hover:bg-[#EAEFFC] hover:text-[#4318FF]"
+                  ? "bg-[#4318FF] text-white border-[#4318FF] shadow-md shadow-[#4318FF]/25"
+                  : isDarkMode
+                    ? "bg-[#25262B] text-slate-200 border-white/10 hover:bg-[#2C2E33]"
+                    : "bg-[#F4F7FE] text-[#1B2559] border-[#E0E5F2] hover:bg-[#EAEFFC] hover:text-[#4318FF]"
                   }`}
                 title="Notifikasi Event & Pesanan Klien Masuk"
                 aria-label="Notifikasi Acara Masuk"
@@ -2324,8 +2324,8 @@ export function AdminView({
               {isNotifOpen && (
                 <div
                   className={`absolute left-0 sm:left-auto sm:right-0 mt-2.5 w-[330px] sm:w-[410px] rounded-2xl shadow-2xl border z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150 ${isDarkMode
-                      ? "bg-[#1E1F25] border-white/10 text-white"
-                      : "bg-white border-[#E0E5F2] text-[#1B2559]"
+                    ? "bg-[#1E1F25] border-white/10 text-white"
+                    : "bg-white border-[#E0E5F2] text-[#1B2559]"
                     }`}
                 >
                   {/* Dropdown Header */}
@@ -2359,8 +2359,8 @@ export function AdminView({
                         type="button"
                         onClick={() => setNotifTabFilter("all")}
                         className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${notifTabFilter === "all"
-                            ? isDarkMode ? "bg-[#25262B] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
-                            : "text-[#8F9BBA] hover:text-[#1B2559]"
+                          ? isDarkMode ? "bg-[#25262B] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
+                          : "text-[#8F9BBA] hover:text-[#1B2559]"
                           }`}
                       >
                         Semua ({notificationItems.length})
@@ -2369,8 +2369,8 @@ export function AdminView({
                         type="button"
                         onClick={() => setNotifTabFilter("bookings")}
                         className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${notifTabFilter === "bookings"
-                            ? isDarkMode ? "bg-[#25262B] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
-                            : "text-[#8F9BBA] hover:text-[#1B2559]"
+                          ? isDarkMode ? "bg-[#25262B] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
+                          : "text-[#8F9BBA] hover:text-[#1B2559]"
                           }`}
                       >
                         Pesanan ({notificationItems.filter((n) => n.type === "booking").length})
@@ -2379,8 +2379,8 @@ export function AdminView({
                         type="button"
                         onClick={() => setNotifTabFilter("events")}
                         className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${notifTabFilter === "events"
-                            ? isDarkMode ? "bg-[#25262B] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
-                            : "text-[#8F9BBA] hover:text-[#1B2559]"
+                          ? isDarkMode ? "bg-[#25262B] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
+                          : "text-[#8F9BBA] hover:text-[#1B2559]"
                           }`}
                       >
                         Acara ({notificationItems.filter((n) => n.type === "event").length})
@@ -2416,19 +2416,19 @@ export function AdminView({
                             key={item.id}
                             onClick={() => handleNotificationClick(item)}
                             className={`p-3.5 transition-colors cursor-pointer flex items-start gap-3 relative ${isDarkMode
-                                ? isUnread
-                                  ? "bg-[#4318FF]/10 hover:bg-[#4318FF]/20"
-                                  : "hover:bg-white/5"
-                                : isUnread
-                                  ? "bg-[#4318FF]/[0.04] hover:bg-[#4318FF]/[0.08]"
-                                  : "hover:bg-[#F4F7FE]/80"
+                              ? isUnread
+                                ? "bg-[#4318FF]/10 hover:bg-[#4318FF]/20"
+                                : "hover:bg-white/5"
+                              : isUnread
+                                ? "bg-[#4318FF]/[0.04] hover:bg-[#4318FF]/[0.08]"
+                                : "hover:bg-[#F4F7FE]/80"
                               }`}
                           >
                             {/* Type Icon */}
                             <div
                               className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${item.type === "booking"
-                                  ? "bg-[#01B574]/15 text-[#01B574]"
-                                  : "bg-[#4318FF]/15 text-[#4318FF]"
+                                ? "bg-[#01B574]/15 text-[#01B574]"
+                                : "bg-[#4318FF]/15 text-[#4318FF]"
                                 }`}
                             >
                               {item.type === "booking" ? (
@@ -2443,8 +2443,8 @@ export function AdminView({
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide ${item.type === "booking"
-                                      ? "bg-[#01B574]/15 text-[#01B574]"
-                                      : "bg-[#4318FF]/15 text-[#4318FF]"
+                                    ? "bg-[#01B574]/15 text-[#01B574]"
+                                    : "bg-[#4318FF]/15 text-[#4318FF]"
                                     }`}
                                 >
                                   {item.type === "booking" ? "Pesanan Klien" : "Event Masuk"}
@@ -2452,8 +2452,8 @@ export function AdminView({
 
                                 {/* TIMESTAMP JAM DENGAN ICON CLOCK */}
                                 <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${isDarkMode
-                                    ? "bg-white/10 text-amber-300"
-                                    : "bg-[#4318FF]/10 text-[#4318FF]"
+                                  ? "bg-white/10 text-amber-300"
+                                  : "bg-[#4318FF]/10 text-[#4318FF]"
                                   }`}>
                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10" />
@@ -2493,8 +2493,8 @@ export function AdminView({
                                   ) : null}
                                   <span
                                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${item.paymentStatus === "PAID"
-                                        ? "bg-emerald-100 text-[#01B574]"
-                                        : "bg-amber-100 text-[#D97706]"
+                                      ? "bg-emerald-100 text-[#01B574]"
+                                      : "bg-amber-100 text-[#D97706]"
                                       }`}
                                   >
                                     {item.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas"}
@@ -3982,8 +3982,8 @@ export function AdminView({
                         type="button"
                         onClick={() => setNewEventPaymentStatus("PAID")}
                         className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${newEventPaymentStatus === "PAID"
-                            ? "bg-[#e9faf4] border-[#01B574] ring-2 ring-[#01B574]/20 shadow-sm"
-                            : "bg-white border-[#e0e5f2] hover:bg-[#f4f7fe]"
+                          ? "bg-[#e9faf4] border-[#01B574] ring-2 ring-[#01B574]/20 shadow-sm"
+                          : "bg-white border-[#e0e5f2] hover:bg-[#f4f7fe]"
                           }`}
                       >
                         <div className="flex items-center gap-2.5">
@@ -4009,8 +4009,8 @@ export function AdminView({
                         type="button"
                         onClick={() => setNewEventPaymentStatus("PENDING")}
                         className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${newEventPaymentStatus === "PENDING"
-                            ? "bg-[#fff6e9] border-[#FFB547] ring-2 ring-[#FFB547]/20 shadow-sm"
-                            : "bg-white border-[#e0e5f2] hover:bg-[#f4f7fe]"
+                          ? "bg-[#fff6e9] border-[#FFB547] ring-2 ring-[#FFB547]/20 shadow-sm"
+                          : "bg-white border-[#e0e5f2] hover:bg-[#f4f7fe]"
                           }`}
                       >
                         <div className="flex items-center gap-2.5">
@@ -4198,8 +4198,8 @@ export function AdminView({
                               {evt.package_tier && (
                                 <div className="mt-1">
                                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${evt.payment_status === "PAID"
-                                      ? "bg-[#01B574]/10 text-[#01B574]"
-                                      : "bg-[#FFB547]/15 text-[#E08A00]"
+                                    ? "bg-[#01B574]/10 text-[#01B574]"
+                                    : "bg-[#FFB547]/15 text-[#E08A00]"
                                     }`}>
                                     <IconStar size={10} /> Paket {evt.package_name || evt.package_tier.toUpperCase()} &bull; {evt.payment_status === "PAID" ? "Lunas" : "Belum Lunas"}
                                   </span>
@@ -4236,8 +4236,8 @@ export function AdminView({
                                   {active ? "Aktif" : evt.status === "ARCHIVED" ? "Diarsipkan" : "Selesai"}
                                 </span>
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${evt.payment_status === "PAID"
-                                    ? "bg-[#01B574]/15 text-[#01B574]"
-                                    : "bg-[#FFB547]/20 text-[#D97706]"
+                                  ? "bg-[#01B574]/15 text-[#01B574]"
+                                  : "bg-[#FFB547]/20 text-[#D97706]"
                                   }`}>
                                   {evt.payment_status === "PAID" ? "✓ Lunas" : "⏳ Belum Lunas"}
                                 </span>
@@ -5286,11 +5286,10 @@ export function AdminView({
                             <button
                               type="button"
                               onClick={() => setEditUiEditorTab("landing")}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                                editUiEditorTab === "landing"
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${editUiEditorTab === "landing"
                                   ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
                                   : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
-                              }`}
+                                }`}
                             >
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
                               <span>1. Landing Page / Poster</span>
@@ -5298,11 +5297,10 @@ export function AdminView({
                             <button
                               type="button"
                               onClick={() => setEditUiEditorTab("guest_name")}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                                editUiEditorTab === "guest_name"
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${editUiEditorTab === "guest_name"
                                   ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
                                   : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
-                              }`}
+                                }`}
                             >
                               <IconUser size={15} />
                               <span>2. Halaman Input Nama Tamu</span>

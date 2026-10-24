@@ -68,6 +68,7 @@ export function LandingUIEditor({
 
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
 
   // Pan & Zoom Stage State
   const [zoom, setZoom] = useState(1);
@@ -76,6 +77,7 @@ export function LandingUIEditor({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const dragDistanceRef = useRef(0);
+  const isPointerDownRef = useRef(false);
 
   // Mouse wheel zoom listener on preview stage
   useEffect(() => {
@@ -97,37 +99,49 @@ export function LandingUIEditor({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.button !== 1) return;
-    setIsPanning(true);
+    isPointerDownRef.current = true;
+    dragDistanceRef.current = 0;
     panStartRef.current = {
       x: e.clientX,
       y: e.clientY,
       panX: pan.x,
       panY: pan.y,
     };
-    dragDistanceRef.current = 0;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch { }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPanning) return;
+    if (!isPointerDownRef.current) return;
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
-    dragDistanceRef.current = Math.hypot(dx, dy);
-    setPan({
-      x: Math.round(panStartRef.current.panX + dx),
-      y: Math.round(panStartRef.current.panY + dy),
-    });
+    const dist = Math.hypot(dx, dy);
+    dragDistanceRef.current = dist;
+
+    // Only initiate canvas panning when user genuinely drags (> 5px)
+    if (dist > 5) {
+      if (!isPanning) {
+        setIsPanning(true);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch { }
+      }
+      setPan({
+        x: Math.round(panStartRef.current.panX + dx),
+        y: Math.round(panStartRef.current.panY + dy),
+      });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isPointerDownRef.current = false;
     if (isPanning) {
       setIsPanning(false);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch { }
     }
+    setTimeout(() => {
+      dragDistanceRef.current = 0;
+    }, 60);
   };
 
   const resetView = () => {
@@ -200,12 +214,30 @@ export function LandingUIEditor({
     if (dragDistanceRef.current > 5) return;
 
     setOpenSections((prev) => ({ ...prev, [secId]: true }));
-    const targetEl = sectionRefs.current[secId];
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      setFlashedSection(secId);
-      setTimeout(() => setFlashedSection(null), 1200);
-    }
+
+    // Wait for React to expand the section DOM before scrolling into view
+    setTimeout(() => {
+      const targetEl = sectionRefs.current[secId];
+      const containerEl = sidebarRef.current;
+
+      if (targetEl && containerEl) {
+        const targetRect = targetEl.getBoundingClientRect();
+        const containerRect = containerEl.getBoundingClientRect();
+        const relativeTop = targetRect.top - containerRect.top + containerEl.scrollTop;
+
+        containerEl.scrollTo({
+          top: Math.max(0, relativeTop - 12),
+          behavior: "smooth",
+        });
+
+        setFlashedSection(secId);
+        setTimeout(() => setFlashedSection(null), 1500);
+      } else if (targetEl) {
+        targetEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        setFlashedSection(secId);
+        setTimeout(() => setFlashedSection(null), 1500);
+      }
+    }, 60);
   };
 
   const toggleSection = (id: string) => {
@@ -417,7 +449,7 @@ export function LandingUIEditor({
           </div>
 
           {/* Accordion Form Sections */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-2.5 scrollbar-thin">
+          <div ref={sidebarRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-2.5 scrollbar-thin">
             {/* 1. BACKGROUND SECTION */}
             <div
               ref={(el) => {
@@ -1292,6 +1324,9 @@ export function LandingUIEditor({
               {/* Outer Phone Hardware Bezel (.frame) */}
               <div
                 ref={previewRef}
+                onPointerDown={() => {
+                  dragDistanceRef.current = 0;
+                }}
                 className="relative rounded-[48px] p-[11px] bg-[#14161a] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] ring-2 ring-[#2b2f36] select-none shrink-0"
                 style={{
                   width: `${device.w + 22}px`,
