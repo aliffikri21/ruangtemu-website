@@ -1145,33 +1145,50 @@ export function AdminView({
       ? (editingEvent.assigned_frames || [])
       : editFrames
         .filter((s) => s.previewUrl)
-        .map((s, idx) => ({
-          id: s.id.startsWith("slot-") ? `frm-${Date.now()}-${idx}` : s.id,
-          name: s.name || `Frame ${idx + 1}`,
-          slug: (s.name || `frame-${idx + 1}`)
+        .map((s, idx) => {
+          let frameId = s.id;
+          if (
+            !frameId ||
+            frameId.startsWith("slot-") ||
+            frameId === "frame-strip-1" ||
+            frameId === "frame-strip-2" ||
+            frameId === "frame-strip-3"
+          ) {
+            frameId = `frm-${Date.now()}-${idx}`;
+          }
+
+          const baseSlug = (s.name || `frame-${idx + 1}`)
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
-            .replace(/(^-|-$)/g, ""),
-          template_type: s.template_type,
-          preview_url: s.previewUrl,
-          config_json: {
-            type: s.template_type,
-            backgroundColor: "#0f172a",
-            borderColor: "#e7e5e4",
-            textContent: editForm.host_name,
-            subTextContent: `${editForm.date} • ${editForm.venue}, ${editForm.city}`,
-            fontFamily: "serif",
-            textColor: "#ffffff",
-            padding: 16,
-            borderRadius: 8,
-            customOverlayUrl: s.previewUrl,
-            photoSlots: s.photoSlots,
-            photoCount: s.detectedCount,
-            frameImageWidth: s.frameImageWidth,
-            frameImageHeight: s.frameImageHeight,
-          },
-          is_active: true,
-        }));
+            .replace(/(^-|-$)/g, "") || "frame";
+
+          const safeSlug = `${baseSlug.slice(0, 50)}-${frameId}`;
+
+          return {
+            id: frameId,
+            name: s.name || `Frame ${idx + 1}`,
+            slug: safeSlug,
+            template_type: s.template_type,
+            preview_url: s.previewUrl,
+            config_json: {
+              type: s.template_type,
+              backgroundColor: "#0f172a",
+              borderColor: "#e7e5e4",
+              textContent: editForm.host_name,
+              subTextContent: `${editForm.date} • ${editForm.venue}, ${editForm.city}`,
+              fontFamily: "serif",
+              textColor: "#ffffff",
+              padding: 16,
+              borderRadius: 8,
+              customOverlayUrl: s.previewUrl,
+              photoSlots: s.photoSlots,
+              photoCount: s.detectedCount,
+              frameImageWidth: s.frameImageWidth,
+              frameImageHeight: s.frameImageHeight,
+            },
+            is_active: true,
+          };
+        });
 
     const physicalTier = editSelectedPhysicalTier || "hours2";
     const virtualTier = editSelectedTier || "silver";
@@ -1269,6 +1286,21 @@ export function AdminView({
           prev.map((ev) => (ev.id === data.event.id ? data.event : ev))
         );
         setEditingEvent(data.event);
+        if (data.event.assigned_frames && data.event.assigned_frames.length > 0) {
+          setEditFrames(
+            data.event.assigned_frames.map((fr: any, idx: number) => ({
+              id: fr.id,
+              name: fr.name || `Frame ${idx + 1}`,
+              template_type: fr.template_type || "custom",
+              previewUrl: fr.preview_url || fr.config_json?.customOverlayUrl || "",
+              fileName: fr.name,
+              photoSlots: fr.config_json?.photoSlots,
+              detectedCount: fr.config_json?.photoCount || fr.config_json?.photoSlots?.length,
+              frameImageWidth: fr.config_json?.frameImageWidth,
+              frameImageHeight: fr.config_json?.frameImageHeight,
+            }))
+          );
+        }
         setEditSuccessMsg("Perubahan event, paket photobooth, frame, dan status pembayaran berhasil disimpan!");
       } else {
         setEditErrorMsg(data.error || "Gagal memperbarui event.");

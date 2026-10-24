@@ -49,15 +49,30 @@ export async function PUT(
                 ? await saveFrameImage(rawUrl, fr.name || `frame-${idx + 1}`)
                 : rawUrl;
 
+              let frameId = fr.id;
+              if (
+                !frameId ||
+                frameId.startsWith("slot-") ||
+                frameId === "frame-strip-1" ||
+                frameId === "frame-strip-2" ||
+                frameId === "frame-strip-3"
+              ) {
+                frameId = `frm-${Date.now()}-${idx}`;
+              }
+
+              const baseSlug = (fr.name || `frame-${idx + 1}`)
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "") || "frame";
+
+              const safeSlug = fr.slug && fr.slug.includes(frameId)
+                ? fr.slug
+                : `${baseSlug.slice(0, 50)}-${frameId}`;
+
               return {
-                id: fr.id || `frm-${Date.now()}-${idx}`,
+                id: frameId,
                 name: fr.name || `Frame ${idx + 1}`,
-                slug:
-                  fr.slug ||
-                  (fr.name || `frame-${idx + 1}`)
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/(^-|-$)/g, ""),
+                slug: safeSlug,
                 template_type: fr.template_type || "custom",
                 preview_url: savedUrl,
                 config_json: {

@@ -831,6 +831,38 @@ export async function getEventBySlug(slug: string): Promise<EventItem | null> {
   return mockEvents.find((e) => e.slug === slug || e.id === slug) || null;
 }
 
+function buildSafeFramePayload(fr: FrameItem, index: number, eventId?: string) {
+  let frameId = fr.id;
+  if (
+    !frameId ||
+    frameId.startsWith("slot-") ||
+    frameId === "frame-strip-1" ||
+    frameId === "frame-strip-2" ||
+    frameId === "frame-strip-3"
+  ) {
+    frameId = `frm-${Date.now()}-${index}`;
+  }
+
+  const baseSlug = (fr.name || `frame-${index + 1}`)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "frame";
+
+  const safeSlug = fr.slug && fr.slug.includes(frameId)
+    ? fr.slug
+    : `${baseSlug.slice(0, 50)}-${frameId}`;
+
+  return {
+    id: frameId,
+    name: fr.name || `Frame ${index + 1}`,
+    slug: safeSlug,
+    template_type: fr.template_type || "custom",
+    preview_url: fr.preview_url || null,
+    config_json: fr.config_json || {},
+    is_active: true,
+  };
+}
+
 export async function createEvent(event: Omit<EventItem, "id" | "created_at">): Promise<EventItem> {
   const newEvent: EventItem = {
     ...event,
@@ -907,26 +939,31 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
       // 4. Masukkan frame yang ditugaskan jika ada
       if (newEvent.assigned_frames && newEvent.assigned_frames.length > 0) {
         for (let i = 0; i < newEvent.assigned_frames.length; i++) {
-          const fr = newEvent.assigned_frames[i];
+          const framePayload = buildSafeFramePayload(newEvent.assigned_frames[i], i, newEvent.id);
           try {
-            await client.from("frames").upsert({
-              id: fr.id,
-              name: fr.name,
-              slug: fr.slug || `frame-${newEvent.id}-${i + 1}`,
-              template_type: fr.template_type || "custom",
-              preview_url: fr.preview_url || null,
-              config_json: fr.config_json || {},
-              is_active: true,
-            });
+            let { error: frErr } = await client.from("frames").upsert(framePayload);
+            if (frErr && (frErr.code === "23505" || frErr.message?.includes("duplicate key"))) {
+              const baseSlug = (framePayload.name || "frame").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "frame";
+              framePayload.slug = `${baseSlug.slice(0, 40)}-${randomUUID().slice(0, 8)}`;
+              const retryRes = await client.from("frames").upsert(framePayload);
+              frErr = retryRes.error;
+            }
 
-            await client.from("event_frames").insert({
-              id: randomUUID(),
-              event_id: newEvent.id,
-              frame_id: fr.id,
-              sort_order: i + 1,
-            });
+            if (frErr) {
+              console.warn(`[Supabase] frame insert error for ${framePayload.id}:`, frErr.message);
+            } else {
+              const { error: efErr } = await client.from("event_frames").insert({
+                id: randomUUID(),
+                event_id: newEvent.id,
+                frame_id: framePayload.id,
+                sort_order: i + 1,
+              });
+              if (efErr) {
+                console.warn(`[Supabase] event_frames.insert error for ${framePayload.id}:`, efErr.message);
+              }
+            }
           } catch (fErr: any) {
-            console.warn("[Supabase] frame insert skipped:", fErr?.message);
+            console.warn("[Supabase] frame insert exception:", fErr?.message);
           }
         }
       }
@@ -1015,26 +1052,36 @@ export async function updateEvent(
       }
 
       if (updates.assigned_frames !== undefined) {
-        await client.from("event_frames").delete().eq("event_id", id);
+        const { error: delErr } = await client.from("event_frames").delete().eq("event_id", id);
+        if (delErr) console.warn("[Supabase] delete event_frames error:", delErr.message);
 
         for (let i = 0; i < updates.assigned_frames.length; i++) {
-          const fr = updates.assigned_frames[i];
-          await client.from("frames").upsert({
-            id: fr.id,
-            name: fr.name,
-            slug: fr.slug,
-            template_type: fr.template_type || "custom",
-            preview_url: fr.preview_url || null,
-            config_json: fr.config_json || {},
-            is_active: true,
-          });
+          const framePayload = buildSafeFramePayload(updates.assigned_frames[i], i, id);
+          try {
+            let { error: frErr } = await client.from("frames").upsert(framePayload);
+            if (frErr && (frErr.code === "23505" || frErr.message?.includes("duplicate key"))) {
+              const baseSlug = (framePayload.name || "frame").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "frame";
+              framePayload.slug = `${baseSlug.slice(0, 40)}-${randomUUID().slice(0, 8)}`;
+              const retryRes = await client.from("frames").upsert(framePayload);
+              frErr = retryRes.error;
+            }
 
-          await client.from("event_frames").insert({
-            id: randomUUID(),
-            event_id: id,
-            frame_id: fr.id,
-            sort_order: i + 1,
-          });
+            if (frErr) {
+              console.error(`[Supabase] frames.upsert failed for ${framePayload.id}:`, frErr.message);
+            } else {
+              const { error: efErr } = await client.from("event_frames").insert({
+                id: randomUUID(),
+                event_id: id,
+                frame_id: framePayload.id,
+                sort_order: i + 1,
+              });
+              if (efErr) {
+                console.error(`[Supabase] event_frames.insert failed for ${framePayload.id}:`, efErr.message);
+              }
+            }
+          } catch (fErr: any) {
+            console.error("[Supabase] frame update exception:", fErr?.message);
+          }
         }
       }
 
