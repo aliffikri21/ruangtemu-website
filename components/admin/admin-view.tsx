@@ -149,6 +149,15 @@ function IconUpload({ size = 14 }: { size?: number }) {
     </svg>
   );
 }
+function IconDownload({ size = 14, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
 function IconSun({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -728,7 +737,112 @@ export function AdminView({
     }
   };
 
+  // ZIP download & Delete gallery states
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+  const [showDeleteGalleryModal, setShowDeleteGalleryModal] = useState(false);
+  const [isDeletingGallery, setIsDeletingGallery] = useState(false);
+
+  const handleDownloadZip = async () => {
+    setIsDownloadingZip(true);
+    try {
+      const targetSlug =
+        galleryEventFilter === "all"
+          ? "all"
+          : events.find((e) => e.id === galleryEventFilter)?.slug || galleryEventFilter;
+
+      const res = await fetch(`/api/events/${targetSlug}/export-zip`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Gagal mengunduh file ZIP");
+        return;
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      const contentDisposition = res.headers.get("content-disposition");
+      let filename = `galeri-${targetSlug}-${Date.now()}.zip`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^";]+)"?/);
+        if (match && match[1]) filename = match[1];
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      console.error("Error downloading zip:", err);
+      alert("Terjadi kesalahan saat mengunduh ZIP");
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
+  const handleConfirmDeleteGallery = async () => {
+    if (galleryEventFilter === "all") return;
+    const targetEvent = events.find((e) => e.id === galleryEventFilter);
+    if (!targetEvent) return;
+
+    setIsDeletingGallery(true);
+    try {
+      const res = await fetch(`/api/events/${targetEvent.slug}/entries`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEntries((prev) =>
+          prev.filter((e) => e.event_id !== targetEvent.id && e.event_slug !== targetEvent.slug)
+        );
+        setShowDeleteGalleryModal(false);
+        alert(`Galeri foto dan storage Supabase untuk "${targetEvent.title}" berhasil dibersihkan!`);
+      } else {
+        alert(data.error || "Gagal membersihkan galeri dari database");
+      }
+    } catch (err: any) {
+      console.error("Error clearing gallery:", err);
+      alert("Terjadi kesalahan saat menghapus galeri");
+    } finally {
+      setIsDeletingGallery(false);
+    }
+  };
+
   const [isRefreshingBookings, setIsRefreshingBookings] = useState(false);
+  const [isExportingFinance, setIsExportingFinance] = useState(false);
+
+  const handleExportFinanceXlsx = async () => {
+    setIsExportingFinance(true);
+    try {
+      const res = await fetch("/api/admin/finance/export-xlsx");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Gagal mengunduh buku keuangan Excel");
+        return;
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      const contentDisposition = res.headers.get("content-disposition");
+      let filename = `Buku_Keuangan_RUANGTEMU_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^";]+)"?/);
+        if (match && match[1]) filename = match[1];
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      console.error("Error exporting finance xlsx:", err);
+      alert("Terjadi kesalahan saat mengunduh file Excel");
+    } finally {
+      setIsExportingFinance(false);
+    }
+  };
 
   // Auto-dismiss notification after 14 seconds
   useEffect(() => {
@@ -2032,7 +2146,40 @@ export function AdminView({
     );
   }
 
-  const totalRevenue = bookings.reduce((acc, b) => acc + (b.total_price || 0), 0);
+  const getEventPackagePrice = (evt: EventItem): number => {
+    if (evt.payment_amount && evt.payment_amount > 0) {
+      return Number(evt.payment_amount);
+    }
+    const tier = (evt.package_tier || evt.package_name || "").toLowerCase().trim();
+    const isPhysical = evt.category === "physical" || evt.category === "photobooth";
+
+    const matchedPkg = initialPackages.find((p) => {
+      const pName = p.name.toLowerCase();
+      const pSlug = p.slug.toLowerCase();
+      if (tier && (pName.includes(tier) || pSlug.includes(tier))) return true;
+      if (evt.package_name && pName.includes(evt.package_name.toLowerCase())) return true;
+      return false;
+    });
+
+    if (matchedPkg && matchedPkg.price > 0) {
+      return matchedPkg.price;
+    }
+
+    if (isPhysical) {
+      if (tier.includes("3 jam")) return 2800000;
+      return 2000000;
+    }
+
+    if (tier.includes("gold")) return 500000;
+    if (tier.includes("silver")) return 350000;
+    if (tier.includes("bronze") || tier.includes("basic")) return 250000;
+
+    return 350000;
+  };
+
+  const paidEvents = events.filter((e) => e.payment_status === "PAID");
+  const paidEventsRevenue = paidEvents.reduce((acc, evt) => acc + getEventPackagePrice(evt), 0);
+  const totalRevenue = paidEventsRevenue;
   const confirmedBookings = bookings.filter((b) => b.status === "confirmed").length;
   const activeEvents = events.filter((e) => e.is_active !== false && e.status !== "COMPLETED" && e.status !== "ARCHIVED").length;
 
@@ -2722,17 +2869,29 @@ export function AdminView({
             </div>
 
             {activeTab === "overview" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("events");
-                  setIsCreatingEvent(true);
-                }}
-                className="h-10 px-4 rounded-xl text-sm font-semibold bg-[#4318FF] hover:bg-[#3311DB] text-white transition-all shadow-[0_4px_12px_rgba(67,24,255,0.2)] hover:shadow-[0_6px_16px_rgba(67,24,255,0.3)] inline-flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
-              >
-                <IconPlus size={16} />
-                <span>Tambahkan Event Baru</span>
-              </button>
+              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                <button
+                  type="button"
+                  onClick={handleExportFinanceXlsx}
+                  disabled={isExportingFinance}
+                  className="h-10 px-4 rounded-xl text-xs font-bold bg-[#05CD99]/15 hover:bg-[#05CD99]/25 text-[#05CD99] border border-[#05CD99]/30 transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
+                  title="Unduh seluruh buku keuangan event dan transaksi booking dalam format Excel (.xlsx)"
+                >
+                  <IconDownload size={15} className={isExportingFinance ? "animate-bounce" : ""} />
+                  <span>{isExportingFinance ? "Menyiapkan Excel..." : "Ekspor Buku Keuangan (.xlsx)"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("events");
+                    setIsCreatingEvent(true);
+                  }}
+                  className="h-10 px-4 rounded-xl text-sm font-semibold bg-[#4318FF] hover:bg-[#3311DB] text-white transition-all shadow-[0_4px_12px_rgba(67,24,255,0.2)] hover:shadow-[0_6px_16px_rgba(67,24,255,0.3)] inline-flex items-center gap-2 shrink-0 cursor-pointer"
+                >
+                  <IconPlus size={16} />
+                  <span>Tambahkan Event Baru</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -2795,20 +2954,20 @@ export function AdminView({
                   </div>
                 </div>
 
-                {/* 4. Estimasi Nilai Layanan */}
+                {/* 4. Estimasi Omset dari Event Lunas */}
                 <div className="bg-white rounded-2xl p-5 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-[#A3AED0]">Estimasi Omset</span>
-                    <div className="w-9 h-9 rounded-xl bg-[#F4F7FE] flex items-center justify-center text-[#1B2559]">
+                    <div className="w-9 h-9 rounded-xl bg-[#05CD99]/15 flex items-center justify-center text-[#05CD99]">
                       <IconPackage size={18} />
                     </div>
                   </div>
                   <div className="mt-3">
-                    <div className="text-xl font-extrabold text-[#1B2559] truncate">
-                      {formatRupiah(totalRevenue)}
+                    <div className="text-xl font-extrabold text-[#1B2559] truncate" title={formatRupiah(paidEventsRevenue)}>
+                      {formatRupiah(paidEventsRevenue)}
                     </div>
-                    <div className="mt-1 text-[11px] font-medium text-[#A3AED0]">
-                      Pipeline booking Palopo
+                    <div className="mt-1 text-[11px] font-semibold text-[#05CD99]">
+                      {paidEvents.length} event lunas terverifikasi
                     </div>
                   </div>
                 </div>
@@ -5524,6 +5683,16 @@ export function AdminView({
                       <IconRefresh size={14} className={isRefreshingBookings ? "animate-spin" : ""} />
                       <span>{isRefreshingBookings ? "Memuat..." : "Segarkan Data"}</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={handleExportFinanceXlsx}
+                      disabled={isExportingFinance || bookings.length === 0}
+                      className="h-9 px-3.5 rounded-xl border border-[#05CD99] bg-[#05CD99]/10 hover:bg-[#05CD99]/20 text-[#05CD99] text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      title="Download seluruh buku transaksi dan laporan keuangan dalam format Excel (.xlsx)"
+                    >
+                      <IconDownload size={14} className={isExportingFinance ? "animate-bounce" : ""} />
+                      <span>{isExportingFinance ? "Menyiapkan Excel..." : "Ekspor Buku Keuangan (.xlsx)"}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -6193,72 +6362,96 @@ export function AdminView({
           })()}
 
           {/* ═══════ TAB: GALLERY ═══════ */}
-          {activeTab === "gallery" && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E0E5F2]">
-                <div>
-                  <h2 className="text-lg font-bold text-[#1B2559]">Galeri Foto Tamu Seluruh Acara</h2>
-                  <p className="text-xs text-[#A3AED0] mt-0.5">
-                    Menampilkan {galleryEventFilter === "all" ? entries.length : entries.filter((e) => e.event_id === galleryEventFilter || e.event_slug === galleryEventFilter).length} foto dari {galleryEventFilter === "all" ? "semua event" : "event terpilih"} secara real-time.
-                  </p>
+          {activeTab === "gallery" && (() => {
+            const displayedEntries =
+              galleryEventFilter === "all"
+                ? entries
+                : entries.filter((e) => e.event_id === galleryEventFilter || e.event_slug === galleryEventFilter);
+            const selectedEventObj = events.find((e) => e.id === galleryEventFilter);
+
+            return (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E0E5F2]">
+                  <div>
+                    <h2 className="text-lg font-bold text-[#1B2559]">Galeri Foto Tamu Seluruh Acara</h2>
+                    <p className="text-xs text-[#A3AED0] mt-0.5">
+                      Menampilkan {displayedEntries.length} foto dari {galleryEventFilter === "all" ? "semua event" : `event "${selectedEventObj?.title || galleryEventFilter}"`} secara real-time.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {/* Event Filter Dropdown */}
+                    <select
+                      value={galleryEventFilter}
+                      onChange={(e) => setGalleryEventFilter(e.target.value)}
+                      className="h-9 px-3 bg-white border border-[#E0E5F2] rounded-xl text-xs font-semibold text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors"
+                    >
+                      <option value="all">Semua Event ({entries.length} Foto)</option>
+                      {events.map((evt) => {
+                        const count = entries.filter((e) => e.event_id === evt.id || e.event_slug === evt.slug).length;
+                        return (
+                          <option key={evt.id} value={evt.id}>
+                            {evt.title} ({count})
+                          </option>
+                        );
+                      })}
+                    </select>
+
+                    {/* Refresh Button */}
+                    <button
+                      type="button"
+                      onClick={refreshEntries}
+                      disabled={isRefreshingGallery}
+                      className="h-9 px-3.5 rounded-xl border border-[#E0E5F2] bg-white hover:bg-[#F4F7FE] text-xs font-semibold text-[#1B2559] transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      title="Segarkan Foto Terbaru"
+                    >
+                      <IconRefresh size={14} className={isRefreshingGallery ? "animate-spin" : ""} />
+                      <span>{isRefreshingGallery ? "Memuat..." : "Segarkan"}</span>
+                    </button>
+
+                    {/* Download ZIP Button */}
+                    <button
+                      type="button"
+                      onClick={handleDownloadZip}
+                      disabled={isDownloadingZip || displayedEntries.length === 0}
+                      className="h-9 px-3.5 rounded-xl border border-[#4318FF] bg-[#4318FF]/10 hover:bg-[#4318FF]/20 text-[#4318FF] text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      title="Download semua foto yang ditampilkan sebagai file ZIP"
+                    >
+                      <IconDownload size={14} className={isDownloadingZip ? "animate-bounce" : ""} />
+                      <span>{isDownloadingZip ? "Mengompres..." : `Download ZIP (${displayedEntries.length})`}</span>
+                    </button>
+
+                    {/* Hapus Galeri dari Database Button */}
+                    {galleryEventFilter !== "all" && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteGalleryModal(true)}
+                        disabled={isDeletingGallery || displayedEntries.length === 0}
+                        className="h-9 px-3.5 rounded-xl border border-[#EE5D50] bg-[#EE5D50]/10 hover:bg-[#EE5D50]/20 text-[#EE5D50] text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        title="Hapus foto dari storage Supabase dan database untuk hemat kapasitas"
+                      >
+                        <IconTrash size={14} />
+                        <span>Hapus Galeri dari Database</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {/* Event Filter Dropdown */}
-                  <select
-                    value={galleryEventFilter}
-                    onChange={(e) => setGalleryEventFilter(e.target.value)}
-                    className="h-9 px-3 bg-white border border-[#E0E5F2] rounded-xl text-xs font-semibold text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors"
-                  >
-                    <option value="all">Semua Event ({entries.length} Foto)</option>
-                    {events.map((evt) => {
-                      const count = entries.filter((e) => e.event_id === evt.id || e.event_slug === evt.slug).length;
-                      return (
-                        <option key={evt.id} value={evt.id}>
-                          {evt.title} ({count})
-                        </option>
-                      );
-                    })}
-                  </select>
-
-                  {/* Refresh Button */}
-                  <button
-                    type="button"
-                    onClick={refreshEntries}
-                    disabled={isRefreshingGallery}
-                    className="h-9 px-3.5 rounded-xl border border-[#E0E5F2] bg-white hover:bg-[#F4F7FE] text-xs font-semibold text-[#1B2559] transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                    title="Segarkan Foto Terbaru"
-                  >
-                    <IconRefresh size={14} className={isRefreshingGallery ? "animate-spin" : ""} />
-                    <span>{isRefreshingGallery ? "Memuat..." : "Segarkan"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {(() => {
-                const displayedEntries = galleryEventFilter === "all"
-                  ? entries
-                  : entries.filter((e) => e.event_id === galleryEventFilter || e.event_slug === galleryEventFilter);
-
-                if (displayedEntries.length === 0) {
-                  return (
-                    <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
-                      <div className="w-12 h-12 rounded-full bg-[#F4F7FE] flex items-center justify-center text-[#A3AED0] mx-auto">
-                        <IconImage size={22} />
-                      </div>
-                      <div className="text-sm font-semibold text-[#1B2559]">
-                        Belum Ada Foto Tamu
-                      </div>
-                      <p className="text-xs text-[#A3AED0] max-w-sm mx-auto">
-                        {galleryEventFilter === "all"
-                          ? "Foto dari seluruh acara yang diambil tamu melalui virtual photobooth akan otomatis tampil di panel galeri ini."
-                          : "Belum ada foto yang diunggah tamu untuk acara ini."}
-                      </p>
+                {displayedEntries.length === 0 ? (
+                  <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
+                    <div className="w-12 h-12 rounded-full bg-[#F4F7FE] flex items-center justify-center text-[#A3AED0] mx-auto">
+                      <IconImage size={22} />
                     </div>
-                  );
-                }
-
-                return (
+                    <div className="text-sm font-semibold text-[#1B2559]">
+                      Belum Ada Foto Tamu
+                    </div>
+                    <p className="text-xs text-[#A3AED0] max-w-sm mx-auto">
+                      {galleryEventFilter === "all"
+                        ? "Foto dari seluruh acara yang diambil tamu melalui virtual photobooth akan otomatis tampil di panel galeri ini."
+                        : "Belum ada foto yang diunggah tamu untuk acara ini."}
+                    </p>
+                  </div>
+                ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                     {displayedEntries.map((ent) => {
                       const evt = getEventForEntry(ent);
@@ -6309,10 +6502,73 @@ export function AdminView({
                       );
                     })}
                   </div>
-                );
-              })()}
-            </div>
-          )}
+                )}
+
+                {/* Modal Konfirmasi Hapus Galeri dari Database */}
+                {showDeleteGalleryModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-[#E0E5F2] space-y-5 text-left">
+                      <div className="flex items-center justify-between">
+                        <div className="w-12 h-12 rounded-2xl bg-[#EE5D50]/15 flex items-center justify-center text-[#EE5D50]">
+                          <IconTrash size={24} />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowDeleteGalleryModal(false)}
+                          className="w-8 h-8 rounded-full bg-[#F4F7FE] flex items-center justify-center text-[#A3AED0] hover:text-[#1B2559] transition-colors"
+                        >
+                          <IconClose size={16} />
+                        </button>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-bold text-[#1B2559]">
+                          Hapus Galeri dari Database?
+                        </h3>
+                        <p className="text-xs text-[#707EAE] mt-1.5 leading-relaxed">
+                          Tindakan ini permanen. Semua foto tamu pada event{" "}
+                          <strong className="text-[#1B2559]">
+                            {selectedEventObj?.title || galleryEventFilter}
+                          </strong>{" "}
+                          akan langsung dihapus dari <span className="font-semibold text-[#EE5D50]">Supabase Storage</span> dan <span className="font-semibold text-[#EE5D50]">Database</span>. Kapasitas penyimpanan Supabase Anda akan langsung dihemat.
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-[#FFF5F5] rounded-xl border border-[#FEE2E2] text-xs text-[#DC2626] flex items-start gap-2">
+                        <span className="font-bold">Tips:</span> Pastikan Anda sudah menekan tombol <strong>Download ZIP</strong> terlebih dahulu jika masih ingin menyimpan arsip kenangan foto sebelum dihapus.
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowDeleteGalleryModal(false)}
+                          disabled={isDeletingGallery}
+                          className="flex-1 h-11 rounded-xl border border-[#E0E5F2] bg-white text-xs font-bold text-[#1B2559] hover:bg-[#F4F7FE] transition-colors cursor-pointer"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleConfirmDeleteGallery}
+                          disabled={isDeletingGallery}
+                          className="flex-1 h-11 rounded-xl bg-[#EE5D50] hover:bg-[#DC2626] text-xs font-bold text-white transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#EE5D50]/20 disabled:opacity-50"
+                        >
+                          {isDeletingGallery ? (
+                            <>
+                              <IconRefresh size={14} className="animate-spin" />
+                              <span>Menghapus...</span>
+                            </>
+                          ) : (
+                            <span>Ya, Hapus Sekarang</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ═══════ TAB: PACKAGES ═══════ */}
           {activeTab === "packages" && (() => {

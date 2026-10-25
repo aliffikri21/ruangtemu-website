@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { EventItem, Package, Booking, GalleryEntry, BookingStatus, FrameItem, FrameConfig } from "@/types";
 import { getDbClient, isSupabaseConfigured } from "./supabase";
+import { deleteMediaFiles } from "./save-frame";
 
 function parseJsonField<T>(val: any, fallback: T): T {
   if (!val) return fallback;
@@ -1596,6 +1597,17 @@ export async function deleteEntry(id: string): Promise<boolean> {
   const client = getDbClient();
   if (client) {
     try {
+      // Find entry first to get storage file URLs
+      const { data: entry } = await client
+        .from("entries")
+        .select("photo_url, voice_note_url")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (entry) {
+        await deleteMediaFiles([entry.photo_url, entry.voice_note_url]);
+      }
+
       const { error } = await client.from("entries").delete().eq("id", id);
       if (error) {
         console.warn("[Supabase] deleteEntry error:", error.message);
@@ -1607,7 +1619,13 @@ export async function deleteEntry(id: string): Promise<boolean> {
     }
   }
 
-  mockEntries = mockEntries.filter((e) => e.id !== id);
+  const memIdx = mockEntries.findIndex((e) => e.id === id);
+  if (memIdx !== -1) {
+    const [removed] = mockEntries.splice(memIdx, 1);
+    if (removed) {
+      await deleteMediaFiles([removed.photo_url, removed.voice_note_url]);
+    }
+  }
   return true;
 }
 
@@ -1619,6 +1637,18 @@ export async function clearEventEntries(eventId: string, eventSlug?: string): Pr
         ? `event_id.eq.${eventId},event_slug.eq.${eventId},event_slug.eq.${eventSlug}`
         : `event_id.eq.${eventId},event_slug.eq.${eventId}`;
 
+      // 1. Fetch entries first so their files in Supabase Storage can be permanently purged
+      const { data: entriesToDelete } = await client
+        .from("entries")
+        .select("photo_url, voice_note_url")
+        .or(orFilter);
+
+      if (entriesToDelete && entriesToDelete.length > 0) {
+        const fileUrls = entriesToDelete.flatMap((e: any) => [e.photo_url, e.voice_note_url]);
+        await deleteMediaFiles(fileUrls);
+      }
+
+      // 2. Delete rows from entries database
       const { error } = await client.from("entries").delete().or(orFilter);
       if (error) {
         console.warn("[Supabase] clearEventEntries error:", error.message);
@@ -1628,9 +1658,19 @@ export async function clearEventEntries(eventId: string, eventSlug?: string): Pr
     }
   }
 
+  // Purge any local/mock files if present
+  const toDeleteMemory = mockEntries.filter(
+    (e) => e.event_id === eventId || e.event_slug === eventId || (eventSlug && e.event_slug === eventSlug)
+  );
+  if (toDeleteMemory.length > 0) {
+    const fileUrls = toDeleteMemory.flatMap((e) => [e.photo_url, e.voice_note_url]);
+    await deleteMediaFiles(fileUrls);
+  }
+
   mockEntries = mockEntries.filter(
     (e) => e.event_id !== eventId && e.event_slug !== eventId && (!eventSlug || e.event_slug !== eventSlug)
   );
   return true;
 }
+
 

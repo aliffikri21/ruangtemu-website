@@ -342,3 +342,72 @@ export async function saveLandingBgImage(
   }
 }
 
+/**
+ * Permanently deletes media files from Supabase Storage and local disk.
+ */
+export async function deleteMediaFiles(
+  urls: (string | null | undefined)[]
+): Promise<{ deletedSupabase: number; deletedLocal: number }> {
+  let deletedSupabase = 0;
+  let deletedLocal = 0;
+  const supabasePaths: string[] = [];
+
+  for (const rawUrl of urls) {
+    if (!rawUrl) continue;
+    const url = String(rawUrl).trim();
+
+    // 1. Supabase Storage URLs
+    if (url.includes(`${STORAGE_BUCKET}/`)) {
+      const parts = url.split(`${STORAGE_BUCKET}/`);
+      if (parts[1]) {
+        const cleanPath = parts[1].split("?")[0];
+        supabasePaths.push(cleanPath);
+      }
+    } else if (
+      url.startsWith("entries/") ||
+      url.startsWith("audio/") ||
+      url.startsWith("frames/") ||
+      url.startsWith("backgrounds/")
+    ) {
+      supabasePaths.push(url.split("?")[0]);
+    }
+
+    // 2. Local uploads
+    if (url.startsWith("/uploads/")) {
+      try {
+        const cleanRel = url.split("?")[0].replace(/^\//, "");
+        const localPath = path.join(process.cwd(), "public", cleanRel);
+        if (fs.existsSync(localPath)) {
+          fs.unlinkSync(localPath);
+          deletedLocal++;
+        }
+      } catch (fsErr) {
+        console.warn("[deleteMediaFiles] Local unlink error:", fsErr);
+      }
+    }
+  }
+
+  // Purge from Supabase Storage in batches
+  if (supabasePaths.length > 0 && isSupabaseConfigured) {
+    const client = getDbClient();
+    if (client) {
+      try {
+        const uniquePaths = Array.from(new Set(supabasePaths));
+        const { data, error } = await client.storage
+          .from(STORAGE_BUCKET)
+          .remove(uniquePaths);
+
+        if (error) {
+          console.warn("[Supabase Storage] remove error:", error.message);
+        } else if (data) {
+          deletedSupabase = data.length;
+        }
+      } catch (err: any) {
+        console.warn("[Supabase Storage] remove exception:", err?.message);
+      }
+    }
+  }
+
+  return { deletedSupabase, deletedLocal };
+}
+
