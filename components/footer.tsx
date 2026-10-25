@@ -68,7 +68,7 @@ export function Footer() {
                 @ruangtemuphotobooth
               </a>
               <span className="block text-stone-400">
-                halo@ruangtemu.id
+                halo@ruangtemu.online
               </span>
               <span className="block text-stone-400">
                 Kota Palopo, Sulawesi Selatan

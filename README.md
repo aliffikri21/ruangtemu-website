@@ -273,8 +273,8 @@ Berisi data awal untuk pengujian langsung, termasuk paket harga resmi RUANGTEMU 
 File `.env.local` membutuhkan parameter berikut:
 
 ```env
-# URL Aplikasi
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+# URL Aplikasi (Gunakan https://ruangtemu.online pada Vercel Production)
+NEXT_PUBLIC_APP_URL=https://ruangtemu.online
 
 # Konfigurasi Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co

@@ -36,7 +36,7 @@ export default function MaintenanceView() {
   };
 
   const handleCopyEmail = () => {
-    const email = "halo@ruangtemu.id";
+    const email = "halo@ruangtemu.online";
     if (navigator.clipboard) {
       navigator.clipboard
         .writeText(email)
@@ -403,11 +403,11 @@ export default function MaintenanceView() {
                 type="button"
                 id="mail"
                 onClick={handleCopyEmail}
-                data-copy="halo@ruangtemu.id"
-                aria-label="Salin alamat email halo@ruangtemu.id"
+                data-copy="halo@ruangtemu.online"
+                aria-label="Salin alamat email halo@ruangtemu.online"
               >
                 <small>Email</small>
-                <b>halo@ruangtemu.id</b>
+                <b>halo@ruangtemu.online</b>
               </button>
             </div>
           </footer>

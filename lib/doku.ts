@@ -263,7 +263,7 @@ export async function createDokuCheckoutSession(params: DokuPaymentSessionReques
       order: {
         invoice_number: params.orderId,
         amount: params.amount,
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/admin`,
+        callback_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://ruangtemu.online"}/admin`,
         auto_redirect: true,
       },
       payment: {
@@ -272,7 +272,7 @@ export async function createDokuCheckoutSession(params: DokuPaymentSessionReques
       customer: {
         id: `CUST-${Date.now().toString().slice(-6)}`,
         name: params.customerName || "Admin RUANGTEMU",
-        email: params.customerEmail || "admin@ruangtemu.id",
+        email: params.customerEmail || "admin@ruangtemu.online",
         phone: params.customerPhone || "6282244866088",
       },
       additional_info: {
@@ -370,7 +370,7 @@ export async function createDokuVirtualAccount(params: DokuVaRequest) {
       },
       customer: {
         name: params.customerName || "Admin RUANGTEMU",
-        email: params.customerEmail || "admin@ruangtemu.id",
+        email: params.customerEmail || "admin@ruangtemu.online",
       },
     };
 

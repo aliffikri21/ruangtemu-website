@@ -31,7 +31,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "RUANGTEMU Digital: Platform Photobooth Modern Palopo",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://ruangtemu.online"),
+  title: "RUANGTEMU",
   description:
     "Platform photobooth modern di Kota Palopo dan Tana Luwu. Layanan Photobooth Fisik cetak instan, Virtual Web Photobooth dari HP tamu, dan audio guestbook.",
   keywords: [
@@ -41,13 +42,28 @@ export const metadata: Metadata = {
     "wedding photobooth palopo",
     "ruangtemu digital",
     "photobooth luwu",
+    "ruangtemu.online",
   ],
   authors: [{ name: "RUANGTEMU PHOTOBOOTH Palopo" }],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "RUANGTEMU Digital: Platform Photobooth Modern",
+    title: "RUANGTEMU",
     description: "Abadikan setiap momen bermakna bersama RUANGTEMU Photobooth Palopo.",
+    url: "https://ruangtemu.online",
+    siteName: "RUANGTEMU",
     locale: "id_ID",
     type: "website",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png", sizes: "96x96" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 

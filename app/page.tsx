@@ -1487,9 +1487,9 @@ export default function HomePage() {
                 <div className="ct">
                   <div>
                     <small>Email</small>
-                    <span>halo@ruangtemu.id</span>
+                    <span>halo@ruangtemu.online</span>
                   </div>
-                  <button className="cp" data-copy="halo@ruangtemu.id">
+                  <button className="cp" data-copy="halo@ruangtemu.online">
                     Salin
                   </button>
                 </div>

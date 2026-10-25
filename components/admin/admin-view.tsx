@@ -1458,11 +1458,11 @@ export function AdminView({
     const cleanPassword = password.trim();
 
     const isValidAdmin =
-      (cleanUsername === "admin" || cleanUsername === "admin@ruangtemu.id") &&
+      (cleanUsername === "admin" || cleanUsername === "admin@ruangtemu.id" || cleanUsername === "admin@ruangtemu.online") &&
       (cleanPassword === "ruangtemu21" || cleanPassword === "admin");
 
     const isValidDev =
-      (cleanUsername === "dev" || cleanUsername === "dev@ruangtemu.id") &&
+      (cleanUsername === "dev" || cleanUsername === "dev@ruangtemu.id" || cleanUsername === "dev@ruangtemu.online") &&
       (cleanPassword === "admin" || cleanPassword === "dev" || cleanPassword === "ruangtemu21");
 
     if (isValidAdmin || isValidDev) {

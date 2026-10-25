@@ -105,7 +105,7 @@ export function DokuPaymentModal({
         amount,
         bank: selectedBank,
         customerName: hostName || "Admin RUANGTEMU",
-        customerEmail: "admin@ruangtemu.id",
+        customerEmail: "admin@ruangtemu.online",
       }),
     })
       .then((res) => res.json())
