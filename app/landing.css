@@ -311,6 +311,11 @@ h2 em,h1 em{font-style:normal;color:var(--mag)}
 
 /* ---------- cta + footer ---------- */
 .cta-sec{padding-bottom:clamp(48px,6vw,72px)}
+.sec.dark.cta-sec::before,
+.cta-sec::before{
+  border-bottom-left-radius:0!important;
+  border-bottom-right-radius:0!important;
+}
 .cta-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:clamp(30px,5vw,80px);align-items:end}
 .cta-sec h2{font-size:clamp(38px,6vw,84px);letter-spacing:-.045em}
 .contacts{display:grid;gap:10px}
