@@ -695,10 +695,10 @@ export default function HomePage() {
           <div className="wrap">
             <div className="hero-top">
               <p className="eyebrow" data-rv="">
-                Photobooth modern · Palopo &amp; Luwu Raya
+                RUANGTEMU · Photobooth Modern Palopo &amp; Luwu Raya
               </p>
               <h1 data-rv="">
-                Abadikan momen <em>paling berkesan</em>
+                RUANGTEMU — Abadikan momen <em>paling berkesan</em>
               </h1>
               <p className="lead" data-rv="">
                 Cetak instan dan Virtual Web Photobooth yang dibuka langsung dari browser tamu. Tanpa instal aplikasi, tanpa antre lama.

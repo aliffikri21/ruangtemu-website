@@ -55,6 +55,34 @@ export const metadata: Metadata = {
     siteName: "RUANGTEMU",
     locale: "id_ID",
     type: "website",
+    images: [
+      {
+        url: "/logo-ruangtemu.jpg",
+        width: 1080,
+        height: 1080,
+        alt: "RUANGTEMU Photobooth",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RUANGTEMU",
+    description: "Platform Photobooth Modern di Kota Palopo & Luwu Raya: Photobooth Fisik Cetak Instan dan Virtual Web Photobooth.",
+    images: ["/logo-ruangtemu.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
   },
   icons: {
     icon: [
@@ -65,6 +93,47 @@ export const metadata: Metadata = {
       { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://ruangtemu.online/#website",
+      "url": "https://ruangtemu.online",
+      "name": "RUANGTEMU",
+      "alternateName": ["RUANGTEMU Photobooth", "ruangtemu.online", "Ruang Temu", "Ruang Temu Palopo"],
+      "description": "Platform Photobooth Modern di Kota Palopo & Luwu Raya: Photobooth Fisik Cetak Instan dan Virtual Web Photobooth.",
+      "inLanguage": "id-ID"
+    },
+    {
+      "@type": "LocalBusiness",
+      "@id": "https://ruangtemu.online/#organization",
+      "name": "RUANGTEMU",
+      "alternateName": ["RUANGTEMU Photobooth Palopo", "RUANGTEMU Digital", "Ruang Temu"],
+      "url": "https://ruangtemu.online",
+      "logo": "https://ruangtemu.online/logo-ruangtemu.jpg",
+      "image": "https://ruangtemu.online/logo-ruangtemu.jpg",
+      "description": "Layanan sewa photobooth modern di Kota Palopo dan Luwu Raya. Cetak instan untuk pernikahan, wisuda, gathering, dan virtual web photobooth dari HP tamu.",
+      "telephone": "+6282244866088",
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Kota Palopo",
+        "addressRegion": "Sulawesi Selatan",
+        "addressCountry": "ID"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "-2.9928",
+        "longitude": "120.1963"
+      },
+      "sameAs": [
+        "https://instagram.com/ruangtemuphotobooth"
+      ]
+    }
+  ]
 };
 
 export default function RootLayout({
@@ -80,6 +149,10 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Allura&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Poppins:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body

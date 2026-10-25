@@ -5287,8 +5287,8 @@ export function AdminView({
                               type="button"
                               onClick={() => setEditUiEditorTab("landing")}
                               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${editUiEditorTab === "landing"
-                                  ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
-                                  : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
+                                ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
+                                : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
                                 }`}
                             >
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
@@ -5298,8 +5298,8 @@ export function AdminView({
                               type="button"
                               onClick={() => setEditUiEditorTab("guest_name")}
                               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${editUiEditorTab === "guest_name"
-                                  ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
-                                  : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
+                                ? "bg-[#4318FF] text-white shadow-md shadow-[#4318FF]/20"
+                                : "text-[#8F9BBA] hover:text-[#1B2559] hover:bg-white/70"
                                 }`}
                             >
                               <IconUser size={15} />
