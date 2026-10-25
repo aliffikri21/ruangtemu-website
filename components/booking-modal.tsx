@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useId } from "react";
+import { useEffect, useState, useId, useMemo } from "react";
 import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
-import { EventType } from "@/types";
+import { EventType, Package } from "@/types";
 
 export type BookingServiceCategory = "photobooth" | "virtual_photobooth";
 
@@ -183,6 +183,7 @@ interface BookingModalProps {
   initialPackageId?: string;
   initialCategory?: BookingServiceCategory;
   initialPrintSize?: "2R" | "4R";
+  packages?: Package[];
 }
 
 export function BookingModal({
@@ -191,8 +192,62 @@ export function BookingModal({
   initialPackageId,
   initialCategory,
   initialPrintSize,
+  packages,
 }: BookingModalProps) {
   const modalTitleId = useId();
+
+  const [dynamicPackages, setDynamicPackages] = useState<Package[]>(packages || []);
+
+  useEffect(() => {
+    if (packages && packages.length > 0) {
+      setDynamicPackages(packages);
+    } else {
+      fetch("/api/packages")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && Array.isArray(data.packages) && data.packages.length > 0) {
+            setDynamicPackages(data.packages);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [packages, isOpen]);
+
+  const photoboothPackages: PackageOption[] = useMemo(() => {
+    const list = dynamicPackages.filter((p) => p.category === "physical");
+    if (list.length === 0) return PHOTOBOOTH_PACKAGES;
+    return list.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      badge: p.popular ? "Rekomendasi Acara" : `${p.duration_hours} Jam Layanan`,
+      price: p.price,
+      price2R: p.price_2r ?? p.price,
+      price4R: p.price_4r ?? p.price + 500000,
+      duration: p.duration_hours,
+      durationLabel: `${p.duration_hours} Jam Layanan`,
+      category: "photobooth",
+      description: p.tagline || (p.features && p.features.length > 0 ? p.features.slice(0, 3).join(", ") : ""),
+      features: p.features || [],
+    }));
+  }, [dynamicPackages]);
+
+  const virtualPackages: PackageOption[] = useMemo(() => {
+    const list = dynamicPackages.filter((p) => p.category === "virtual");
+    if (list.length === 0) return VIRTUAL_PHOTOBOOTH_PACKAGES;
+    return list.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      badge: p.popular ? "Rekomendasi" : `Akses ${Math.round(p.duration_hours / 24)} Hari`,
+      price: p.price,
+      duration: p.duration_hours,
+      durationLabel: `Akses ${Math.round(p.duration_hours / 24)} Hari`,
+      category: "virtual_photobooth",
+      description: p.tagline || (p.features && p.features.length > 0 ? p.features.slice(0, 3).join(", ") : ""),
+      features: p.features || [],
+    }));
+  }, [dynamicPackages]);
 
   const [physicalPrintSize, setPhysicalPrintSize] = useState<"2R" | "4R">(() => initialPrintSize || "2R");
 
@@ -346,8 +401,8 @@ export function BookingModal({
   if (!isOpen) return null;
 
   const activeCategoryPackages = serviceCategory === "photobooth"
-    ? PHOTOBOOTH_PACKAGES
-    : VIRTUAL_PHOTOBOOTH_PACKAGES;
+    ? photoboothPackages
+    : virtualPackages;
 
   const selectedPackage =
     activeCategoryPackages.find(

@@ -562,6 +562,101 @@ export function AdminView({
     new Set((initialBookings || []).map((b) => b.id))
   );
   const isInitialMountRef = useRef<boolean>(true);
+  const [packagesList, setPackagesList] = useState<Package[]>(initialPackages || []);
+  const [editingPackage, setEditingPackage] = useState<Package | null>(null);
+  const [editPkgName, setEditPkgName] = useState("");
+  const [editPkgTagline, setEditPkgTagline] = useState("");
+  const [editPkgPrice, setEditPkgPrice] = useState<number>(0);
+  const [editPkgPrice4R, setEditPkgPrice4R] = useState<number>(0);
+  const [editPkgDurationHours, setEditPkgDurationHours] = useState<number>(3);
+  const [editPkgFeatures, setEditPkgFeatures] = useState<string[]>([]);
+  const [newFeatureInput, setNewFeatureInput] = useState("");
+  const [editPkgPopular, setEditPkgPopular] = useState(false);
+  const [editPkgPrintsIncluded, setEditPkgPrintsIncluded] = useState("");
+  const [editPkgBackdrop, setEditPkgBackdrop] = useState("");
+  const [isSavingPackage, setIsSavingPackage] = useState(false);
+  const [packageSaveSuccess, setPackageSaveSuccess] = useState(false);
+
+  const handleOpenEditPackage = (pkg: Package) => {
+    setEditingPackage(pkg);
+    setEditPkgName(pkg.name);
+    setEditPkgTagline(pkg.tagline || "");
+    const basePrice = pkg.price_2r || pkg.price;
+    setEditPkgPrice(basePrice);
+    setEditPkgPrice4R(pkg.price_4r || (pkg.category === "physical" ? basePrice + 500000 : 0));
+    setEditPkgDurationHours(pkg.duration_hours);
+    setEditPkgFeatures([...(pkg.features || [])]);
+    setNewFeatureInput("");
+    setEditPkgPopular(Boolean(pkg.popular));
+    setEditPkgPrintsIncluded(pkg.prints_included || "");
+    setEditPkgBackdrop(pkg.backdrop || "");
+    setPackageSaveSuccess(false);
+  };
+
+  const handleAddFeature = () => {
+    if (!newFeatureInput.trim()) return;
+    setEditPkgFeatures((prev) => [...prev, newFeatureInput.trim()]);
+    setNewFeatureInput("");
+  };
+
+  const handleRemoveFeature = (index: number) => {
+    setEditPkgFeatures((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateFeature = (index: number, val: string) => {
+    setEditPkgFeatures((prev) => {
+      const copy = [...prev];
+      copy[index] = val;
+      return copy;
+    });
+  };
+
+  const handleSavePackage = async () => {
+    if (!editingPackage) return;
+    setIsSavingPackage(true);
+    setPackageSaveSuccess(false);
+
+    try {
+      const filteredFeatures = editPkgFeatures.map((f) => f.trim()).filter(Boolean);
+      const isPhysical = editingPackage.category === "physical";
+      const res = await fetch("/api/packages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingPackage.id,
+          name: editPkgName.trim() || editingPackage.name,
+          tagline: editPkgTagline.trim(),
+          price: Number(editPkgPrice),
+          price_2r: isPhysical ? Number(editPkgPrice) : undefined,
+          price_4r: isPhysical ? Number(editPkgPrice4R) : undefined,
+          duration_hours: Number(editPkgDurationHours),
+          features: filteredFeatures,
+          popular: editPkgPopular,
+          prints_included: editPkgPrintsIncluded.trim(),
+          backdrop: editPkgBackdrop.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.package) {
+        setPackagesList((prev) =>
+          prev.map((p) => (p.id === editingPackage.id ? data.package : p))
+        );
+        setPackageSaveSuccess(true);
+        setTimeout(() => {
+          setEditingPackage(null);
+          setPackageSaveSuccess(false);
+        }, 1200);
+      } else {
+        alert(data.error || "Gagal memperbarui paket.");
+      }
+    } catch (err: any) {
+      alert("Koneksi gagal saat memperbarui paket. Coba lagi.");
+    } finally {
+      setIsSavingPackage(false);
+    }
+  };
+
   const [entries, setEntries] = useState<GalleryEntry[]>(initialEntries);
   const [galleryEventFilter, setGalleryEventFilter] = useState<string>("all");
   const [isRefreshingGallery, setIsRefreshingGallery] = useState(false);
@@ -2153,7 +2248,7 @@ export function AdminView({
     const tier = (evt.package_tier || evt.package_name || "").toLowerCase().trim();
     const isPhysical = evt.category === "physical" || evt.category === "photobooth";
 
-    const matchedPkg = initialPackages.find((p) => {
+    const matchedPkg = packagesList.find((p) => {
       const pName = p.name.toLowerCase();
       const pSlug = p.slug.toLowerCase();
       if (tier && (pName.includes(tier) || pSlug.includes(tier))) return true;
@@ -3337,7 +3432,7 @@ export function AdminView({
                     </div>
 
                     <div className="space-y-3">
-                      {initialPackages.slice(0, 3).map((pkg) => (
+                      {packagesList.slice(0, 3).map((pkg) => (
                         <div
                           key={pkg.id}
                           className="p-3.5 bg-[#F4F7FE] rounded-xl flex items-center justify-between gap-3"
@@ -6572,9 +6667,9 @@ export function AdminView({
 
           {/* ═══════ TAB: PACKAGES ═══════ */}
           {activeTab === "packages" && (() => {
-            const virtualCount = initialPackages.filter((p) => p.category === "virtual").length;
-            const physicalCount = initialPackages.filter((p) => p.category === "physical").length;
-            const filteredPackages = initialPackages.filter((pkg) => {
+            const virtualCount = packagesList.filter((p) => p.category === "virtual").length;
+            const physicalCount = packagesList.filter((p) => p.category === "physical").length;
+            const filteredPackages = packagesList.filter((pkg) => {
               if (packagesCategoryFilter === "all") return true;
               if (packagesCategoryFilter === "virtual_photobooth") return pkg.category === "virtual";
               if (packagesCategoryFilter === "photobooth") return pkg.category === "physical";
@@ -6587,7 +6682,7 @@ export function AdminView({
                   <div>
                     <h2 className="text-lg font-bold text-[#1B2559]">Katalog Paket Layanan RUANGTEMU</h2>
                     <p className="text-xs text-[#A3AED0] mt-0.5">
-                      Price list resmi RUANGTEMU Photobooth &amp; Virtual Photobooth Palopo (Aktif untuk aktivasi event)
+                      Price list resmi RUANGTEMU Photobooth &amp; Virtual Photobooth Palopo (Tersinkronisasi ke Landing Page &amp; Form Reservasi)
                     </p>
                   </div>
                 </div>
@@ -6604,7 +6699,7 @@ export function AdminView({
                   >
                     <span>Semua Paket</span>
                     <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${packagesCategoryFilter === "all" ? "bg-white/20 text-white" : "bg-[#F4F7FE] text-[#707EAE]"}`}>
-                      {initialPackages.length}
+                      {packagesList.length}
                     </span>
                   </button>
                   <button
@@ -6675,12 +6770,35 @@ export function AdminView({
                             </div>
                           </div>
 
-                          <div className="py-3 px-4 rounded-xl bg-[#F4F7FE] flex items-baseline justify-between">
-                            <span className="text-xs text-[#8F9BBA] font-medium">Investasi Paket:</span>
-                            <span className="text-xl font-black text-[#1B2559] font-mono">
-                              {formatRupiah(pkg.price)}
-                            </span>
-                          </div>
+                          {isPhysical ? (
+                            <div className="py-3 px-4 rounded-xl bg-[#F4F7FE] space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-[#8F9BBA] font-medium flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                  Cetak 2R (Strip):
+                                </span>
+                                <span className="text-base font-black text-[#1B2559] font-mono">
+                                  {formatRupiah(pkg.price_2r || pkg.price)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between pt-1.5 border-t border-[#E0E5F2]">
+                                <span className="text-xs text-[#8F9BBA] font-medium flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                  Cetak 4R (Postcard):
+                                </span>
+                                <span className="text-base font-black text-[#4318FF] font-mono">
+                                  {formatRupiah(pkg.price_4r || (pkg.price + 500000))}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="py-3 px-4 rounded-xl bg-[#F4F7FE] flex items-baseline justify-between">
+                              <span className="text-xs text-[#8F9BBA] font-medium">Investasi Paket:</span>
+                              <span className="text-xl font-black text-[#1B2559] font-mono">
+                                {formatRupiah(pkg.price)}
+                              </span>
+                            </div>
+                          )}
 
                           <div className="space-y-1.5 text-xs text-[#8F9BBA]">
                             <div className="flex items-center gap-2">
@@ -6713,7 +6831,15 @@ export function AdminView({
                           </ul>
                         </div>
 
-                        <div className="pt-3 border-t border-[#E0E5F2]">
+                        <div className="pt-3 border-t border-[#E0E5F2] flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditPackage(pkg)}
+                            className="w-full min-h-[40px] rounded-xl text-xs font-bold border border-[#4318FF] text-[#4318FF] hover:bg-[#4318FF]/5 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <IconEdit size={14} />
+                            <span>Ubah Harga &amp; Keterangan</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => {
@@ -6727,7 +6853,7 @@ export function AdminView({
                                 setSelectedPackage(matchingKey);
                               }
                             }}
-                            className={`w-full min-h-[44px] rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center ${pkg.popular
+                            className={`w-full min-h-[40px] rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center ${pkg.popular
                               ? "bg-[#4318FF] hover:bg-[#3311DB] text-white shadow-sm"
                               : "bg-[#F4F7FE] hover:bg-[#EAEFFA] text-[#1B2559]"
                               }`}
@@ -7029,6 +7155,302 @@ export function AdminView({
             </div>
           </div>
         </aside>
+      )}
+
+      {/* ──────── MODAL EDIT PAKET LAYANAN ──────── */}
+      {editingPackage && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border border-[#E0E5F2] my-auto space-y-5 animate-in fade-in zoom-in-95 duration-200 text-left">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#E0E5F2]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center shrink-0">
+                  <IconEdit size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-[#1B2559]">
+                    Edit Paket: {editingPackage.name}
+                  </h3>
+                  <p className="text-xs text-[#A3AED0]">
+                    Perubahan harga &amp; keterangan akan otomatis terupdate di landing page &amp; formulir reservasi
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPackage(null)}
+                className="w-8 h-8 rounded-full bg-[#F4F7FE] flex items-center justify-center text-[#A3AED0] hover:text-[#1B2559] transition-colors cursor-pointer"
+              >
+                <IconClose size={16} />
+              </button>
+            </div>
+
+            {packageSaveSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-2">
+                <IconCheck size={16} />
+                <span>Berhasil! Paket layanan telah diperbarui dan disinkronkan ke Landing Page &amp; Reservasi.</span>
+              </div>
+            )}
+
+            {/* Form Fields */}
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+              {/* Nama Paket */}
+              <div>
+                <label className="block text-xs font-bold text-[#1B2559] mb-1">
+                  Nama Paket
+                </label>
+                <input
+                  type="text"
+                  value={editPkgName}
+                  onChange={(e) => setEditPkgName(e.target.value)}
+                  className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl px-3.5 py-2.5 text-xs font-medium text-[#1B2559] focus:outline-none focus:border-[#4318FF]"
+                  placeholder="Contoh: Paket 3 Jam Photobooth Fisik"
+                />
+              </div>
+
+              {/* Harga Paket */}
+              {editingPackage.category === "physical" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1B2559] mb-1 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      Harga Cetak 2R Strip (Rp)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#A3AED0]">
+                        Rp
+                      </span>
+                      <input
+                        type="number"
+                        value={editPkgPrice}
+                        onChange={(e) => setEditPkgPrice(Number(e.target.value))}
+                        className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-bold text-[#1B2559] font-mono focus:outline-none focus:border-[#4318FF]"
+                        placeholder="Contoh: 2500000"
+                      />
+                    </div>
+                    <span className="text-[11px] text-[#A3AED0] mt-1 block">
+                      Format 2R: <strong>{formatRupiah(editPkgPrice)}</strong>
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#1B2559] mb-1 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      Harga Cetak 4R Postcard (Rp)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#A3AED0]">
+                        Rp
+                      </span>
+                      <input
+                        type="number"
+                        value={editPkgPrice4R}
+                        onChange={(e) => setEditPkgPrice4R(Number(e.target.value))}
+                        className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-bold text-[#1B2559] font-mono focus:outline-none focus:border-[#4318FF]"
+                        placeholder="Contoh: 3000000"
+                      />
+                    </div>
+                    <span className="text-[11px] text-[#A3AED0] mt-1 block">
+                      Format 4R: <strong>{formatRupiah(editPkgPrice4R)}</strong>
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-[#1B2559] mb-1">
+                    Harga Investasi Paket (Rp)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#A3AED0]">
+                      Rp
+                    </span>
+                    <input
+                      type="number"
+                      value={editPkgPrice}
+                      onChange={(e) => setEditPkgPrice(Number(e.target.value))}
+                      className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-bold text-[#1B2559] font-mono focus:outline-none focus:border-[#4318FF]"
+                      placeholder="Contoh: 350000"
+                    />
+                  </div>
+                  <span className="text-[11px] text-[#A3AED0] mt-1 block">
+                    Format tampil: <strong>{formatRupiah(editPkgPrice)}</strong> (Tarif per event)
+                  </span>
+                </div>
+              )}
+
+              {/* Tagline / Keterangan Singkat */}
+              <div>
+                <label className="block text-xs font-bold text-[#1B2559] mb-1">
+                  Keterangan Singkat / Subtitle
+                </label>
+                <textarea
+                  rows={2}
+                  value={editPkgTagline}
+                  onChange={(e) => setEditPkgTagline(e.target.value)}
+                  className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl p-3 text-xs font-medium text-[#1B2559] focus:outline-none focus:border-[#4318FF] resize-none"
+                  placeholder="Tuliskan keterangan singkat paket ini..."
+                />
+              </div>
+
+              {/* Durasi Layanan & Rekomendasi */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1B2559] mb-1">
+                    Durasi ({editingPackage.category === "physical" ? "Jam" : "Jam Akses"})
+                  </label>
+                  <input
+                    type="number"
+                    value={editPkgDurationHours}
+                    onChange={(e) => setEditPkgDurationHours(Number(e.target.value))}
+                    className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl px-3.5 py-2.5 text-xs font-medium text-[#1B2559] focus:outline-none focus:border-[#4318FF]"
+                  />
+                  <span className="text-[10px] text-[#A3AED0] mt-1 block">
+                    {editingPackage.category === "physical"
+                      ? `${editPkgDurationHours} Jam Layanan di lokasi`
+                      : `Setara ${Math.round(editPkgDurationHours / 24)} Hari Akses Web Photobooth`}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1B2559] mb-1">
+                    Label Rekomendasi
+                  </label>
+                  <label className="flex items-center gap-2.5 mt-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={editPkgPopular}
+                      onChange={(e) => setEditPkgPopular(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#4318FF] focus:ring-[#4318FF]"
+                    />
+                    <span className="text-xs font-semibold text-[#1B2559]">
+                      Tandai sebagai Rekomendasi (Popular)
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Output Cetak & Backdrop / Template */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1B2559] mb-1">
+                    Keterangan Output Cetak
+                  </label>
+                  <input
+                    type="text"
+                    value={editPkgPrintsIncluded}
+                    onChange={(e) => setEditPkgPrintsIncluded(e.target.value)}
+                    className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl px-3.5 py-2 text-xs font-medium text-[#1B2559] focus:outline-none focus:border-[#4318FF]"
+                    placeholder="Contoh: Unlimited Print 2R Strip / 4R"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1B2559] mb-1">
+                    Keterangan Template / Backdrop
+                  </label>
+                  <input
+                    type="text"
+                    value={editPkgBackdrop}
+                    onChange={(e) => setEditPkgBackdrop(e.target.value)}
+                    className="w-full bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl px-3.5 py-2 text-xs font-medium text-[#1B2559] focus:outline-none focus:border-[#4318FF]"
+                    placeholder="Contoh: Pilihan 5+ Premium Backdrop"
+                  />
+                </div>
+              </div>
+
+              {/* Poin-Poin Fitur / Fasilitas */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-[#1B2559]">
+                    Poin Fitur &amp; Keterangan Fasilitas
+                  </label>
+                  <span className="text-[10px] text-[#A3AED0]">
+                    {editPkgFeatures.length} poin aktif
+                  </span>
+                </div>
+
+                <div className="space-y-2 mb-2">
+                  {editPkgFeatures.map((feat, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-[#E9FAF4] text-[#01B574] flex items-center justify-center shrink-0">
+                        <IconCheck size={12} />
+                      </div>
+                      <input
+                        type="text"
+                        value={feat}
+                        onChange={(e) => handleUpdateFeature(idx, e.target.value)}
+                        className="flex-1 bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl px-3 py-1.5 text-xs font-medium text-[#1B2559] focus:outline-none focus:border-[#4318FF]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFeature(idx)}
+                        className="w-7 h-7 rounded-lg text-rose-500 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Hapus poin"
+                      >
+                        <IconTrash size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tambah Poin Baru */}
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={newFeatureInput}
+                    onChange={(e) => setNewFeatureInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddFeature();
+                      }
+                    }}
+                    placeholder="Tulis poin fitur baru lalu tekan Tambah..."
+                    className="flex-1 bg-white border border-dashed border-[#E0E5F2] rounded-xl px-3 py-2 text-xs text-[#1B2559] focus:outline-none focus:border-[#4318FF]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddFeature}
+                    className="px-3.5 py-2 rounded-xl bg-[#F4F7FE] hover:bg-[#EAEFFA] text-[#1B2559] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                  >
+                    <IconPlus size={14} />
+                    <span>Tambah</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E0E5F2]">
+              <button
+                type="button"
+                onClick={() => setEditingPackage(null)}
+                disabled={isSavingPackage}
+                className="px-5 py-2.5 rounded-xl border border-[#E0E5F2] text-xs font-bold text-[#707EAE] hover:bg-[#F4F7FE] transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePackage}
+                disabled={isSavingPackage}
+                className="px-6 py-2.5 rounded-xl bg-[#4318FF] hover:bg-[#3311DB] text-white text-xs font-bold transition-all shadow-md shadow-[#4318FF]/20 cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              >
+                {isSavingPackage ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconCheck size={14} />
+                    <span>Simpan Perubahan</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Inline style for keyframes animation */}

@@ -254,6 +254,43 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phoneContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Sync document body/html background to eliminate white space on mobile bounce and safe areas
+  useEffect(() => {
+    const targetBg = currentStep === "frame_select" ? eventPrimaryColor : "#000000";
+    const origBodyBg = document.body.style.backgroundColor;
+    const origHtmlBg = document.documentElement.style.backgroundColor;
+
+    document.body.style.backgroundColor = targetBg;
+    document.documentElement.style.backgroundColor = targetBg;
+
+    return () => {
+      document.body.style.backgroundColor = origBodyBg;
+      document.documentElement.style.backgroundColor = origHtmlBg;
+    };
+  }, [currentStep, eventPrimaryColor]);
+
+  // Always reset scroll to topmost position on step transition
+  useEffect(() => {
+    const resetScrollTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      if (phoneContainerRef.current) {
+        phoneContainerRef.current.scrollTop = 0;
+        phoneContainerRef.current.scrollTo(0, 0);
+      }
+    };
+
+    resetScrollTop();
+    const t1 = setTimeout(resetScrollTop, 50);
+    const t2 = setTimeout(resetScrollTop, 150);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [currentStep]);
 
   const handleProceedToNameInput = useCallback(() => {
     if (splashTimerRef.current) {
@@ -1023,7 +1060,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   // ─── Render ───────────────────────────────────────────────────
 
   return (
-    <div className="min-h-[100dvh] w-full bg-black flex flex-col md:flex-row md:h-screen md:max-h-screen md:overflow-hidden overflow-x-hidden">
+    <div
+      className="min-h-[100dvh] w-full bg-black flex flex-col md:flex-row md:h-screen md:max-h-screen md:overflow-hidden overflow-x-hidden"
+      style={{ backgroundColor: currentStep === "frame_select" ? eventPrimaryColor : "#000000" }}
+    >
       {/* ─── DESKTOP / TABLET POSTER COLUMN (HIDDEN ON SMARTPHONES) ─── */}
       <div className="hidden md:flex flex-1 flex-col justify-between items-center relative overflow-hidden bg-black select-none border-r border-white/10">
         {/* Ambient subtle background from event cover photo */}
@@ -1085,11 +1125,25 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       </div>
 
       {/* ─── DOCKED PHONE CONTAINER (FULL WIDTH ON MOBILE, PHONE-SIZED ON DESKTOP) ─── */}
-      <div className="w-full md:w-[420px] lg:w-[450px] xl:w-[480px] shrink-0 min-h-[100dvh] md:h-[100dvh] md:max-h-[100dvh] relative overflow-y-auto overflow-x-hidden flex flex-col shadow-[-25px_0_60px_rgba(0,0,0,0.85)]">
-        <div className={`min-h-[100dvh] flex flex-col relative flex-1 ${isNurulIqraWedding && currentStep !== "camera"
-          ? "bg-white text-stone-900 selection:bg-red-100 selection:text-red-900"
-          : "bg-[#111113] text-stone-100 selection:bg-stone-700 selection:text-white"
-          }`}>
+      <div
+        ref={phoneContainerRef}
+        className="w-full md:w-[420px] lg:w-[450px] xl:w-[480px] shrink-0 min-h-[100dvh] md:h-[100dvh] md:max-h-[100dvh] relative overflow-y-auto overflow-x-hidden flex flex-col bg-black shadow-[-25px_0_60px_rgba(0,0,0,0.85)]"
+        style={{
+          backgroundColor: currentStep === "frame_select" ? eventPrimaryColor : "#000000",
+        }}
+      >
+        <div
+          className={`min-h-[100dvh] flex flex-col relative flex-1 ${
+            currentStep === "frame_select"
+              ? ""
+              : isNurulIqraWedding && currentStep !== "camera"
+                ? "bg-white text-stone-900 selection:bg-red-100 selection:text-red-900"
+                : "bg-[#111113] text-stone-100 selection:bg-stone-700 selection:text-white"
+          }`}
+          style={{
+            backgroundColor: currentStep === "frame_select" ? eventPrimaryColor : undefined,
+          }}
+        >
           {/* Bridal Couple Photo Background Overlay (~10% opacity) for screens after poster */}
           {isNurulIqraWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && (
             <div

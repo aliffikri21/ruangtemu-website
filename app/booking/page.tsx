@@ -130,20 +130,43 @@ function BookingForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [availablePackages, setAvailablePackages] = useState<PackageOption[]>(packageOptions);
+
+  useEffect(() => {
+    fetch("/api/packages")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.packages) && data.packages.length > 0) {
+          const mapped: PackageOption[] = data.packages.map((p: any) => ({
+            id: p.id,
+            slug: p.slug,
+            name: p.name,
+            category: p.category === "physical" ? "photobooth" : "virtual_photobooth",
+            price: p.price,
+            price2R: p.price_2r ?? p.price,
+            price4R: p.price_4r ?? (p.category === "physical" ? p.price + 500000 : p.price),
+            duration: p.duration_hours * 60,
+            description: p.tagline || (p.features && p.features.length > 0 ? p.features.slice(0, 3).join(", ") : ""),
+          }));
+          setAvailablePackages(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (packageParam) {
-      const found = packageOptions.find((p) => p.slug === packageParam || p.id === packageParam);
+      const found = availablePackages.find((p) => p.slug === packageParam || p.id === packageParam);
       if (found) {
         setServiceCategory(found.category);
         setFormData((prev) => ({ ...prev, package_id: found.id }));
       }
     }
-  }, [packageParam]);
+  }, [packageParam, availablePackages]);
 
-  const filteredPackages = packageOptions.filter((p) => p.category === serviceCategory);
+  const filteredPackages = availablePackages.filter((p) => p.category === serviceCategory);
   const selectedPackage =
-    packageOptions.find((p) => p.id === formData.package_id) || filteredPackages[0] || packageOptions[0];
+    availablePackages.find((p) => p.id === formData.package_id) || filteredPackages[0] || availablePackages[0];
 
   const getPackagePrice = (pkg: PackageOption) => {
     if (pkg.category === "photobooth") {
@@ -156,7 +179,7 @@ function BookingForm() {
 
   const handleCategoryChange = (cat: "photobooth" | "virtual_photobooth") => {
     setServiceCategory(cat);
-    const firstOfCat = packageOptions.find((p) => p.category === cat);
+    const firstOfCat = availablePackages.find((p) => p.category === cat);
     if (firstOfCat) {
       setFormData((prev) => ({ ...prev, package_id: firstOfCat.id }));
     }

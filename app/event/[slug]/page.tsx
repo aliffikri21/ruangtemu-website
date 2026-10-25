@@ -36,5 +36,9 @@ export default async function EventPhotoboothPage({ params }: Props) {
     notFound();
   }
 
-  return <VirtualBooth event={event} />;
+  return (
+    <div className="w-full min-h-[100dvh] bg-black">
+      <VirtualBooth event={event} />
+    </div>
+  );
 }

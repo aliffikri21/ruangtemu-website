@@ -16,54 +16,52 @@ function parseJsonField<T>(val: any, fallback: T): T {
 // ============================================================================
 // IN-MEMORY MOCK STORE (Fallback for offline/local development without Supabase)
 // ============================================================================
-let mockPackages: Package[] = [
+export let mockPackages: Package[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
-    name: "Paket 2 Jam Photobooth Fisik",
+    name: "Paket 2 Jam",
     slug: "paket-2-jam-photobooth",
-    tagline: "Photobooth fisik hemat dengan cetak instan unlimited di Palopo & Luwu Raya",
+    tagline: "Photobooth cetak instan unlimited per 2 jam acara",
     price: 2000000,
     price_2r: 2000000,
     price_4r: 2500000,
     duration_hours: 2,
     features: [
-      "2 Jam Layanan Aktif di Lokasi Acara",
-      "Unlimited Print Foto 2R Strip / 4R",
-      "Custom Template Frame Sesuai Tema Acara",
-      "Studio Lighting & Kamera Profesional",
-      "Download Semua Foto via Cloud Storage",
-      "1 Operator Mesin & 1 Asisten Standby",
+      "Unlimited print foto 2R (Strip) / 4R (Postcard)",
+      "Kamera profesional & lighting studio",
+      "Desain template frame kustom acara",
+      "2 kru operator ramah standby",
+      "Link Google Drive soft copy seluruh foto",
     ],
     popular: false,
     category: "physical",
-    prints_included: "Unlimited Print 2R Strip / 4R",
-    backdrop: "Standard Backdrop / Sequin Fabric",
+    prints_included: "Unlimited Print 2R (Strip) / 4R (Postcard)",
+    backdrop: "Standard Sequin / Fabric Backdrop",
   },
   {
     id: "44444444-4444-4444-4444-444444444444",
-    name: "Paket 3 Jam Photobooth Fisik",
+    name: "Paket 3 Jam",
     slug: "paket-3-jam-photobooth",
-    tagline: "Paket photobooth fisik terpopuler untuk resepsi pernikahan & wisuda di Palopo",
+    tagline: "Paket terpopuler untuk resepsi pernikahan & wisuda di Palopo",
     price: 2500000,
     price_2r: 2500000,
     price_4r: 3000000,
     duration_hours: 3,
     features: [
-      "3 Jam Layanan Penuh di Lokasi Acara",
-      "Unlimited Print Foto 2R Strip / 4R Glossy",
-      "Custom Frame Eksklusif dengan Logo Event",
-      "Studio Lighting & Kamera Profesional",
-      "Download Semua Foto via Cloud Storage",
-      "2 Kru Profesional RUANGTEMU Standby",
+      "Unlimited print foto 2R (Strip) / 4R (Postcard)",
+      "Kustom frame template eksklusif sesuai tema",
+      "Lighting studio & backdrop venue elegan",
+      "2 kru profesional RUANGTEMU standby",
+      "Link Google Drive soft copy seluruh foto",
     ],
     popular: true,
     category: "physical",
-    prints_included: "Unlimited Print 2R Strip / 4R",
+    prints_included: "Unlimited Print 2R (Strip) / 4R (Postcard)",
     backdrop: "Pilihan 5+ Premium Backdrop",
   },
   {
     id: "55555555-5555-5555-5555-555555555555",
-    name: "Paket 4 Jam Photobooth Fisik",
+    name: "Paket 4 Jam",
     slug: "paket-4-jam-photobooth",
     tagline: "Durasi panjang untuk event besar, resepsi malam, & pesta wisuda",
     price: 3000000,
@@ -71,99 +69,96 @@ let mockPackages: Package[] = [
     price_4r: 3500000,
     duration_hours: 4,
     features: [
-      "4 Jam Layanan Penuh di Lokasi Acara",
-      "Unlimited Print Foto 2R Strip / 4R Glossy",
-      "Custom Frame Eksklusif dengan Logo Event",
-      "Studio Lighting & Kamera Profesional",
-      "Download Semua Foto via Cloud Storage",
-      "2 Kru Profesional RUANGTEMU Standby",
+      "4 jam penuh layanan mesin & kru di lokasi",
+      "Unlimited print foto 2R (Strip) / 4R (Postcard)",
+      "Kustom frame template eksklusif sesuai tema",
+      "Setup studio lighting profesional & kamera HD",
+      "2 kru profesional RUANGTEMU standby",
+      "Link Google Drive soft copy seluruh foto",
     ],
     popular: false,
     category: "physical",
-    prints_included: "Unlimited Print 2R Strip / 4R",
+    prints_included: "Unlimited Print 2R (Strip) / 4R (Postcard)",
     backdrop: "Pilihan 5+ Premium Backdrop",
   },
   {
     id: "66666666-6666-6666-6666-666666666666",
-    name: "Paket 5 Jam Photobooth Fisik",
+    name: "Paket 5 Jam",
     slug: "paket-5-jam-photobooth",
-    tagline: "Layanan maksimal untuk pesta seharian penuh tanpa khawatir kehabisan waktu",
+    tagline: "Layanan maksimal seharian penuh tanpa khawatir kehabisan waktu",
     price: 3500000,
     price_2r: 3500000,
     price_4r: 4000000,
     duration_hours: 5,
     features: [
-      "5 Jam Layanan Penuh di Lokasi Acara",
-      "Unlimited Print Foto 2R Strip / 4R Glossy",
-      "Custom Frame Eksklusif dengan Logo Event",
-      "Studio Lighting & Kamera Profesional",
-      "Download Semua Foto via Cloud Storage",
-      "2 Kru Profesional RUANGTEMU Standby",
+      "5 jam penuh layanan mesin & kru di lokasi",
+      "Unlimited print foto 2R (Strip) / 4R (Postcard)",
+      "Kustom frame template eksklusif sesuai tema",
+      "Setup studio lighting profesional & kamera HD",
+      "2 kru profesional RUANGTEMU standby",
+      "Link Google Drive soft copy seluruh foto",
     ],
     popular: false,
     category: "physical",
-    prints_included: "Unlimited Print 2R Strip / 4R",
+    prints_included: "Unlimited Print 2R (Strip) / 4R (Postcard)",
     backdrop: "Pilihan 5+ Premium Backdrop",
   },
   {
     id: "77777777-7777-7777-7777-777777777777",
     name: "Paket Bronze",
     slug: "paket-bronze",
-    tagline: "Paket virtual ekonomis 7 hari akses dengan 1 template frame",
+    tagline: "Akses 7 hari via HP tamu tanpa aplikasi",
     price: 250000,
     duration_hours: 168,
     features: [
       "Foto dan voice message ucapan",
-      "Free 1 desain template frame (Strip/4R/Polaroid)",
-      "Akses Web Photobooth Tanpa Aplikasi",
-      "Unlimited Akses QR Code",
-      "Akses foto 7 hari",
-      "Unlimited foto",
+      "1 pilihan desain frame kustom",
+      "Akses web photobooth via HP tamu",
+      "Scan QR dan unduhan tanpa batas",
+      "Akses galeri digital 7 hari",
     ],
     popular: false,
     category: "virtual",
-    prints_included: "Scan QR Code Tamu Tanpa Batas",
-    backdrop: "1 Desain Template Frame (Strip/4R/Polaroid)",
+    prints_included: "Scan QR dan unduhan tanpa batas",
+    backdrop: "1 pilihan desain frame kustom",
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Paket Silver",
     slug: "paket-silver",
-    tagline: "Paket virtual terpopuler 14 hari akses dengan 2 template frame",
+    tagline: "Paket terfavorit 14 hari akses dengan 2 template frame",
     price: 350000,
     duration_hours: 336,
     features: [
-      "Virtual Photobooth (Photo & Voice Message)",
-      "Free 2 desain template frame (Strip/4R/Polaroid)",
-      "Akses Web Photobooth Tanpa Aplikasi",
-      "Unlimited Akses QR Code",
-      "Akses foto 14 hari",
-      "Unlimited foto",
+      "Foto dan voice message ucapan",
+      "2 pilihan desain frame kustom",
+      "Akses web photobooth via HP tamu",
+      "Scan QR dan unduhan tanpa batas",
+      "Akses galeri digital 14 hari",
     ],
     popular: true,
     category: "virtual",
-    prints_included: "Scan QR Code Tamu Tanpa Batas",
-    backdrop: "2 Desain Template Frame (Strip/4R/Polaroid)",
+    prints_included: "Scan QR dan unduhan tanpa batas",
+    backdrop: "2 pilihan desain frame kustom",
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
     name: "Paket Gold",
     slug: "paket-gold",
-    tagline: "Paket virtual terlengkap 30 hari akses dengan 3 template frame",
+    tagline: "Paket terlengkap 30 hari akses dengan 3 template frame & prioritas support",
     price: 450000,
     duration_hours: 720,
     features: [
-      "Virtual Photobooth (Photo & Voice Message)",
-      "Free 3 desain template frame (Strip/4R/Polaroid)",
-      "Akses Web Photobooth Tanpa Aplikasi",
-      "Unlimited Akses QR Code",
-      "Akses foto 30 hari",
-      "Unlimited foto",
+      "Foto dan voice message ucapan",
+      "3 pilihan desain frame kustom",
+      "Akses web photobooth via HP tamu",
+      "Scan QR dan unduhan tanpa batas",
+      "Akses galeri digital 30 hari & prioritas support",
     ],
     popular: false,
     category: "virtual",
-    prints_included: "Scan QR Code Tamu Tanpa Batas",
-    backdrop: "3 Desain Template Frame (Strip/4R/Polaroid)",
+    prints_included: "Scan QR dan unduhan tanpa batas",
+    backdrop: "3 pilihan desain frame kustom",
   },
 ];
 
@@ -492,17 +487,33 @@ let mockEntries: GalleryEntry[] = [];
 // ROW MAPPERS
 // ============================================================================
 function mapPackageRow(row: any): Package {
+  const price = Number(row.price || 0);
+  let price_4r: number | undefined = row.price_4r ? Number(row.price_4r) : undefined;
+  let prints_included = row.prints_included || undefined;
+  if (!price_4r && prints_included) {
+    const match = prints_included.match(/\[4R:\s*(\d+)\]/i);
+    if (match) {
+      price_4r = Number(match[1]);
+      prints_included = prints_included.replace(/\s*\[4R:\s*\d+\]/i, "").trim();
+    }
+  }
+  if (!price_4r && row.category === "physical") {
+    price_4r = price + 500000;
+  }
+
   return {
     id: String(row.id),
     slug: String(row.slug),
     name: String(row.name),
     tagline: String(row.tagline || ""),
-    price: Number(row.price || 0),
+    price: price,
+    price_2r: row.price_2r ? Number(row.price_2r) : (row.category === "physical" ? price : undefined),
+    price_4r: price_4r,
     duration_hours: Number(row.duration_hours || 3),
     features: parseJsonField<string[]>(row.features, []),
     popular: Boolean(row.popular),
     category: row.category,
-    prints_included: row.prints_included || undefined,
+    prints_included: prints_included,
     backdrop: row.backdrop || undefined,
   };
 }
@@ -700,6 +711,73 @@ export async function getPackageBySlug(slug: string): Promise<Package | null> {
   }
   const pkgs = await getPackages();
   return pkgs.find((p) => p.slug === slug) || null;
+}
+
+export async function updatePackage(
+  id: string,
+  updates: Partial<Package>
+): Promise<Package | null> {
+  const client = getDbClient();
+  if (client) {
+    try {
+      const payload: Record<string, any> = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.tagline !== undefined) payload.tagline = updates.tagline;
+      if (updates.price !== undefined) payload.price = updates.price;
+      if (updates.duration_hours !== undefined) payload.duration_hours = updates.duration_hours;
+      if (updates.features !== undefined) payload.features = updates.features;
+      if (updates.popular !== undefined) payload.popular = updates.popular;
+
+      let printsVal = updates.prints_included;
+      if (updates.price_4r !== undefined) {
+        if (printsVal === undefined) {
+          const existing = mockPackages.find((p) => p.id === id || p.slug === id);
+          printsVal = existing?.prints_included || "Unlimited Print 2R (Strip) / 4R (Postcard)";
+        }
+        printsVal = printsVal.replace(/\s*\[4R:\s*\d+\]/i, "").trim();
+        printsVal = `${printsVal} [4R: ${updates.price_4r}]`;
+      }
+      if (printsVal !== undefined) payload.prints_included = printsVal;
+      if (updates.backdrop !== undefined) payload.backdrop = updates.backdrop;
+
+      const { data, error } = await client
+        .from("packages")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        console.warn("[Supabase] updatePackage error:", error.message);
+      } else if (data) {
+        const mapped = mapPackageRow(data);
+        const mIdx = mockPackages.findIndex((p) => p.id === id || p.slug === id);
+        const resolved: Package = {
+          ...mapped,
+          price_4r: updates.price_4r !== undefined ? Number(updates.price_4r) : mapped.price_4r,
+          price_2r: updates.price_2r !== undefined ? Number(updates.price_2r) : mapped.price_2r,
+        };
+        if (mIdx !== -1) mockPackages[mIdx] = { ...mockPackages[mIdx], ...resolved };
+        return resolved;
+      }
+    } catch (err: any) {
+      console.warn("[Supabase] updatePackage exception:", err?.message);
+    }
+  }
+
+  const idx = mockPackages.findIndex((p) => p.id === id || p.slug === id);
+  if (idx !== -1) {
+    const updatedPrice = updates.price !== undefined ? Number(updates.price) : mockPackages[idx].price;
+    mockPackages[idx] = {
+      ...mockPackages[idx],
+      ...updates,
+      price: updatedPrice,
+      price_2r: updates.price_2r !== undefined ? Number(updates.price_2r) : (mockPackages[idx].category === "physical" ? updatedPrice : undefined),
+      price_4r: updates.price_4r !== undefined ? Number(updates.price_4r) : (mockPackages[idx].category === "physical" ? (mockPackages[idx].price_4r || updatedPrice + 500000) : undefined),
+    };
+    return mockPackages[idx];
+  }
+  return null;
 }
 
 // ============================================================================
