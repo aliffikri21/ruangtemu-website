@@ -669,8 +669,19 @@ export default function HomePage() {
               </svg>
             </span>
           </button>
-          <button className="burger" id="burger" aria-expanded="false" aria-controls="menu">
-            Menu
+          <button
+            type="button"
+            className="burger"
+            id="burger"
+            aria-expanded="false"
+            aria-controls="menu"
+            aria-label="Buka menu navigasi"
+          >
+            <span className="burger-lines" aria-hidden="true">
+              <span className="burger-line"></span>
+              <span className="burger-line"></span>
+              <span className="burger-line"></span>
+            </span>
           </button>
         </div>
         <div className="menu" id="menu" hidden>
@@ -866,7 +877,7 @@ export default function HomePage() {
                 </div>
                 <span className="tag">Desain</span>
                 <h3>Frame Kustom</h3>
-                <p>Strip 3-Foto, 4-Grid, dan Polaroid, dengan font, warna, dan logo yang disesuaikan acara.</p>
+                <p>Strip 3-Foto, 2-Grid, dan Polaroid, dengan font, warna, dan logo yang disesuaikan acara.</p>
               </article>
               <article className="svc tilt" data-rv="">
                 <div className="svc-ic">
@@ -933,20 +944,18 @@ export default function HomePage() {
             </article>
             <article className="fcard">
               <div className="fstage">
-                <div className="fm grid4">
-                  <div className="ph p4"></div>
+                <div className="fm grid2">
                   <div className="ph p1"></div>
                   <div className="ph p3"></div>
-                  <div className="ph p2"></div>
                   <div className="cap">RUANGTEMU · PALOPO</div>
                 </div>
               </div>
               <div className="meta">
-                <span>4 foto</span>
-                <span>Persegi</span>
+                <span>2 foto</span>
+                <span>Vertikal</span>
               </div>
-              <h3>4-Grid</h3>
-              <p>Empat foto dalam satu kartu. Cocok untuk rombongan dan pose bebas.</p>
+              <h3>2-Grid</h3>
+              <p>Dua foto lanskap dalam satu kartu bertumpuk. Pas untuk momen berdua, sahabat, dan pose bebas.</p>
             </article>
             <article className="fcard">
               <div className="fstage">
