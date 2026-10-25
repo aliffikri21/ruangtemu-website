@@ -154,7 +154,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
     const safeZipName = `galeri-${cleanFilename(eventSlug)}-${Date.now()}.zip`;
 
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(new Uint8Array(zipBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

@@ -11,7 +11,11 @@ import {
   applyPixelFilter,
 } from "@/lib/frame-canvas";
 import { VoiceNoteRecorder } from "@/lib/audio";
-import { LandingPageView, GuestNamePageView } from "@/lib/theme-config";
+import {
+  LandingPageView,
+  GuestNamePageView,
+  resolveLandingThemeConfig,
+} from "@/lib/theme-config";
 import { formatDate } from "@/lib/utils";
 
 interface VirtualBoothProps {
@@ -37,6 +41,107 @@ const FILTERS: { id: CameraFilter; name: string }[] = [
   { id: "grayscale", name: "Mono" },
   { id: "sepia", name: "Sepia" },
 ];
+
+const DAYS_ID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const MONTHS_ID = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+
+function formatIndonesianFullDate(dateInput?: string | Date | number): string {
+  if (!dateInput) return "";
+  try {
+    if (typeof dateInput === "string") {
+      const trimmed = dateInput.trim();
+      const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (isoMatch) {
+        const [, y, m, d] = isoMatch;
+        const yearNum = parseInt(y, 10);
+        const monthNum = parseInt(m, 10);
+        const dayNum = parseInt(d, 10);
+        const dateObj = new Date(yearNum, monthNum - 1, dayNum);
+        return `${DAYS_ID[dateObj.getDay()]}, ${dayNum} ${MONTHS_ID[monthNum - 1]} ${yearNum}`;
+      }
+      const dmyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dmyMatch) {
+        const [, d, m, y] = dmyMatch;
+        const yearNum = parseInt(y, 10);
+        const monthNum = parseInt(m, 10);
+        const dayNum = parseInt(d, 10);
+        const dateObj = new Date(yearNum, monthNum - 1, dayNum);
+        return `${DAYS_ID[dateObj.getDay()]}, ${dayNum} ${MONTHS_ID[monthNum - 1]} ${yearNum}`;
+      }
+    }
+    const d = typeof dateInput === "string" || typeof dateInput === "number" ? new Date(dateInput) : dateInput;
+    if (isNaN(d.getTime())) return String(dateInput);
+    const dayName = DAYS_ID[d.getDay()];
+    const dateNum = d.getDate();
+    const monthName = MONTHS_ID[d.getMonth()];
+    const year = d.getFullYear();
+    return `${dayName}, ${dateNum} ${monthName} ${year}`;
+  } catch {
+    return String(dateInput);
+  }
+}
+
+function isLightHex(color?: string): boolean {
+  if (!color) return false;
+  const hex = color.trim().toLowerCase();
+  if (hex === "white" || hex === "#fff" || hex === "#ffffff") return true;
+  const clean = hex.replace("#", "");
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16);
+    const g = parseInt(clean[1] + clean[1], 16);
+    const b = parseInt(clean[2] + clean[2], 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 195;
+  }
+  if (clean.length >= 6) {
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 195;
+  }
+  return false;
+}
+
+function formatIndonesianDateUpper(dateInput?: string | Date | number): string {
+  if (!dateInput) return "";
+  try {
+    if (typeof dateInput === "string") {
+      const trimmed = dateInput.trim();
+      const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (isoMatch) {
+        const [, y, m, d] = isoMatch;
+        const monthNum = parseInt(m, 10);
+        return `${parseInt(d, 10)} ${MONTHS_ID[monthNum - 1].toUpperCase()} ${y}`;
+      }
+      const dmyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dmyMatch) {
+        const [, d, m, y] = dmyMatch;
+        const monthNum = parseInt(m, 10);
+        return `${parseInt(d, 10)} ${MONTHS_ID[monthNum - 1].toUpperCase()} ${y}`;
+      }
+    }
+    const d = typeof dateInput === "string" || typeof dateInput === "number" ? new Date(dateInput) : dateInput;
+    if (isNaN(d.getTime())) return String(dateInput).toUpperCase();
+    const dateNum = d.getDate();
+    const monthName = MONTHS_ID[d.getMonth()].toUpperCase();
+    const year = d.getFullYear();
+    return `${dateNum} ${monthName} ${year}`;
+  } catch {
+    return String(dateInput).toUpperCase();
+  }
+}
 
 export function VirtualBooth({ event }: VirtualBoothProps) {
   const isNurulIqraWedding =
@@ -78,6 +183,74 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const customBgImage = isJayaRikaWedding
     ? "/images/events/bg-jayarika.png"
     : "/images/events/ilvaricky-bg.jpeg";
+
+  const themeConfig = resolveLandingThemeConfig(event.theme_config, event);
+
+  const rawHeaderLeft = themeConfig.header?.left?.trim() || "The Wedding";
+  const desktopBadgeText =
+    rawHeaderLeft.toLowerCase().includes("wedding") && !rawHeaderLeft.toLowerCase().includes("of")
+      ? `${rawHeaderLeft} of`
+      : rawHeaderLeft;
+
+  const desktopCoupleTitle =
+    themeConfig.title?.text?.trim() ||
+    customCoupleName ||
+    event.host_name ||
+    event.title;
+
+  const desktopFont = themeConfig.title?.font || "Great Vibes";
+  const isScriptFont = ["great vibes", "allura", "dancing script"].some((f) =>
+    desktopFont.toLowerCase().includes(f)
+  );
+
+  const rawDate = event.date || themeConfig.info?.line1 || "2025-12-24";
+  const desktopFormattedDate =
+    formatIndonesianFullDate(rawDate) || customDateText || formatDate(rawDate);
+
+  const desktopVenue =
+    event.venue
+      ? `${event.venue}${event.city ? `, ${event.city}` : ""}`
+      : themeConfig.info?.line2 || customVenueText || "";
+
+  const desktopBgPhoto =
+    themeConfig.background?.image ||
+    event.cover_image_url ||
+    event.cover_image ||
+    customBgImage ||
+    "";
+
+  // Event Primary Color Resolution (matches Landing Page primary CTA color & event accent)
+  const rawCtaBg = themeConfig?.cta1?.bg?.trim();
+  const rawCtaIconBg = themeConfig?.cta1?.iconBg?.trim();
+  const rawAccent = themeConfig?.layout?.accent?.trim();
+
+  let eventPrimaryColor = isNurulIqraWedding
+    ? "#ad0d0d"
+    : isJayaRikaWedding
+      ? "#224DA5"
+      : isIlvaRickyWedding
+        ? "#3a716c"
+        : "#801823";
+
+  if (rawCtaBg && !isLightHex(rawCtaBg)) {
+    eventPrimaryColor = rawCtaBg;
+  } else if (rawCtaIconBg && !isLightHex(rawCtaIconBg)) {
+    eventPrimaryColor = rawCtaIconBg;
+  } else if (rawAccent && !isLightHex(rawAccent)) {
+    eventPrimaryColor = rawAccent;
+  } else if (rawCtaBg) {
+    eventPrimaryColor = rawCtaBg;
+  }
+
+  const isLightPrimary = isLightHex(eventPrimaryColor);
+  const onPrimaryTextColor = isLightPrimary ? "#09090b" : "#ffffff";
+  const onPrimarySubtextColor = isLightPrimary ? "rgba(9, 9, 11, 0.75)" : "rgba(255, 255, 255, 0.85)";
+
+  const frameSelectHeader = themeConfig.header?.left
+    ? `${themeConfig.header.left.replace(/^the\s+/i, "").toUpperCase()} MEMORIES`
+    : "WEDDING MEMORIES";
+
+  const frameSelectDate = formatIndonesianDateUpper(rawDate);
 
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -759,6 +932,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     }
   };
 
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isProgrammaticScrollRef = useRef(false);
+
   const scrollToFrame = useCallback((index: number) => {
     if (!carouselRef.current) return;
     const container = carouselRef.current;
@@ -766,47 +942,58 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     if (slides[index]) {
       const slide = slides[index];
       const targetLeft = slide.offsetLeft - (container.offsetWidth - slide.offsetWidth) / 2;
+      isProgrammaticScrollRef.current = true;
       container.scrollTo({ left: targetLeft, behavior: "smooth" });
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 450);
     }
   }, []);
 
   const handleCarouselScroll = useCallback(() => {
-    if (!carouselRef.current) return;
-    const container = carouselRef.current;
-    const center = container.scrollLeft + container.offsetWidth / 2;
-    const slides = container.querySelectorAll<HTMLElement>("[data-frame-slide]");
-    let closestIdx = 0;
-    let minDistance = Infinity;
-
-    slides.forEach((slide, idx) => {
-      const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
-      const dist = Math.abs(center - slideCenter);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestIdx = idx;
-      }
-    });
-
-    if (assignedFrames && assignedFrames[closestIdx]) {
-      const targetFrame = assignedFrames[closestIdx];
-      if (targetFrame.id !== selectedFrameId) {
-        setSelectedFrameId(targetFrame.id);
-        setFrameConfig({
-          ...targetFrame.config_json,
-          type: targetFrame.template_type,
-          customOverlayUrl: targetFrame.preview_url || targetFrame.config_json?.customOverlayUrl,
-        });
-        setCapturedPhotos([]);
-        setCurrentShotIndex(0);
-      }
-    } else if (!assignedFrames && FRAME_TEMPLATES[closestIdx]) {
-      const tmpl = FRAME_TEMPLATES[closestIdx];
-      if (frameConfig.type !== tmpl.type) {
-        setFrameConfig({ ...frameConfig, type: tmpl.type });
-        setCapturedPhotos([]);
-        setCurrentShotIndex(0);
-      }
+    if (!carouselRef.current || isProgrammaticScrollRef.current) return;
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
     }
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (!carouselRef.current) return;
+      const container = carouselRef.current;
+      const center = container.scrollLeft + container.offsetWidth / 2;
+      const slides = container.querySelectorAll<HTMLElement>("[data-frame-slide]");
+      let closestIdx = 0;
+      let minDistance = Infinity;
+
+      slides.forEach((slide, idx) => {
+        const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+        const dist = Math.abs(center - slideCenter);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIdx = idx;
+        }
+      });
+
+      if (assignedFrames && assignedFrames[closestIdx]) {
+        const targetFrame = assignedFrames[closestIdx];
+        if (targetFrame.id !== selectedFrameId) {
+          setSelectedFrameId(targetFrame.id);
+          setFrameConfig({
+            ...targetFrame.config_json,
+            type: targetFrame.template_type,
+            customOverlayUrl: targetFrame.preview_url || targetFrame.config_json?.customOverlayUrl,
+          });
+          setCapturedPhotos([]);
+          setCurrentShotIndex(0);
+        }
+      } else if (!assignedFrames && FRAME_TEMPLATES[closestIdx]) {
+        const tmpl = FRAME_TEMPLATES[closestIdx];
+        if (frameConfig.type !== tmpl.type) {
+          setFrameConfig({ ...frameConfig, type: tmpl.type });
+          setCapturedPhotos([]);
+          setCurrentShotIndex(0);
+        }
+      }
+    }, 50);
   }, [assignedFrames, selectedFrameId, frameConfig]);
 
   const handleSelectFrame = (frame: any, index: number) => {
@@ -836,44 +1023,107 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   // ─── Render ───────────────────────────────────────────────────
 
   return (
-    <div className={`min-h-[100dvh] flex flex-col relative ${isNurulIqraWedding && currentStep !== "camera"
-      ? "bg-white text-stone-900 selection:bg-red-100 selection:text-red-900"
-      : "bg-[#111113] text-stone-100 selection:bg-stone-700 selection:text-white"
-      }`}>
-      {/* Bridal Couple Photo Background Overlay (~10% opacity) for screens after poster */}
-      {isNurulIqraWedding && currentStep !== "welcome" && currentStep !== "camera" && (
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/events/nurul-iqra-real.jpg"
-            alt=""
-            className="w-full h-full object-cover object-[center_20%] opacity-10 select-none"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/40" />
-        </div>
-      )}
+    <div className="min-h-[100dvh] w-full bg-black flex flex-col md:flex-row md:h-screen md:max-h-screen md:overflow-hidden overflow-x-hidden">
+      {/* ─── DESKTOP / TABLET POSTER COLUMN (HIDDEN ON SMARTPHONES) ─── */}
+      <div className="hidden md:flex flex-1 flex-col justify-between items-center relative overflow-hidden bg-black select-none border-r border-white/10">
+        {/* Ambient subtle background from event cover photo */}
+        {desktopBgPhoto && (
+          <div aria-hidden="true" className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={desktopBgPhoto}
+              alt=""
+              className="w-full h-full object-cover object-center opacity-10 filter blur-md scale-105 select-none"
+            />
+            <div className="absolute inset-0 bg-black/85" />
+          </div>
+        )}
 
-      {/* Custom Wedding Couple Photo Background Overlay for screens after welcome */}
-      {isCustomWedding && currentStep !== "welcome" && currentStep !== "camera" && (
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={customBgImage}
-            alt=""
-            className="w-full h-full object-cover object-[center_25%] opacity-15 select-none"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#050906]/85 via-[#050906]/90 to-[#050906]" />
+        {/* Top Header Watermark */}
+        <div className="w-full flex items-center justify-between p-6 lg:p-8 relative z-10">
+          <div className="flex items-center gap-2.5 opacity-40 hover:opacity-80 transition-opacity">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-ruangtemu.jpg" alt="RUANGTEMU" className="w-5 h-5 rounded-xs object-cover" />
+            <span className="text-[11px] font-medium tracking-[0.25em] text-white uppercase">RUANGTEMU</span>
+          </div>
         </div>
-      )}
 
-      {/* Minimal Top Bar (hidden during camera, welcome, and name_input screens) */}
-      {!isCustomWedding && currentStep !== "welcome" && currentStep !== "name_input" && currentStep !== "camera" && (
+        {/* Bottom Poster Typography matching reference layout */}
+        <div className="flex-1 flex flex-col justify-end items-center pb-12 lg:pb-16 text-center px-8 relative z-10 w-full max-w-xl">
+          <div className="flex flex-col items-center gap-1.5 w-full">
+            <span
+              className="text-white/85 text-xs md:text-sm tracking-[0.25em] uppercase font-serif italic"
+              style={{ fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif` }}
+            >
+              {desktopBadgeText}
+            </span>
+            <h1
+              className={`text-white leading-tight drop-shadow-xl ${
+                isScriptFont
+                  ? "text-4xl md:text-5xl lg:text-6xl font-normal py-1"
+                  : "text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight"
+              }`}
+              style={{
+                fontFamily: `'${desktopFont}', cursive, serif`,
+                filter: "drop-shadow(0 2px 14px rgba(0,0,0,0.9))",
+              }}
+            >
+              {desktopCoupleTitle}
+            </h1>
+            {desktopFormattedDate && (
+              <p className="text-white font-medium text-xs md:text-sm tracking-wide mt-1 drop-shadow">
+                {desktopFormattedDate}
+              </p>
+            )}
+            {desktopVenue && (
+              <p className="text-white/60 text-[11px] md:text-xs tracking-wider mt-0.5">
+                {desktopVenue}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── DOCKED PHONE CONTAINER (FULL WIDTH ON MOBILE, PHONE-SIZED ON DESKTOP) ─── */}
+      <div className="w-full md:w-[420px] lg:w-[450px] xl:w-[480px] shrink-0 min-h-[100dvh] md:h-[100dvh] md:max-h-[100dvh] relative overflow-y-auto overflow-x-hidden flex flex-col shadow-[-25px_0_60px_rgba(0,0,0,0.85)]">
+        <div className={`min-h-[100dvh] flex flex-col relative flex-1 ${isNurulIqraWedding && currentStep !== "camera"
+          ? "bg-white text-stone-900 selection:bg-red-100 selection:text-red-900"
+          : "bg-[#111113] text-stone-100 selection:bg-stone-700 selection:text-white"
+          }`}>
+          {/* Bridal Couple Photo Background Overlay (~10% opacity) for screens after poster */}
+          {isNurulIqraWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/events/nurul-iqra-real.jpg"
+                alt=""
+                className="w-full h-full object-cover object-[center_20%] opacity-10 select-none"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/40" />
+            </div>
+          )}
+
+          {/* Custom Wedding Couple Photo Background Overlay for screens after welcome */}
+          {isCustomWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={customBgImage}
+                alt=""
+                className="w-full h-full object-cover object-[center_25%] opacity-15 select-none"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#050906]/85 via-[#050906]/90 to-[#050906]" />
+            </div>
+          )}
+
+      {/* Minimal Top Bar (hidden during camera, welcome, frame_select, and name_input screens) */}
+      {!isCustomWedding && currentStep !== "welcome" && currentStep !== "name_input" && currentStep !== "frame_select" && currentStep !== "camera" && (
         <header
           className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${isNurulIqraWedding
             ? "border-red-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
@@ -1245,194 +1495,227 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       }
 
       {/* ─── STEP 2: FRAME SELECTION ─── */}
-      {
-        currentStep === "frame_select" && (
-          <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto overflow-x-hidden relative z-10 ${isNurulIqraWedding ? "bg-transparent text-stone-900" : ""}`}>
-            <div className="w-full max-w-sm mx-auto space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className={`text-xs uppercase tracking-wider ${isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)] font-bold bg-red-50 px-2.5 py-0.5 rounded-full inline-block border border-red-100 mb-1" : isJayaRikaWedding ? "text-[#224DA5] font-semibold" : "text-[#c47a5a] font-semibold"}`}>
-                    Langkah 1 / 3
-                  </div>
-                  <h3 className={`text-xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-[family-name:var(--font-cinzel)] text-2xl" : "text-white"}`}>
-                    {assignedFrames ? "Pilih Frame Acara" : "Pilih Frame"}
-                  </h3>
-                  <p className={`text-xs mt-0.5 ${isNurulIqraWedding ? "text-stone-600" : "text-stone-400"}`}>
-                    {assignedFrames
-                      ? `Pilih 1 dari ${assignedFrames.length} frame yang telah disiapkan untuk acara ini`
-                      : "Pilih format tampilan foto Anda"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setCurrentStep(isNurulIqraWedding || isCustomWedding || !!event.theme_config ? "name_input" : "welcome")}
-                  className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${isNurulIqraWedding ? "text-[#c51d24] hover:text-[#a8161c] bg-red-50/90 hover:bg-red-100 border border-red-100 shadow-sm" : "text-stone-400 active:text-white"
-                    }`}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-                </button>
-              </div>
+      {currentStep === "frame_select" && (
+        <main
+          className="flex-1 w-full min-h-[100dvh] flex flex-col justify-between relative overflow-hidden select-none transition-colors duration-300"
+          style={{
+            backgroundColor: eventPrimaryColor,
+            color: onPrimaryTextColor,
+          }}
+        >
+          {/* Top Bar with Back Button & Centered Typography */}
+          <header className="relative w-full pt-4 sm:pt-6 pb-2 px-5 flex flex-col items-center justify-center shrink-0 z-20">
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentStep(
+                  isNurulIqraWedding || isCustomWedding || !!event.theme_config
+                    ? "name_input"
+                    : "welcome"
+                )
+              }
+              aria-label="Kembali"
+              className="absolute left-3 sm:left-4 top-3 sm:top-5 w-11 h-11 flex items-center justify-center hover:opacity-80 active:scale-90 transition-all cursor-pointer z-30"
+              style={{ color: onPrimaryTextColor }}
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+            </button>
 
-              {/* Frame Carousel (Sliding Horizontal Track - Pure Floating Frames) */}
-              <div className="relative -mx-5 px-1 py-1">
-                <div
-                  ref={carouselRef}
-                  onScroll={handleCarouselScroll}
-                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory py-2 px-[calc(50%-125px)] scroll-smooth touch-pan-x"
+            <div className="flex flex-col items-center text-center px-10">
+              <span
+                className="text-[11px] sm:text-xs font-serif tracking-[0.25em] uppercase font-medium"
+                style={{
+                  color: onPrimarySubtextColor,
+                  fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif`,
+                }}
+              >
+                {frameSelectHeader}
+              </span>
+              <h2
+                className="text-3xl sm:text-4xl md:text-5xl font-normal leading-tight drop-shadow-md py-0.5"
+                style={{
+                  fontFamily: `'${desktopFont}', cursive, serif`,
+                  color: onPrimaryTextColor,
+                  filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.45))",
+                }}
+              >
+                {desktopCoupleTitle}
+              </h2>
+              {frameSelectDate && (
+                <span
+                  className="text-[11px] sm:text-xs font-serif tracking-[0.25em] uppercase font-medium mt-0.5"
                   style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                    WebkitOverflowScrolling: "touch",
+                    color: onPrimarySubtextColor,
+                    fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif`,
                   }}
                 >
-                  {assignedFrames ? (
-                    assignedFrames.map((frame, index) => {
-                      const isSelected = selectedFrameId === frame.id;
-                      const overlayUrl = frame.preview_url || frame.config_json?.customOverlayUrl;
-
-                      return (
-                        <div
-                          key={frame.id}
-                          data-frame-slide
-                          onClick={() => handleSelectFrame(frame, index)}
-                          className="snap-center shrink-0 w-[250px] flex items-center justify-center cursor-pointer select-none py-3"
-                        >
-                          {overlayUrl ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={overlayUrl}
-                              alt={frame.name}
-                              className={`max-h-[370px] sm:max-h-[410px] w-auto object-contain transition-all duration-300 select-none pointer-events-none ${isSelected
-                                ? "scale-100 opacity-100 drop-shadow-[0_16px_36px_rgba(0,0,0,0.26)]"
-                                : "scale-[0.88] opacity-50 hover:opacity-75 drop-shadow-[0_8px_18px_rgba(0,0,0,0.14)]"
-                                }`}
-                            />
-                          ) : (
-                            <div className="w-[180px] h-[270px] bg-white rounded-lg shadow-xl flex items-center justify-center font-mono text-xs text-stone-500">
-                              FRAME
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    FRAME_TEMPLATES.map((tmpl, index) => {
-                      const isSelected = frameConfig.type === tmpl.type;
-                      return (
-                        <div
-                          key={tmpl.type}
-                          data-frame-slide
-                          onClick={() => {
-                            setFrameConfig({ ...frameConfig, type: tmpl.type });
-                            scrollToFrame(index);
-                          }}
-                          className="snap-center shrink-0 w-[250px] flex items-center justify-center cursor-pointer select-none py-3"
-                        >
-                          <div
-                            className={`w-[180px] h-[280px] bg-white text-stone-900 rounded-xl p-4 flex flex-col justify-between items-center transition-all duration-300 ${isSelected
-                              ? "scale-100 opacity-100 shadow-2xl ring-2 ring-[#c51d24]"
-                              : "scale-[0.88] opacity-50 shadow-md"
-                              }`}
-                          >
-                            <div className="text-center font-bold text-sm">{tmpl.name}</div>
-                            <div className="text-xs text-[#c51d24] font-semibold">{tmpl.shots} Pose Foto</div>
-                            <div className="text-[11px] text-stone-500 text-center">{tmpl.description}</div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Pagination Dots Indicator */}
-                <div className="flex justify-center items-center gap-1.5 pt-2 pb-1">
-                  {assignedFrames ? (
-                    assignedFrames.map((frame, idx) => {
-                      const isCurrent = selectedFrameId === frame.id;
-                      return (
-                        <button
-                          key={frame.id}
-                          type="button"
-                          onClick={() => handleSelectFrame(frame, idx)}
-                          aria-label={`Pilih Frame ${idx + 1}`}
-                          className={`transition-all duration-300 rounded-full ${isCurrent
-                            ? isNurulIqraWedding
-                              ? "w-6 h-2 bg-[#c51d24] shadow-sm"
-                              : isJayaRikaWedding
-                                ? "w-6 h-2 bg-[#224DA5] shadow-sm"
-                                : "w-6 h-2 bg-white"
-                            : isNurulIqraWedding
-                              ? "w-2 h-2 bg-stone-300 hover:bg-stone-400"
-                              : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
-                            }`}
-                        />
-                      );
-                    })
-                  ) : (
-                    FRAME_TEMPLATES.map((tmpl, idx) => {
-                      const isCurrent = frameConfig.type === tmpl.type;
-                      return (
-                        <button
-                          key={tmpl.type}
-                          type="button"
-                          onClick={() => {
-                            setFrameConfig({ ...frameConfig, type: tmpl.type });
-                            scrollToFrame(idx);
-                          }}
-                          aria-label={`Pilih Frame ${idx + 1}`}
-                          className={`transition-all duration-300 rounded-full ${isCurrent
-                            ? "w-6 h-2 bg-white shadow-sm"
-                            : "w-2 h-2 bg-stone-700 hover:bg-stone-500"
-                            }`}
-                        />
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Sticker Picker only if not using full custom overlay */}
-              {!assignedFrames && (
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-stone-400">Aksen Ikon</div>
-                  <div className="flex gap-2 flex-wrap">
-                    {["✦", "✧", "◆", "◇", "★", "☆"].map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => setFrameConfig({ ...frameConfig, sticker: emoji })}
-                        className={`min-w-[48px] min-h-[48px] flex items-center justify-center text-lg border rounded-lg transition-colors ${frameConfig.sticker === emoji
-                          ? "bg-white text-stone-950 border-white"
-                          : "bg-stone-900/60 border-stone-700 active:bg-stone-800"
-                          }`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  {frameSelectDate}
+                </span>
               )}
-
-              {/* CTA */}
-              <button
-                onClick={() => {
-                  setCapturedPhotos([]);
-                  setCurrentShotIndex(0);
-                  setCurrentStep("camera");
-                  startCamera();
-                }}
-                className={`w-full min-h-[52px] py-3 font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg ${isNurulIqraWedding
-                  ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
-                  : isJayaRikaWedding
-                    ? "bg-[#224DA5] hover:bg-[#1b3e85] active:scale-[0.98] text-white shadow-blue-950/30"
-                    : "bg-white hover:bg-stone-100 active:bg-stone-200 text-stone-950 rounded-lg font-semibold"
-                  }`}
-              >
-                Buka Kamera ({requiredShots} Foto)
-              </button>
             </div>
-          </main>
-        )
-      }
+          </header>
+
+          {/* Center Frame Carousel */}
+          <div className="relative w-full overflow-hidden flex-1 flex flex-col justify-center items-center my-auto min-h-0">
+            <div
+              ref={carouselRef}
+              onScroll={handleCarouselScroll}
+              className="w-full flex gap-6 overflow-x-auto snap-x snap-mandatory py-4 px-[calc(50%-125px)] scroll-smooth touch-pan-x items-center overscroll-x-contain"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              {assignedFrames ? (
+                assignedFrames.map((frame, index) => {
+                  const isSelected = selectedFrameId === frame.id;
+                  const overlayUrl = frame.preview_url || frame.config_json?.customOverlayUrl;
+
+                  return (
+                    <div
+                      key={frame.id}
+                      data-frame-slide
+                      onClick={() => handleSelectFrame(frame, index)}
+                      className="snap-center snap-always shrink-0 w-[250px] flex items-center justify-center cursor-pointer select-none py-2 will-change-transform"
+                    >
+                      {overlayUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={overlayUrl}
+                          alt={frame.name}
+                          className={`max-h-[46dvh] sm:max-h-[50dvh] w-auto object-contain transition-all duration-500 ease-out select-none pointer-events-none will-change-transform ${
+                            isSelected
+                              ? "scale-100 opacity-100 drop-shadow-[0_20px_45px_rgba(0,0,0,0.5)]"
+                              : "scale-[0.86] opacity-45 hover:opacity-75 drop-shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
+                          }`}
+                        />
+                      ) : (
+                        <div className="w-[190px] h-[280px] bg-white text-stone-900 rounded-xl shadow-2xl flex flex-col justify-between p-4 items-center transition-all duration-500 ease-out will-change-transform">
+                          <span className="text-xs font-serif font-bold uppercase tracking-wider">{frame.name}</span>
+                          <span className="text-[11px] font-medium text-stone-500">{frame.config_json?.photoCount || 1} Pose Foto</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                FRAME_TEMPLATES.map((tmpl, index) => {
+                  const isSelected = frameConfig.type === tmpl.type;
+                  return (
+                    <div
+                      key={tmpl.type}
+                      data-frame-slide
+                      onClick={() => {
+                        setFrameConfig({ ...frameConfig, type: tmpl.type });
+                        scrollToFrame(index);
+                      }}
+                      className="snap-center snap-always shrink-0 w-[250px] flex items-center justify-center cursor-pointer select-none py-2 will-change-transform"
+                    >
+                      <div
+                        className={`w-[190px] h-[290px] bg-white text-stone-900 rounded-xl p-5 flex flex-col justify-between items-center transition-all duration-500 ease-out will-change-transform ${
+                          isSelected
+                            ? "scale-100 opacity-100 shadow-2xl ring-2 ring-white"
+                            : "scale-[0.86] opacity-45 shadow-md"
+                        }`}
+                      >
+                        <div className="text-center font-bold text-sm tracking-tight">{tmpl.name}</div>
+                        <div className="text-xs font-semibold" style={{ color: eventPrimaryColor }}>
+                          {tmpl.shots} Pose Foto
+                        </div>
+                        <div className="text-[11px] text-stone-500 text-center leading-relaxed">
+                          {tmpl.description}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Pagination Dots Indicator */}
+            <div className="flex justify-center items-center gap-2 pt-2 pb-1">
+              {assignedFrames ? (
+                assignedFrames.map((frame, idx) => {
+                  const isCurrent = selectedFrameId === frame.id;
+                  return (
+                    <button
+                      key={frame.id}
+                      type="button"
+                      onClick={() => handleSelectFrame(frame, idx)}
+                      aria-label={`Pilih Frame ${idx + 1}`}
+                      className={`transition-all duration-300 rounded-full cursor-pointer ${
+                        isCurrent
+                          ? "w-7 h-1.5 bg-white shadow-sm"
+                          : "w-2 h-2 bg-white/40 hover:bg-white/70"
+                      }`}
+                    />
+                  );
+                })
+              ) : (
+                FRAME_TEMPLATES.map((tmpl, idx) => {
+                  const isCurrent = frameConfig.type === tmpl.type;
+                  return (
+                    <button
+                      key={tmpl.type}
+                      type="button"
+                      onClick={() => {
+                        setFrameConfig({ ...frameConfig, type: tmpl.type });
+                        scrollToFrame(idx);
+                      }}
+                      aria-label={`Pilih Frame ${idx + 1}`}
+                      className={`transition-all duration-300 rounded-full cursor-pointer ${
+                        isCurrent
+                          ? "w-7 h-1.5 bg-white shadow-sm"
+                          : "w-2 h-2 bg-white/40 hover:bg-white/70"
+                      }`}
+                    />
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Bottom Button ("PILIH BINGKAI") */}
+          <div
+            className="w-full px-6 pb-6 pt-3 mt-auto shrink-0 z-20"
+            style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setCapturedPhotos([]);
+                setCurrentShotIndex(0);
+                setCurrentStep("camera");
+                startCamera();
+              }}
+              className="w-full min-h-[54px] py-3.5 px-6 bg-[#fcfaf7] hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center shadow-2xl cursor-pointer"
+              style={{
+                color: eventPrimaryColor,
+              }}
+            >
+              <span
+                className="text-sm sm:text-base font-serif font-bold tracking-[0.2em] uppercase"
+                style={{ fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif` }}
+              >
+                PILIH BINGKAI
+              </span>
+            </button>
+          </div>
+        </main>
+      )}
 
       {/* ─── STEP 3: CAMERA ─── */}
       {
@@ -2085,9 +2368,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         )
       }
 
-      {/* Footer (hidden for Nurul & Iqra and custom wedding per user request) */}
+      {/* Footer (hidden for Nurul & Iqra, custom wedding, welcome, frame_select, and camera) */}
       {
-        !isNurulIqraWedding && !isCustomWedding && (
+        !isNurulIqraWedding && !isCustomWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && (
           <footer
             className="border-t border-stone-800/40 bg-[#111113] px-4 py-3 text-center text-[11px] text-stone-600"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
@@ -2100,6 +2383,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           </footer>
         )
       }
-    </div >
+        </div>
+      </div>
+    </div>
   );
 }
