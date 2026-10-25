@@ -1274,11 +1274,11 @@ export default function HomePage() {
                     </button>
                   </article>
                 </div>
+                <p className="note" data-rv="">
+                  Acara di luar Kota Palopo (Luwu, Luwu Utara, Luwu Timur, Toraja)? Tersedia paket perjalanan khusus lewat konsultasi WhatsApp.
+                </p>
               </div>
             )}
-            <p className="note" data-rv="">
-              Acara di luar Kota Palopo (Luwu, Luwu Utara, Luwu Timur, Toraja)? Tersedia paket perjalanan khusus lewat konsultasi WhatsApp.
-            </p>
           </div>
         </section>
 
