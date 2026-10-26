@@ -49,7 +49,7 @@ export const DEFAULT_THEME_CONFIG: LandingThemeConfig = {
   title: { show: true, text: "Jaya & Rika", font: "Great Vibes", size: 58, color: "#ffffff", top: 18, align: "center" },
   info: { show: true, line1: "12/10/2026", line2: "D'Twins Cafe", color: "#ffffff", size: 13, align: "left", top: 14 },
   cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#ffffff", color: "#111111", iconBg: "#224DA5", iconColor: "#ffffff", href: "/capture" },
-  cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/album" },
+  cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/gallery" },
   footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#ffffff" },
   layout: { variant: "classic", surface: "#ffffff", accent: "#224DA5", photoHeight: 54, buttonStyle: "pill", buttonHeight: 56, buttonFont: 16, gap: 12, sidePadding: 24, topPadding: 28, bottomPadding: 22, footerGap: 14 },
 };
@@ -65,7 +65,7 @@ export const TEMPLATES: { id: string; name: string; patch: Partial<LandingThemeC
       title: { show: true, text: "", font: "Great Vibes", size: 58, color: "#ffffff", align: "center", top: 18 },
       info: { show: true, line1: "", line2: "", color: "#ffffff", size: 13, align: "left", top: 14 },
       cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#ffffff", color: "#111111", iconBg: "#224DA5", iconColor: "#ffffff", href: "/capture" },
-      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/album" },
+      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/gallery" },
       footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#ffffff" },
       layout: { variant: "classic", buttonStyle: "pill", surface: "#ffffff", accent: "#224DA5", buttonHeight: 56, buttonFont: 16, gap: 12, sidePadding: 24, topPadding: 28, bottomPadding: 22, footerGap: 14 },
     },
@@ -80,7 +80,7 @@ export const TEMPLATES: { id: string; name: string; patch: Partial<LandingThemeC
       title: { show: true, text: "", font: "Playfair Display", size: 46, color: "#ffffff", align: "center", top: 0 },
       info: { show: true, line1: "", line2: "", color: "#ffffff", size: 13, align: "center", top: 12 },
       cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#ffffff", color: "#111111", iconBg: "#111111", iconColor: "#ffffff", href: "/capture" },
-      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "glass", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/album" },
+      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "glass", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/gallery" },
       footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#ffffff" },
       layout: { variant: "center", buttonStyle: "rounded", surface: "#ffffff", accent: "#ffffff", buttonHeight: 56, buttonFont: 16, gap: 12, sidePadding: 24, topPadding: 28, bottomPadding: 22, footerGap: 14 },
     },
@@ -95,7 +95,7 @@ export const TEMPLATES: { id: string; name: string; patch: Partial<LandingThemeC
       title: { show: true, text: "", font: "Playfair Display", size: 40, color: "#2b2118", align: "left", top: 0 },
       info: { show: true, line1: "", line2: "", color: "#6b5d50", size: 13, align: "left", top: 10 },
       cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#2b2118", color: "#ffffff", iconBg: "#ffffff", iconColor: "#2b2118", href: "/capture" },
-      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#2b2118", color: "#2b2118", iconBg: "#2b211822", iconColor: "#2b2118", href: "/album" },
+      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#2b2118", color: "#2b2118", iconBg: "#2b211822", iconColor: "#2b2118", href: "/gallery" },
       footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#8a7c6e" },
       layout: { variant: "sheet", buttonStyle: "pill", surface: "#fbf7f2", accent: "#2b2118", photoHeight: 54, buttonHeight: 56, buttonFont: 16, gap: 12, sidePadding: 24, topPadding: 28, bottomPadding: 22, footerGap: 14 },
     },
@@ -110,7 +110,7 @@ export const TEMPLATES: { id: string; name: string; patch: Partial<LandingThemeC
       title: { show: true, text: "", font: "Dancing Script", size: 44, color: "#5a4636", align: "center", top: 8 },
       info: { show: true, line1: "", line2: "", color: "#7d6857", size: 13, align: "center", top: 8 },
       cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#5a4636", color: "#ffffff", iconBg: "#f3ece4", iconColor: "#5a4636", href: "/capture" },
-      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#5a4636", color: "#5a4636", iconBg: "#5a463622", iconColor: "#5a4636", href: "/album" },
+      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#5a4636", color: "#5a4636", iconBg: "#5a463622", iconColor: "#5a4636", href: "/gallery" },
       footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#8c7866" },
       layout: { variant: "polaroid", buttonStyle: "rounded", surface: "#f3ece4", accent: "#5a4636", buttonHeight: 56, buttonFont: 16, gap: 12, sidePadding: 24, topPadding: 28, bottomPadding: 22, footerGap: 14 },
     },
@@ -125,7 +125,7 @@ export const TEMPLATES: { id: string; name: string; patch: Partial<LandingThemeC
       title: { show: true, text: "", font: "Great Vibes", size: 52, color: "#6b4f3f", align: "center", top: 14 },
       info: { show: true, line1: "", line2: "", color: "#8a6f5f", size: 13, align: "center", top: 8 },
       cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#6b4f3f", color: "#ffffff", iconBg: "#f6efe9", iconColor: "#6b4f3f", href: "/capture" },
-      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#6b4f3f", color: "#6b4f3f", iconBg: "#6b4f3f22", iconColor: "#6b4f3f", href: "/album" },
+      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "outline", bg: "#ffffff", borderColor: "#6b4f3f", color: "#6b4f3f", iconBg: "#6b4f3f22", iconColor: "#6b4f3f", href: "/gallery" },
       footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#9a8070" },
       layout: { variant: "arch", buttonStyle: "pill", surface: "#f6efe9", accent: "#b98a6b", buttonHeight: 56, buttonFont: 16, gap: 12, sidePadding: 24, topPadding: 28, bottomPadding: 22, footerGap: 14 },
     },
@@ -140,7 +140,7 @@ export const TEMPLATES: { id: string; name: string; patch: Partial<LandingThemeC
       title: { show: true, text: "", font: "Playfair Display", size: 50, color: "#ffffff", align: "left", top: 0 },
       info: { show: true, line1: "", line2: "", color: "#e8e0d4", size: 13, align: "left", top: 12 },
       cta1: { show: true, text: "Tambahkan Momen Anda", icon: "arrow", bg: "#e8c97a", color: "#1a1714", iconBg: "#1a1714", iconColor: "#e8c97a", href: "/capture" },
-      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "glass", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/album" },
+      cta2: { show: true, text: "Jelajahi Album", icon: "image", variant: "glass", bg: "#ffffff", borderColor: "#ffffff", color: "#ffffff", iconBg: "#ffffff33", iconColor: "#ffffff", href: "/gallery" },
       footer: { show: true, text: "Virtual Photobooth by RUANGTEMUPHOTOBOOTH", color: "#ffffff" },
       layout: { variant: "editorial", buttonStyle: "square", surface: "#ffffff", accent: "#e8c97a", buttonHeight: 56, buttonFont: 16, gap: 12, sidePadding: 24, topPadding: 28, bottomPadding: 22, footerGap: 14 },
     },
@@ -254,7 +254,7 @@ export function getDefaultThemeConfigForEvent(event?: Partial<EventItem>): Landi
       color: "#ffffff",
       iconBg: "#ffffff33",
       iconColor: "#ffffff",
-      href: event?.slug ? `/event/${event.slug}/gallery` : "/album",
+      href: event?.slug ? `/event/${event.slug}/gallery` : "/gallery",
     },
     footer: {
       show: true,
@@ -284,7 +284,27 @@ export function resolveLandingThemeConfig(
 ): LandingThemeConfig {
   const base = getDefaultThemeConfigForEvent(event);
   if (!customConfig) return base;
-  return mergeThemeConfig(base, customConfig);
+  const merged = mergeThemeConfig(base, customConfig);
+
+  // Normalize CTA2 href: if it's "/album", "album", "/gallery", "gallery", empty, or ends with "/album",
+  // dynamically resolve to the event's gallery URL so guests never encounter 404 errors.
+  const rawHref = merged.cta2?.href?.trim();
+  if (
+    event?.slug &&
+    (!rawHref ||
+      rawHref === "/album" ||
+      rawHref === "album" ||
+      rawHref === "/gallery" ||
+      rawHref === "gallery" ||
+      rawHref.endsWith("/album"))
+  ) {
+    if (!merged.cta2) {
+      merged.cta2 = { ...base.cta2 };
+    }
+    merged.cta2.href = `/event/${event.slug}/gallery`;
+  }
+
+  return merged;
 }
 
 const BUTTON_RADIUS_MAP: Record<string, string> = {

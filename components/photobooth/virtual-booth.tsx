@@ -11,6 +11,7 @@ import {
   applyPixelFilter,
 } from "@/lib/frame-canvas";
 import { VoiceNoteRecorder } from "@/lib/audio";
+import { VoiceWaveformVisualizer } from "./voice-waveform";
 import {
   LandingPageView,
   GuestNamePageView,
@@ -387,6 +388,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
   // Voice Note
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const [audioSeconds, setAudioSeconds] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
@@ -497,6 +499,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   useEffect(() => {
     return () => {
       stopCamera();
+      if (recorderRef.current) {
+        recorderRef.current.cancel();
+      }
     };
   }, [stopCamera]);
 
@@ -789,6 +794,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
           console.error("Audio stop error:", e);
         }
       }
+      setRecordingStream(null);
       setIsRecordingAudio(false);
     } else {
       recorderRef.current = new VoiceNoteRecorder();
@@ -800,6 +806,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             handleToggleVoiceRecording();
           }
         });
+        setRecordingStream(recorderRef.current.getStream());
         setIsRecordingAudio(true);
       } catch {
         alert("Mikrofon tidak dapat diakses.");
@@ -1207,11 +1214,25 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       {currentStep === "welcome" && event.theme_config && (
         <main className="flex-1 w-full h-[100dvh] min-h-[100dvh] flex flex-col relative overflow-hidden select-none">
           <LandingPageView
-            config={event.theme_config}
+            config={themeConfig}
             onCta1Click={handleProceedToNameInput}
             onCta2Click={() => {
-              window.location.href =
-                event.theme_config?.cta2?.href || `/event/${event.slug}/gallery`;
+              const rawHref =
+                themeConfig?.cta2?.href?.trim() ||
+                event.theme_config?.cta2?.href?.trim();
+              const isInvalidOrGenericAlbum =
+                !rawHref ||
+                rawHref === "/album" ||
+                rawHref === "album" ||
+                rawHref === "/gallery" ||
+                rawHref === "gallery" ||
+                rawHref.endsWith("/album");
+
+              const targetUrl = isInvalidOrGenericAlbum
+                ? `/event/${event.slug}/gallery`
+                : rawHref;
+
+              window.location.href = targetUrl;
             }}
             interactive={true}
           />
@@ -2598,7 +2619,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                       <button
                         type="button"
                         onClick={handleToggleVoiceRecording}
-                        className={`min-h-[44px] px-4 font-semibold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center gap-2 ${
+                        className={`min-h-[44px] px-4 font-semibold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center gap-2 shrink-0 ${
                           isRecordingAudio
                             ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 animate-pulse"
                             : isNurulIqraWedding
@@ -2623,6 +2644,17 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           </>
                         )}
                       </button>
+
+                      {/* Real-time Voice Frequency Graphic */}
+                      {isRecordingAudio && (
+                        <div className="flex-1 h-11 px-3 bg-red-950/40 border border-red-500/25 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
+                          <VoiceWaveformVisualizer
+                            stream={recordingStream}
+                            isRecording={isRecordingAudio}
+                            className="w-full h-7"
+                          />
+                        </div>
+                      )}
 
                       {audioUrl && !isRecordingAudio && (
                         <audio src={audioUrl} controls className="h-9 flex-1 max-w-[190px] opacity-90 rounded-lg" />

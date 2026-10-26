@@ -13,6 +13,10 @@ export class VoiceNoteRecorder {
   private stream: MediaStream | null = null;
   private timerInterval: NodeJS.Timeout | null = null;
 
+  public getStream(): MediaStream | null {
+    return this.stream;
+  }
+
   public async startRecording(onTick?: (seconds: number) => void): Promise<void> {
     this.audioChunks = [];
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });

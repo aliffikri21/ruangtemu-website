@@ -1,17 +1,17 @@
 # Graph Report - ruangtemu-test  (2026-10-26)
 
 ## Corpus Check
-- 117 files · ~157,900 words
+- 119 files · ~159,937 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: .ico 2, .css 2, .example 1)
 
 ## Summary
-- 1252 nodes · 1863 edges · 93 communities (80 shown, 13 thin omitted)
+- 1260 nodes · 1875 edges · 100 communities (89 shown, 11 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 16 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `97a05051`
+- Built from commit: `8f88e9a3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -24,7 +24,7 @@
 - booking-modal.tsx
 - virtual-booth.tsx
 - compress.py
-- contrast-check.py
+- theme-config.tsx
 - maintenance.ts
 - package.json
 - detect.py
@@ -43,13 +43,13 @@
 - app/page.tsx
 - eslint.config.mjs
 - getEventBySlug
-- status/route.ts
+- guest-name-ui-editor.tsx
 - scripts
 - CurvedLoop.tsx
 - AGENTS.md
 - RUANGTEMU Virtual Photobooth - Design & Architecture Specification
-- lock_path_for
-- qr/page.tsx
+- booking/page.tsx
+- projection/page.tsx
 - Tone & Voice
 - 📸 RUANGTEMU Virtual Photobooth & Event Management Platform
 - antislop-layoutmobile
@@ -62,7 +62,7 @@
 - Group 1: Hard Gate (absolute, no exceptions)
 - Caveman Help
 - export-zip/route.ts
-- save-frame.ts
+- VoiceNoteRecorder
 - Group 2: Purpose-Gate (technique allowed, purpose required)
 - Rules
 - Rules
@@ -77,11 +77,11 @@
 - Visual & Color
 - caveman-commit
 - caveman-review
-- AdminMobileGuard
+- contrast-check.py
 - Group 3: Quality Locks (consistency)
 - Playwright E2E Testing Skill
 - packages/route.ts
-- frame-detect.ts
+- admin/page.tsx
 - antislop
 - Part 1: AI Slop Patterns (Warning Signs)
 - App & Dashboard
@@ -95,54 +95,61 @@
 - Delivery Gate (Mandatory)
 - skills/caveman-learn — the Caveman Learn editing skill (Apache-2.0, public)
 - caveman-learn skill
-- qrcode
+- frame-detect.ts
 - Part 3: Liveliness Toolkit
 - This is NOT the Next.js you know
 - MOBILE-FIRST MVP PRIORITY — RUANGTEMU VIRTUAL PHOTOBOOTH
 - megacave/README.md
 - ultracave/README.md
-- googleapis@^188.0.0
+- react
+- lock_path_for
+- [id]/route.ts
+- Mobile Navigation
+- Breakpoints
+- Overflow
+- Tap Targets
+- canvas-confetti
 - @playwright/test
 - jszip
-- lucide-react
+- react-dom@19.2.8
 - @types/three@^0.186.0
 
 ## God Nodes (most connected - your core abstractions)
 1. `AdminView()` - 42 edges
-2. `next` - 36 edges
+2. `next` - 37 edges
 3. `getDbClient()` - 27 edges
 4. `RUANGTEMU VIRTUAL PHOTOBOOTH — AUDIT REPORT` - 24 edges
 5. `_compress_file_locked()` - 19 edges
-6. `react` - 18 edges
+6. `react` - 19 edges
 7. `Group 1: Hard Gate (absolute, no exceptions)` - 18 edges
 8. `compilerOptions` - 17 edges
 9. `RUANGTEMU Virtual Photobooth - Design & Architecture Specification` - 17 edges
-10. `getEventBySlug()` - 16 edges
+10. `VirtualBooth()` - 16 edges
 
 ## Surprising Connections (you probably didn't know these)
+- ``components/photobooth/virtual-booth.tsx` (726 lines)` --references--> `renderPhotoboothFrame()`  [INFERRED]
+  docs/AUDIT.md → lib/frame-canvas.ts
 - `Fixed Pixel Type` --references--> `clamp()`  [INFERRED]
   .agents/skills/antislop-layoutmobile/SKILL.md → components/reactbits/CircularText.tsx
 - ``components/photobooth/virtual-booth.tsx` (726 lines)` --references--> `VoiceNoteRecorder`  [INFERRED]
   docs/AUDIT.md → lib/audio.ts
-- ``components/photobooth/virtual-booth.tsx` (726 lines)` --references--> `renderPhotoboothFrame()`  [INFERRED]
-  docs/AUDIT.md → lib/frame-canvas.ts
 - `DELETE()` --calls--> `deleteBooking()`  [EXTRACTED]
   app/api/bookings/route.ts → lib/db.ts
-- `GET()` --calls--> `getEvents()`  [EXTRACTED]
-  app/api/events/route.ts → lib/db.ts
+- `generateMetadata()` --calls--> `getEventBySlug()`  [EXTRACTED]
+  app/event/[slug]/page.tsx → lib/db.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (93 total, 13 thin omitted)
+## Communities (100 total, 11 thin omitted)
 
 ### Community 0 - "db.ts"
-Cohesion: 0.14
-Nodes (21): DELETE(), PATCH(), POST(), DELETE(), dynamic, RouteContext, createBooking(), defaultDemoFrames (+13 more)
+Cohesion: 0.21
+Nodes (15): DELETE(), PATCH(), POST(), createBooking(), defaultDemoFrames, encodeBookingNotes(), mapBookingRow(), mockBookings (+7 more)
 
 ### Community 1 - "admin-view.tsx"
-Cohesion: 0.11
-Nodes (31): AdminView(), formatIndonesianDateTime(), formatNotificationClockTime(), IconBell(), IconBooking(), IconCalendar(), IconCamera(), IconCheck() (+23 more)
+Cohesion: 0.10
+Nodes (37): AdminMobileGuard(), AdminView(), formatIndonesianDateTime(), formatNotificationClockTime(), IconBell(), IconBooking(), IconCalendar(), IconCamera() (+29 more)
 
 ### Community 2 - "layout.tsx"
 Cohesion: 0.20
@@ -153,28 +160,28 @@ Cohesion: 0.09
 Nodes (21): benchmark_pair(), count_tokens(), main(), print_table(), count_bullets(), extract_code_blocks(), extract_fenced_spans(), extract_headings() (+13 more)
 
 ### Community 4 - "doku.ts"
-Cohesion: 0.12
-Nodes (19): dynamic, POST(), dynamic, POST(), ADDON_PRICING, createDokuCheckoutSession(), createDokuVirtualAccount(), DOKU_CONFIG (+11 more)
+Cohesion: 0.09
+Nodes (28): dynamic, POST(), dynamic, POST(), dynamic, GET(), POST(), dynamic (+20 more)
 
 ### Community 5 - "booking-modal.tsx"
-Cohesion: 0.19
-Nodes (13): BookingForm(), DokuPaymentModal(), DokuPaymentModalProps, BOOKING_PACKAGES, BookingModal(), BookingServiceCategory, PackageOption, PHOTOBOOTH_PACKAGES (+5 more)
+Cohesion: 0.15
+Nodes (12): ClientReviewItem, DEFAULT_LANDING_PACKAGES, DUMMY_QUOTES_POOL, INITIAL_CLIENT_REVIEWS, BOOKING_PACKAGES, BookingModalProps, BookingServiceCategory, PackageOption (+4 more)
 
 ### Community 6 - "virtual-booth.tsx"
-Cohesion: 0.06
-Nodes (53): DEVICES, GuestNameUIEditor(), GuestNameUIEditorProps, PRESETS, DEVICES, ICON_OPTIONS, LandingUIEditor(), LandingUIEditorProps (+45 more)
+Cohesion: 0.14
+Nodes (23): EventPhotoboothPage(), generateMetadata(), Props, CameraState, DAYS_ID, FILTERS, formatIndonesianDateUpper(), formatIndonesianFullDate() (+15 more)
 
 ### Community 7 - "compress.py"
 Cohesion: 0.12
 Nodes (11): AnthropicSdkUnavailable, call_anthropic_sdk(), call_claude(), call_claude_cli(), call_openai_compat(), call_opencode_cli(), configured_model(), configured_provider() (+3 more)
 
-### Community 8 - "contrast-check.py"
-Cohesion: 0.27
-Nodes (9): contrast_ratio(), linearize(), luminance(), main(), parse_hex(), parse_pairing(), parse_reference_rows(), reference_doc_path() (+1 more)
+### Community 8 - "theme-config.tsx"
+Cohesion: 0.20
+Nodes (15): DEVICES, ICON_OPTIONS, LandingUIEditor(), LandingUIEditorProps, LAYOUT_VARIANTS, BUTTON_RADIUS_MAP, DEFAULT_THEME_CONFIG, FONTS_BODY (+7 more)
 
 ### Community 9 - "maintenance.ts"
-Cohesion: 0.16
-Nodes (11): dynamic, GET(), POST(), cachedConfig, DEFAULT_CONFIG, getMaintenanceConfig(), LOCAL_FILE_PATH, MaintenanceConfig (+3 more)
+Cohesion: 0.13
+Nodes (14): dynamic, GET(), POST(), cachedConfig, DEFAULT_CONFIG, getMaintenanceConfig(), LOCAL_FILE_PATH, MaintenanceConfig (+6 more)
 
 ### Community 10 - "package.json"
 Cohesion: 0.12
@@ -190,11 +197,11 @@ Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModu
 
 ### Community 13 - "dependencies"
 Cohesion: 0.09
-Nodes (23): dependencies, clsx@^2.1.1, exceljs@^4.4.0, motion@^14.3.0, mysql2@^3.24.5, next@16.3.5, react@19.2.8, react-dom@19.2.8 (+15 more)
+Nodes (23): dependencies, clsx@^2.1.1, exceljs@^4.4.0, googleapis@^188.0.0, lucide-react@^1.47.0, motion@^14.3.0, next@16.3.5, react@19.2.8 (+15 more)
 
 ### Community 14 - "index.ts"
-Cohesion: 0.13
-Nodes (15): Props, AdminViewProps, BookingModalProps, Booking, BookingStatus, EventFrame, EventStatus, GalleryEntry (+7 more)
+Cohesion: 0.20
+Nodes (9): BookingStatus, EventFrame, EventStatus, MediaAsset, ModerationStatus, PhysicalPrintSize, PublicEventDTO, PublicFrameDTO (+1 more)
 
 ### Community 15 - "maintenance/page.tsx"
 Cohesion: 0.38
@@ -229,24 +236,24 @@ Cohesion: 0.20
 Nodes (9): description, files, license, name, private, scripts, test, type (+1 more)
 
 ### Community 23 - "gallery/page.tsx"
-Cohesion: 0.36
-Nodes (6): EventGalleryPage(), formatDateCustom(), formatTimeCustom(), isLightHex(), Props, EventData
+Cohesion: 0.33
+Nodes (7): EventGalleryPage(), formatDateCustom(), formatTimeCustom(), isLightHex(), Props, resolveLandingThemeConfig(), EventData
 
 ### Community 24 - "app/page.tsx"
-Cohesion: 0.16
-Nodes (11): Fixed Pixel Type, ClientReviewItem, DEFAULT_LANDING_PACKAGES, DUMMY_QUOTES_POOL, INITIAL_CLIENT_REVIEWS, CircularText(), CircularTextProps, clamp() (+3 more)
+Cohesion: 0.18
+Nodes (11): 100vh Sections, Desktop-Sized Everything, Fixed Pixel Type, Huge Empty Padding, Scale & Sizing, CircularText(), CircularTextProps, clamp() (+3 more)
 
 ### Community 25 - "eslint.config.mjs"
 Cohesion: 0.33
 Nodes (5): eslintConfig, eslint@^9, eslint-config-next@16.3.5, eslint, eslint-config-next
 
 ### Community 26 - "getEventBySlug"
-Cohesion: 0.29
-Nodes (12): DELETE(), GET(), PUT(), EventPhotoboothPage(), generateMetadata(), Props, deleteEvent(), getEventBySlug() (+4 more)
+Cohesion: 0.27
+Nodes (11): GET(), DELETE(), GET(), PUT(), buildSafeFramePayload(), deleteEvent(), getEvents(), mapEventRow() (+3 more)
 
-### Community 27 - "status/route.ts"
-Cohesion: 0.33
-Nodes (9): dynamic, POST(), dynamic, GET(), POST(), updateEventPaymentByInvoice(), checkDokuOrderStatus(), isInvoicePaidLocally() (+1 more)
+### Community 27 - "guest-name-ui-editor.tsx"
+Cohesion: 0.26
+Nodes (11): DEVICES, GuestNameUIEditor(), GuestNameUIEditorProps, PRESETS, VirtualBoothProps, DEFAULT_GUEST_NAME_CONFIG, GuestNamePageView(), GuestNamePageViewProps (+3 more)
 
 ### Community 28 - "scripts"
 Cohesion: 0.29
@@ -264,9 +271,13 @@ Nodes (58): 10. CAMERA PREVIEW, 11. CAMERA PERMISSION, 12. CAMERA CLEANUP, 13. M
 Cohesion: 0.05
 Nodes (39): 10. Data Access Layer (`lib/db.ts`), 11.1 `components/photobooth/virtual-booth.tsx` (657 baris), 11.2 `components/admin/admin-view.tsx` (640 baris), 11.3 `lib/frame-canvas.ts` (11.7KB), 11.4 `lib/audio.ts` (2.9KB), 11. Komponen Utama, 12. Environment Variables, 13. Technical Debt & Migration Gaps (+31 more)
 
-### Community 33 - "lock_path_for"
-Cohesion: 0.29
-Nodes (3): lock_path_for(), mask_code_blocks(), _state_base_dir()
+### Community 33 - "booking/page.tsx"
+Cohesion: 0.19
+Nodes (13): BookingForm(), BookingPage(), PackageOption, packageOptions, DokuPaymentModal(), DokuPaymentModalProps, BookingModal(), Footer() (+5 more)
+
+### Community 34 - "projection/page.tsx"
+Cohesion: 0.40
+Nodes (3): Props, qrcode@^1.5.4, qrcode
 
 ### Community 35 - "Tone & Voice"
 Cohesion: 0.05
@@ -277,8 +288,8 @@ Cohesion: 0.06
 Nodes (32): 1. `database/mysql_schema.sql` (Initial Database Schema), 1. Mobile-First Virtual Photobooth (Tamu), 2. `database/mysql_seed.sql` (Seed Data), 2. Manajemen Multi-Event & Isolasi Data, 3. Galeri Acara & Mode Proyeksi Venue (Live Projection), 4. Landing Page Komersial & Live UI Editor, 5. Dual Database Support (MySQL & Supabase), 6. Sistem Pemeliharaan (Maintenance Mode) (+24 more)
 
 ### Community 37 - "antislop-layoutmobile"
-Cohesion: 0.07
-Nodes (29): 100vh Sections, antislop-layoutmobile, Bottom Nav That Eats Content, Breakpoint Driven by Device List, Breakpoints, Columns That Don't Collapse, Desktop-Only Layout, Desktop-Sized Everything (+21 more)
+Cohesion: 0.25
+Nodes (7): antislop-layoutmobile, Columns That Don't Collapse, Fixed-Width Grid, Forced 12-Column, Grids & Stacking, How to use this skill, Layoutmobile Skill Checklist
 
 ### Community 39 - "RUANGTEMU VIRTUAL PHOTOBOOTH — AUDIT REPORT"
 Cohesion: 0.07
@@ -309,12 +320,12 @@ Cohesion: 0.14
 Nodes (12): caveman-help, Example output, How to invoke, See also, What it does, Caveman Help, Configure Default Mode, Deactivate (+4 more)
 
 ### Community 46 - "export-zip/route.ts"
-Cohesion: 0.19
-Nodes (13): dynamic, GET(), revalidate, GET(), cleanFilename(), dynamic, fetchFileBuffer(), GET() (+5 more)
-
-### Community 47 - "save-frame.ts"
 Cohesion: 0.18
-Nodes (12): GET(), POST(), POST(), POST(), buildSafeFramePayload(), createEvent(), deleteBooking(), saveFrameImage() (+4 more)
+Nodes (16): DELETE(), dynamic, GET(), POST(), revalidate, RouteContext, cleanFilename(), dynamic (+8 more)
+
+### Community 47 - "VoiceNoteRecorder"
+Cohesion: 0.20
+Nodes (5): `components/admin/admin-view.tsx` (680 lines), `components/photobooth/virtual-booth.tsx` (726 lines), CURRENT COMPONENTS, AudioRecorderState, VoiceNoteRecorder
 
 ### Community 48 - "Group 2: Purpose-Gate (technique allowed, purpose required)"
 Cohesion: 0.15
@@ -329,12 +340,12 @@ Cohesion: 0.15
 Nodes (12): 1. Fragments, 2. One word when one word is enough, 3. Each fact once, 4. Cut conjunctions only when order survives, 5. Tool runs, 6. Never perform, Floor, Persistence (+4 more)
 
 ### Community 51 - "admin/page.tsx"
-Cohesion: 0.21
-Nodes (10): AdminPage(), dynamic, metadata, revalidate, dynamic, GET(), getEventPrice(), revalidate (+2 more)
+Cohesion: 0.29
+Nodes (7): dynamic, GET(), getEventPrice(), revalidate, AdminViewProps, Booking, GalleryEntry
 
 ### Community 52 - "getEventBySlug"
-Cohesion: 0.27
-Nodes (10): DELETE(), dynamic, POST(), revalidate, RouteContext, clearEventEntries(), createEntry(), saveEntryPhoto() (+2 more)
+Cohesion: 0.30
+Nodes (10): POST(), POST(), POST(), createEvent(), deleteBooking(), saveEntryPhoto(), saveFrameImage(), saveLandingBgImage() (+2 more)
 
 ### Community 53 - "Decorative Elements"
 Cohesion: 0.17
@@ -349,8 +360,8 @@ Cohesion: 0.38
 Nodes (5): HomePage(), frame(), measure(), resize(), target()
 
 ### Community 56 - "next"
-Cohesion: 0.12
-Nodes (9): BookingPage(), PackageOption, packageOptions, Footer(), Navbar(), config, nextConfig, next (+1 more)
+Cohesion: 0.13
+Nodes (4): AlbumPageProps, config, nextConfig, next
 
 ### Community 57 - "antislop-ui"
 Cohesion: 0.18
@@ -372,9 +383,9 @@ Nodes (9): caveman-commit, Example output, How to invoke, See also, What it does
 Cohesion: 0.18
 Nodes (9): caveman-review, Example output, How to invoke, See also, What it does, Auto-Clarity, Boundaries, Examples (+1 more)
 
-### Community 62 - "AdminMobileGuard"
-Cohesion: 0.40
-Nodes (5): AdminMobileGuard(), IconDesktopTablet(), IconRefresh(), IconShieldCheck(), IconSmartphoneOff()
+### Community 62 - "contrast-check.py"
+Cohesion: 0.27
+Nodes (9): contrast_ratio(), linearize(), luminance(), main(), parse_hex(), parse_pairing(), parse_reference_rows(), reference_doc_path() (+1 more)
 
 ### Community 63 - "Group 3: Quality Locks (consistency)"
 Cohesion: 0.20
@@ -388,9 +399,9 @@ Nodes (3): Mobile-First Testing Principles (Per AGENTS.md), Playwright E2E Testi
 Cohesion: 0.29
 Nodes (10): dynamic, GET(), PATCH(), revalidate, getPackageBySlug(), getPackages(), mapPackageRow(), toggleEntryApproval() (+2 more)
 
-### Community 66 - "frame-detect.ts"
-Cohesion: 0.33
-Nodes (8): FrameUploadSlot, DetectionResult, detectTransparentRegions(), floodFill(), loadImageFromUrl(), mergeOverlapping(), FrameType, PhotoSlot
+### Community 66 - "admin/page.tsx"
+Cohesion: 0.19
+Nodes (11): AdminPage(), dynamic, metadata, revalidate, GET(), dynamic, GET(), revalidate (+3 more)
 
 ### Community 67 - "antislop"
 Cohesion: 0.25
@@ -444,9 +455,9 @@ Nodes (4): Boundary (binding), Install path, Layout, skills/caveman-learn — th
 Cohesion: 0.40
 Nodes (4): caveman-learn skill, Honesty, Install, What it does
 
-### Community 80 - "qrcode"
+### Community 80 - "frame-detect.ts"
 Cohesion: 0.33
-Nodes (4): canvas-confetti@^1.9.4, qrcode@^1.5.4, canvas-confetti, qrcode
+Nodes (8): FrameUploadSlot, DetectionResult, detectTransparentRegions(), floodFill(), loadImageFromUrl(), mergeOverlapping(), FrameType, PhotoSlot
 
 ### Community 81 - "Part 3: Liveliness Toolkit"
 Cohesion: 0.50
@@ -456,23 +467,55 @@ Nodes (4): Design Read (how the dials are set), Levers (how the dials become vis
 Cohesion: 0.67
 Nodes (3): antislop, caveman, This is NOT the Next.js you know
 
+### Community 86 - "react"
+Cohesion: 0.29
+Nodes (5): Props, drawRoundedPill(), VoiceWaveformVisualizer(), VoiceWaveformVisualizerProps, react
+
+### Community 87 - "lock_path_for"
+Cohesion: 0.29
+Nodes (3): lock_path_for(), mask_code_blocks(), _state_base_dir()
+
+### Community 90 - "[id]/route.ts"
+Cohesion: 0.40
+Nodes (5): DELETE(), dynamic, RouteContext, deleteEntry(), deleteMediaFiles()
+
+### Community 91 - "Mobile Navigation"
+Cohesion: 0.40
+Nodes (5): Bottom Nav That Eats Content, Mobile Navigation, Nav That Stays Desktop, Sticky Nav Steals the Screen, The Bare Hamburger
+
+### Community 92 - "Breakpoints"
+Cohesion: 0.40
+Nodes (5): Breakpoint Driven by Device List, Breakpoints, Desktop-Only Layout, Mobile Styled Last, Two-State Layout
+
+### Community 93 - "Overflow"
+Cohesion: 0.50
+Nodes (4): Fixed-Width Children, Horizontal Scroll Leak, Overflow, Overflow Hidden Clipping
+
+### Community 94 - "Tap Targets"
+Cohesion: 0.50
+Nodes (4): Hover-Only Interactions, Tap Targets, Targets Too Close, Under-Sized Targets
+
+### Community 95 - "canvas-confetti"
+Cohesion: 0.33
+Nodes (4): canvas-confetti@^1.9.4, mysql2@^3.24.5, canvas-confetti, mysql2
+
 ## Knowledge Gaps
-- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `next` connect `next` to `db.ts`, `admin-view.tsx`, `layout.tsx`, `doku.ts`, `virtual-booth.tsx`, `maintenance.ts`, `package.json`, `dependencies`, `index.ts`, `maintenance/page.tsx`, `gallery/page.tsx`, `app/page.tsx`, `getEventBySlug`, `status/route.ts`, `qr/page.tsx`, `export-zip/route.ts`, `save-frame.ts`, `admin/page.tsx`, `getEventBySlug`, `packages/route.ts`?**
-  _High betweenness centrality (0.068) - this node is a cross-community bridge._
+- **Why does `next` connect `next` to `db.ts`, `admin-view.tsx`, `layout.tsx`, `doku.ts`, `booking-modal.tsx`, `virtual-booth.tsx`, `maintenance.ts`, `package.json`, `dependencies`, `maintenance/page.tsx`, `gallery/page.tsx`, `getEventBySlug`, `booking/page.tsx`, `projection/page.tsx`, `export-zip/route.ts`, `admin/page.tsx`, `getEventBySlug`, `packages/route.ts`, `admin/page.tsx`, `react`, `[id]/route.ts`?**
+  _High betweenness centrality (0.067) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `AdminView()` (e.g. with `handleClickOutside()` and `IconBooking()`) actually correct?**
   _`AdminView()` has 7 INFERRED edges - model-reasoned connections that need verification._
-- **Should `db.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.13768115942028986 - nodes in this community are weakly interconnected._
-- **Why does `react` connect `qr/page.tsx` to `admin-view.tsx`, `booking-modal.tsx`, `virtual-booth.tsx`, `package.json`, `dependencies`, `index.ts`, `maintenance/page.tsx`, `gallery/page.tsx`, `next`, `app/page.tsx`, `CurvedLoop.tsx`?**
-  _High betweenness centrality (0.027) - this node is a cross-community bridge._
 - **Should `admin-view.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.11051693404634581 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.09615384615384616 - nodes in this community are weakly interconnected._
+- **Why does `react` connect `react` to `booking/page.tsx`, `projection/page.tsx`, `admin-view.tsx`, `booking-modal.tsx`, `virtual-booth.tsx`, `theme-config.tsx`, `package.json`, `dependencies`, `maintenance/page.tsx`, `gallery/page.tsx`, `app/page.tsx`, `guest-name-ui-editor.tsx`, `CurvedLoop.tsx`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
 - **Should `validate.py` be split into smaller, more focused modules?**
   _Cohesion score 0.09009009009009009 - nodes in this community are weakly interconnected._
 - **Should `doku.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.11688311688311688 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.09269162210338681 - nodes in this community are weakly interconnected._
+- **Should `virtual-booth.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.14153846153846153 - nodes in this community are weakly interconnected._
