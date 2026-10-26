@@ -234,9 +234,9 @@
     "semantic_hash": "ba236c933521866ecde57e733a9d8078"
   },
   "app/page.tsx": {
-    "mtime": 1792963047.6200573,
-    "seen": 1792963092.4682188,
-    "ast_hash": "5a91874dfc0b990228e8866f3f5d027c",
+    "mtime": 1793040223.2570848,
+    "seen": 1793040263.3312669,
+    "ast_hash": "7fbbc0247e76f95ce6b8e139fff1953d",
     "semantic_hash": ""
   },
   "app/robots.ts": {

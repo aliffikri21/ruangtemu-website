@@ -34,7 +34,7 @@ const INITIAL_CLIENT_REVIEWS: ClientReviewItem[] = [
     clientName: "Nurul & Iqra",
     venue: "Gedung Merdeka Convention Centre, Palopo",
     eventType: "PERNIKAHAN",
-    quote: "Menilai layanan rapi, tepat waktu, dan interaktif berkat live projection di lokasi.",
+    quote: "Menilai layanan rapi, tepat waktu, dan interaktif dengan hasil cetak instan berkualitas di lokasi.",
   },
   {
     clientName: "Andi Pratama & Sarah Wijaya",
@@ -53,7 +53,7 @@ const INITIAL_CLIENT_REVIEWS: ClientReviewItem[] = [
 const DUMMY_QUOTES_POOL = [
   "Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.",
   "Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.",
-  "Menilai layanan rapi, tepat waktu, dan interaktif berkat live projection di lokasi.",
+  "Menilai layanan rapi, tepat waktu, dan interaktif dengan hasil cetak instan berkualitas di lokasi.",
   "Kualitas cetakan foto tajam, warna akurat, dan prosesnya cepat sehingga tidak ada antrean panjang.",
   "Tamu undangan sangat antusias mencoba virtual photobooth langsung lewat smartphone masing-masing.",
   "Pelayanan sangat ramah dan responsif dari awal konsultasi sampai hari H. Tamu-tamu kami sangat puas!",
