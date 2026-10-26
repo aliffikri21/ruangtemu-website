@@ -3,6 +3,8 @@
 import { useEffect, useState, useId, useMemo } from "react";
 import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
 import { EventType, Package } from "@/types";
+import { DateInputDMY } from "./ui/date-input-dmy";
+import { TimeInput24 } from "./ui/time-input-24";
 
 export type BookingServiceCategory = "photobooth" | "virtual_photobooth";
 
@@ -1221,10 +1223,9 @@ export function BookingModal({
                         <label className="block text-xs font-semibold text-blue-900 mb-1">
                           Waktu Mulai Acara (WITA)
                         </label>
-                        <input
-                          type="time"
+                        <TimeInput24
                           value={formData.event_time}
-                          onChange={(e) => setFormData({ ...formData, event_time: e.target.value })}
+                          onChange={(time24) => setFormData({ ...formData, event_time: time24 })}
                           className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-slate-800 text-sm outline-none transition-all font-mono"
                         />
                       </div>
@@ -1236,13 +1237,12 @@ export function BookingModal({
                         <label className="block text-xs font-semibold text-blue-900 mb-1">
                           Tanggal Acara *
                         </label>
-                        <div className="relative">
-                          <input
-                            type="date"
+                        <div>
+                          <DateInputDMY
                             required
                             value={formData.event_date}
-                            onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-                            className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-slate-800 text-sm outline-none transition-all font-mono"
+                            onChange={(isoDate) => setFormData({ ...formData, event_date: isoDate })}
+                            className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-slate-800 text-sm outline-none transition-all"
                           />
                         </div>
                       </div>

@@ -46,17 +46,32 @@ export function formatTime(timeInput?: string | Date | number): string {
   try {
     if (typeof timeInput === "string") {
       const trimmed = timeInput.trim();
-      const timeMatch = trimmed.match(/^(\d{1,2})[.:](\d{2})/);
-      if (timeMatch && !trimmed.includes("T")) {
-        const [, h, m] = timeMatch;
-        return `${h.padStart(2, "0")}:${m}`;
+      // Tangani format "01:00 PM", "1:00 PM", atau "13:00"
+      const ampmMatch = trimmed.match(/^(\d{1,2})[.:](\d{2})\s*(AM|PM)?$/i);
+      if (ampmMatch && !trimmed.includes("T")) {
+        let [, hStr, mStr, ampm] = ampmMatch;
+        let h = parseInt(hStr, 10);
+        if (ampm) {
+          const isPM = ampm.toUpperCase() === "PM";
+          if (isPM && h < 12) h += 12;
+          if (!isPM && h === 12) h = 0;
+        }
+        return `${String(h).padStart(2, "0")}:${mStr}`;
       }
     }
     const date = typeof timeInput === "string" || typeof timeInput === "number" ? new Date(timeInput) : timeInput;
     if (isNaN(date.getTime())) return String(timeInput);
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${hours}:${minutes}`;
+
+    // Konversi ke zona waktu WITA (Asia/Makassar, UTC+8) dengan format 24 jam (hour12: false)
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Makassar",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(date);
+    const h = parts.find((p) => p.type === "hour")?.value || String(date.getHours()).padStart(2, "0");
+    const m = parts.find((p) => p.type === "minute")?.value || String(date.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
   } catch {
     return String(timeInput);
   }

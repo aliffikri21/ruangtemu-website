@@ -6,6 +6,8 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
 import { EventType } from "@/types";
+import { DateInputDMY } from "@/components/ui/date-input-dmy";
+import { TimeInput24 } from "@/components/ui/time-input-24";
 
 interface PackageOption {
   id: string;
@@ -392,11 +394,10 @@ function BookingForm() {
                   <label className="block text-xs font-mono uppercase tracking-wider text-stone-600 mb-1.5">
                     Tanggal Acara *
                   </label>
-                  <input
-                    type="date"
+                  <DateInputDMY
                     required
                     value={formData.event_date}
-                    onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                    onChange={(isoDate) => setFormData({ ...formData, event_date: isoDate })}
                     className="w-full min-h-[44px] px-3.5 py-2 bg-stone-50/50 border border-stone-200 focus:border-stone-900 focus:bg-white text-stone-900 text-sm outline-none transition-colors"
                   />
                 </div>
@@ -405,10 +406,9 @@ function BookingForm() {
                   <label className="block text-xs font-mono uppercase tracking-wider text-stone-600 mb-1.5">
                     Waktu Mulai (WITA)
                   </label>
-                  <input
-                    type="time"
+                  <TimeInput24
                     value={formData.event_time}
-                    onChange={(e) => setFormData({ ...formData, event_time: e.target.value })}
+                    onChange={(time24) => setFormData({ ...formData, event_time: time24 })}
                     className="w-full min-h-[44px] px-3.5 py-2 bg-stone-50/50 border border-stone-200 focus:border-stone-900 focus:bg-white text-stone-900 text-sm outline-none transition-colors"
                   />
                 </div>

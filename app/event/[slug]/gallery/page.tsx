@@ -45,12 +45,18 @@ function formatDateCustom(dateStr: string): string {
 function formatTimeCustom(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "13:00";
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${hours}:${minutes}`;
+    if (isNaN(d.getTime())) return "13:00 WITA";
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Makassar",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(d);
+    const h = parts.find((p) => p.type === "hour")?.value || String(d.getHours()).padStart(2, "0");
+    const m = parts.find((p) => p.type === "minute")?.value || String(d.getMinutes()).padStart(2, "0");
+    return `${h}:${m} WITA`;
   } catch {
-    return "13:00";
+    return "13:00 WITA";
   }
 }
 

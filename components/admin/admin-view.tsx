@@ -7,6 +7,8 @@ import { formatRupiah, formatDate, formatTime } from "@/lib/utils";
 import { detectTransparentRegions } from "@/lib/frame-detect";
 import { LandingUIEditor } from "./landing-ui-editor";
 import { GuestNameUIEditor } from "./guest-name-ui-editor";
+import { AdminCharts } from "./admin-charts";
+import { DateInputDMY } from "../ui/date-input-dmy";
 import { getDefaultThemeConfigForEvent } from "@/lib/theme-config";
 import {
   VIRTUAL_BOOTH_PACKAGES,
@@ -253,8 +255,14 @@ function formatNotificationClockTime(isoString?: string): { time: string; dateAn
     const d = new Date(isoString);
     if (isNaN(d.getTime())) return { time: "--:--", dateAndClock: "-", relative: "Baru saja" };
 
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Makassar",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(d);
+    const hours = parts.find((p) => p.type === "hour")?.value || String(d.getHours()).padStart(2, "0");
+    const minutes = parts.find((p) => p.type === "minute")?.value || String(d.getMinutes()).padStart(2, "0");
     const clock = `${hours}:${minutes} WITA`;
 
     const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
@@ -3068,6 +3076,14 @@ export function AdminView({
                 </div>
               </div>
 
+              {/* ROW 1.5: VISUAL CHARTS & DIAGRAMS (TAILWIND NATIVE) */}
+              <AdminCharts
+                entries={entries}
+                events={events}
+                bookings={bookings}
+                isDarkMode={isDarkMode}
+              />
+
               {/* ROW 2: TWO COLUMNS (LEFT: EVENT MANAGEMENT & LINKS, RIGHT: LIVE GUEST PHOTO STREAM) */}
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                 {/* ───── LEFT COLUMN (8 of 12) ───── */}
@@ -3586,7 +3602,7 @@ export function AdminView({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Tanggal Acara *</label>
-                        <input type="date" required value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
+                        <DateInputDMY required value={newEvent.date} onChange={(isoDate) => setNewEvent({ ...newEvent, date: isoDate })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Lokasi / Gedung *</label>
@@ -3601,7 +3617,7 @@ export function AdminView({
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Tanggal Acara *</label>
-                        <input type="date" required value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
+                        <DateInputDMY required value={newEvent.date} onChange={(isoDate) => setNewEvent({ ...newEvent, date: isoDate })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Lokasi / Gedung *</label>
@@ -5368,7 +5384,7 @@ export function AdminView({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Tanggal</label>
-                            <input type="date" required value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
+                            <DateInputDMY required value={editForm.date} onChange={(isoDate) => setEditForm({ ...editForm, date: isoDate })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Lokasi / Gedung</label>
@@ -5384,7 +5400,7 @@ export function AdminView({
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Tanggal</label>
-                            <input type="date" required value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
+                            <DateInputDMY required value={editForm.date} onChange={(isoDate) => setEditForm({ ...editForm, date: isoDate })} className="w-full h-11 px-4 bg-[#f4f7fe] border border-[#e0e5f2] rounded-xl text-sm text-[#1B2559] outline-none focus:border-[#4318FF] transition-colors" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-[#1B2559] mb-1.5">Lokasi / Gedung</label>
