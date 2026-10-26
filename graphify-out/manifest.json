@@ -294,9 +294,9 @@
     "semantic_hash": "d7991c9d8ccc39398df293cdfb83d96b"
   },
   "components/photobooth/virtual-booth.tsx": {
-    "mtime": 1793009952.8422961,
-    "seen": 1793009991.3495166,
-    "ast_hash": "478628f5d9063f0ebb0d748642d8d25b",
+    "mtime": 1793028777.9941604,
+    "seen": 1793028820.9111457,
+    "ast_hash": "02163fb3468672b9689f2e3a91f908b5",
     "semantic_hash": ""
   },
   "components/reactbits/CircularText.tsx": {

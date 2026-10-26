@@ -1,7 +1,7 @@
 # Graph Report - ruangtemu-test  (2026-10-26)
 
 ## Corpus Check
-- 119 files · ~159,937 words
+- 119 files · ~160,023 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: .ico 2, .css 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8f88e9a3`
+- Built from commit: `339b8dc2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -506,7 +506,7 @@ Nodes (4): canvas-confetti@^1.9.4, mysql2@^3.24.5, canvas-confetti, mysql2
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `next` connect `next` to `db.ts`, `admin-view.tsx`, `layout.tsx`, `doku.ts`, `booking-modal.tsx`, `virtual-booth.tsx`, `maintenance.ts`, `package.json`, `dependencies`, `maintenance/page.tsx`, `gallery/page.tsx`, `getEventBySlug`, `booking/page.tsx`, `projection/page.tsx`, `export-zip/route.ts`, `admin/page.tsx`, `getEventBySlug`, `packages/route.ts`, `admin/page.tsx`, `react`, `[id]/route.ts`?**
-  _High betweenness centrality (0.067) - this node is a cross-community bridge._
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `AdminView()` (e.g. with `handleClickOutside()` and `IconBooking()`) actually correct?**
   _`AdminView()` has 7 INFERRED edges - model-reasoned connections that need verification._
 - **Should `admin-view.tsx` be split into smaller, more focused modules?**

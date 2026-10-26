@@ -1183,8 +1183,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             </div>
           )}
 
-      {/* Minimal Top Bar (hidden during camera, welcome, frame_select, name_input, preview, and guestbook screens) */}
-      {!isCustomWedding && currentStep !== "welcome" && currentStep !== "name_input" && currentStep !== "frame_select" && currentStep !== "camera" && currentStep !== "preview" && currentStep !== "guestbook" && (
+      {/* Minimal Top Bar (hidden during camera, welcome, frame_select, name_input, preview, guestbook, and finished screens) */}
+      {!isCustomWedding && currentStep !== "welcome" && currentStep !== "name_input" && currentStep !== "frame_select" && currentStep !== "camera" && currentStep !== "preview" && currentStep !== "guestbook" && currentStep !== "finished" && (
         <header
           className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${isNurulIqraWedding
             ? "border-red-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
@@ -2444,14 +2444,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
       {
         currentStep === "guestbook" && (
           <main
-            className={`flex-1 w-full min-h-[100dvh] flex flex-col justify-between px-5 py-4 relative z-10 select-none overflow-y-auto ${
+            className={`flex-1 w-full min-h-[100dvh] flex flex-col justify-between px-4 sm:px-5 py-3 relative z-10 select-none overflow-y-auto ${
               isNurulIqraWedding
                 ? "bg-gradient-to-b from-[#fffaf7] via-white to-[#fbf2ed] text-stone-900"
-                : "bg-radial from-[#18181c]/70 via-[#0e0e11] to-[#070709] text-white"
+                : "bg-radial from-[#18181c]/80 via-[#0e0e11] to-[#070709] text-white"
             }`}
             style={{
-              paddingTop: "max(1rem, env(safe-area-inset-top))",
-              paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
+              paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+              paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
             }}
           >
             {/* Ambient Studio Lighting (Theme Accent Glow) */}
@@ -2460,7 +2460,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               className="absolute inset-0 pointer-events-none overflow-hidden z-0"
             >
               <div
-                className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[400px] rounded-full blur-[100px] ${
+                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[440px] rounded-full blur-[100px] ${
                   isNurulIqraWedding ? "opacity-15 bg-[#c51d24]" : "opacity-25"
                 }`}
                 style={{
@@ -2471,324 +2471,469 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                 className={`absolute inset-0 pointer-events-none ${
                   isNurulIqraWedding
                     ? "bg-gradient-to-b from-white/30 via-transparent to-red-950/5"
-                    : "bg-gradient-to-b from-black/20 via-transparent to-black/60"
+                    : "bg-gradient-to-b from-black/20 via-transparent to-black/70"
                 }`}
               />
             </div>
 
-            <div className="w-full max-w-sm mx-auto space-y-4 flex-1 flex flex-col justify-between relative z-10">
-              <div className="space-y-4">
-                {/* Minimalist Top Indicator Bar */}
-                <header className="relative z-10 w-full flex items-center justify-between pb-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep("preview")}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
-                      isNurulIqraWedding
-                        ? "bg-stone-100 hover:bg-stone-200 text-stone-800"
-                        : "bg-white/10 hover:bg-white/15 border border-white/10 text-white backdrop-blur-md"
-                    }`}
-                    aria-label="Kembali ke pratinjau foto"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                  </button>
-
-                  <div
-                    className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold shadow-xs border ${
-                      isNurulIqraWedding
-                        ? "bg-red-50/90 border-red-100 text-[#c51d24] font-[family-name:var(--font-cinzel)]"
-                        : "bg-white/10 backdrop-blur-md border-white/10 text-stone-200"
-                    }`}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        isNurulIqraWedding ? "bg-[#c51d24] animate-pulse" : "animate-pulse"
-                      }`}
-                      style={{
-                        backgroundColor: isNurulIqraWedding ? undefined : eventPrimaryColor || "#ffffff",
-                      }}
-                    />
-                    <span>Buku Tamu & Doa</span>
-                  </div>
-
-                  <div
-                    className={`text-[11px] font-semibold tracking-wider uppercase px-2.5 py-0.5 rounded-full ${
-                      isNurulIqraWedding
-                        ? "text-stone-500 bg-stone-100/80"
-                        : "text-stone-400 bg-white/5 border border-white/5"
-                    }`}
-                  >
-                    3 / 3
-                  </div>
-                </header>
-
-                {/* Mini Souvenir Badge: Connecting the Photo to the Wish */}
-                {compositeDataUrl && (
-                  <div
-                    className={`p-3 rounded-2xl border backdrop-blur-md flex items-center gap-3.5 shadow-lg ${
-                      isNurulIqraWedding
-                        ? "bg-white/90 border-red-100 shadow-red-950/5 text-stone-900"
-                        : "bg-white/[0.07] border-white/10 shadow-black/40 text-white"
-                    }`}
-                  >
-                    <div className="relative h-16 w-12 shrink-0 rounded-lg overflow-hidden bg-black/40 border border-white/20 shadow-md">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={compositeDataUrl}
-                        alt="Foto Souvenir"
-                        className="w-full h-full object-cover object-center"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-medium text-stone-400 uppercase tracking-wider">
-                        <span>Foto Anda Siap</span>
-                        <span>•</span>
-                        <span className={`font-semibold truncate ${isNurulIqraWedding ? "text-[#c51d24]" : "text-white"}`}>
-                          {guestName}
-                        </span>
-                      </div>
-                      <p className={`text-xs font-medium truncate mt-0.5 ${isNurulIqraWedding ? "text-stone-800" : "text-stone-200"}`}>
-                        Tinggalkan ucapan untuk {event.host_name || event.title}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Pesan Tertulis Card */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs px-1">
-                    <label
-                      className={`uppercase tracking-wider font-bold text-[11px] flex items-center gap-1.5 ${
-                        isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
-                      }`}
-                    >
-                      Pesan Tertulis
-                    </label>
-                    <span className="text-[11px] text-stone-400">
-                      {guestMessage.length > 0 ? `${guestMessage.length} karakter` : "Opsional"}
-                    </span>
-                  </div>
-                  <textarea
-                    rows={3}
-                    placeholder="Tuliskan ucapan dan doa terbaik Anda..."
-                    value={guestMessage}
-                    onChange={(e) => setGuestMessage(e.target.value)}
-                    className={`w-full px-4 py-3.5 text-sm outline-none resize-none rounded-2xl transition-all shadow-inner ${
-                      isNurulIqraWedding
-                        ? "bg-white border-2 border-stone-200 focus:border-[#c51d24] focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400"
-                        : isJayaRikaWedding
-                          ? "bg-white/[0.06] hover:bg-white/[0.08] focus:bg-white/[0.1] border border-white/10 focus:border-[#224DA5] focus:ring-4 focus:ring-[#224DA5]/20 text-white placeholder:text-stone-500"
-                          : "bg-white/[0.06] hover:bg-white/[0.08] focus:bg-white/[0.1] border border-white/10 focus:border-white/30 focus:ring-4 focus:ring-white/5 text-white placeholder:text-stone-500"
-                    }`}
-                  />
-                </div>
-
-                {/* Voice Note Recorder (if enabled) */}
-                {event.allow_voice_note && (
-                  <div
-                    className={`p-3.5 rounded-2xl border backdrop-blur-md space-y-2.5 shadow-md ${
-                      isNurulIqraWedding
-                        ? "bg-white/95 border-2 border-red-100/80 shadow-red-950/5 text-stone-900"
-                        : "bg-white/[0.06] border-white/10 text-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-xs px-0.5">
-                      <span
-                        className={`font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 ${
-                          isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
-                        }`}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                          <line x1="12" y1="19" x2="12" y2="22" />
-                        </svg>
-                        <span>Voice Note</span>
-                      </span>
-                      {isRecordingAudio && (
-                        <span className="text-red-400 font-bold tabular-nums text-xs flex items-center gap-1 animate-pulse">
-                          <span className="w-2 h-2 rounded-full bg-red-500" />
-                          00:{audioSeconds.toString().padStart(2, "0")}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleToggleVoiceRecording}
-                        className={`min-h-[44px] px-4 font-semibold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center gap-2 shrink-0 ${
-                          isRecordingAudio
-                            ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 animate-pulse"
-                            : isNurulIqraWedding
-                              ? "bg-red-50 hover:bg-red-100 text-[#c51d24] border border-red-100 font-medium"
-                              : audioUrl
-                                ? "bg-white/15 hover:bg-white/20 text-white border border-white/20"
-                                : "bg-white/10 hover:bg-white/15 text-stone-200 border border-white/15"
-                        }`}
-                      >
-                        {isRecordingAudio ? (
-                          <>
-                            <span className="w-2.5 h-2.5 rounded-sm bg-white" />
-                            <span>Berhenti</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                            </svg>
-                            <span>{audioUrl ? "Rekam Ulang" : "Rekam Suara"}</span>
-                          </>
-                        )}
-                      </button>
-
-                      {/* Real-time Voice Frequency Graphic */}
-                      {isRecordingAudio && (
-                        <div className="flex-1 h-11 px-3 bg-red-950/40 border border-red-500/25 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
-                          <VoiceWaveformVisualizer
-                            stream={recordingStream}
-                            isRecording={isRecordingAudio}
-                            className="w-full h-7"
-                          />
-                        </div>
-                      )}
-
-                      {audioUrl && !isRecordingAudio && (
-                        <audio src={audioUrl} controls className="h-9 flex-1 max-w-[190px] opacity-90 rounded-lg" />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {saveError && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-xs text-red-400 font-medium">
-                    {saveError}
-                  </div>
-                )}
-              </div>
-
-              {/* Submit & Action Buttons */}
-              <div className="space-y-2.5 pt-3">
-                <button
-                  disabled={isSaving}
-                  onClick={handleSaveToGallery}
-                  className={`w-full min-h-[54px] font-bold text-sm uppercase tracking-wider transition-all rounded-2xl shadow-xl flex items-center justify-center gap-2.5 active:scale-[0.98] ${
-                    isNurulIqraWedding
-                      ? "bg-[#c51d24] hover:bg-[#a8161c] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
-                      : isJayaRikaWedding
-                        ? "bg-[#224DA5] hover:bg-[#1b3e85] disabled:bg-stone-800 disabled:text-stone-500 text-white shadow-blue-950/40"
-                        : "bg-white hover:bg-stone-100 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 shadow-black/40"
-                  }`}
-                >
-                  {isSaving ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                      <span>Menyimpan ke Galeri...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Kirim ke Galeri</span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13" />
-                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                      </svg>
-                    </>
-                  )}
-                </button>
-
+            <div className="w-full max-w-sm mx-auto flex-1 flex flex-col relative z-10 min-h-full py-1">
+              {/* Minimalist Top Indicator Bar */}
+              <header className="relative z-10 w-full flex items-center justify-between shrink-0 pb-1">
                 <button
                   type="button"
                   onClick={() => setCurrentStep("preview")}
-                  className={`w-full min-h-[44px] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                    isNurulIqraWedding ? "text-stone-500 hover:text-[#c51d24]" : "text-stone-400 hover:text-white"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
+                    isNurulIqraWedding
+                      ? "bg-stone-100 hover:bg-stone-200 text-stone-800"
+                      : "bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] text-white backdrop-blur-md shadow-sm"
                   }`}
+                  aria-label="Kembali ke pratinjau foto"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m15 18-6-6 6-6" />
                   </svg>
-                  <span>Kembali ke Pratinjau Foto</span>
                 </button>
+
+                <div
+                  className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xs border ${
+                    isNurulIqraWedding
+                      ? "bg-red-50/90 border-red-100 text-[#c51d24] font-[family-name:var(--font-cinzel)]"
+                      : "bg-white/[0.08] backdrop-blur-md border-white/[0.08] text-stone-200"
+                  }`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                      backgroundColor: isNurulIqraWedding ? "#c51d24" : eventPrimaryColor || "#ffffff",
+                    }}
+                  />
+                  <span>Buku Tamu & Doa</span>
+                </div>
+
+                <div
+                  className={`text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full ${
+                    isNurulIqraWedding
+                      ? "text-stone-500 bg-stone-100/80"
+                      : "text-stone-400 bg-white/[0.05] border border-white/[0.06]"
+                  }`}
+                >
+                  3 / 3
+                </div>
+              </header>
+
+              {/* Center Stage: Unified Luxury Card + Action Buttons grouped together in optical center */}
+              <div className="my-auto py-2 w-full space-y-3">
+                <div
+                  className={`rounded-3xl transition-all overflow-hidden relative shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65),0_10px_25px_-5px_rgba(0,0,0,0.4)] ${
+                    isNurulIqraWedding
+                      ? "bg-white/95 border border-stone-200/90 shadow-[0_20px_50px_-15px_rgba(180,20,20,0.12)] text-stone-900"
+                      : "bg-white/95 backdrop-blur-xl border border-white/40 text-stone-900"
+                  }`}
+                >
+                  {/* Top: Mini Souvenir Showcase & Dedication */}
+                  {compositeDataUrl && (
+                    <div className="p-4 flex items-center gap-3.5 relative">
+                      <div className="relative h-18 w-13 shrink-0 rounded-xl overflow-hidden bg-black/5 ring-1 ring-stone-900/10 shadow-sm">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={compositeDataUrl}
+                          alt="Foto Souvenir"
+                          className="w-full h-full object-cover object-center"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider uppercase bg-stone-100 text-stone-700 border border-stone-200">
+                          <span>Foto Siap</span>
+                          <span className="text-stone-400">•</span>
+                          <span className={`truncate font-bold ${
+                            isNurulIqraWedding
+                              ? "text-[#c51d24]"
+                              : isJayaRikaWedding
+                                ? "text-[#224DA5]"
+                                : "text-stone-900"
+                          }`}>
+                            {guestName}
+                          </span>
+                        </div>
+                        <h3 className={`text-sm font-bold tracking-tight mt-1 line-clamp-1 ${isNurulIqraWedding ? "text-stone-900 font-[family-name:var(--font-cinzel)]" : "text-stone-900"}`}>
+                          Doa untuk {event.host_name || event.title}
+                        </h3>
+                        <p className="text-xs mt-0.5 line-clamp-1 text-stone-500">
+                          Tuliskan ucapan kesan dan doa restu Anda
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Subtle Separator */}
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+
+                  {/* Middle: Written Message */}
+                  <div className="p-4 pt-3.5 space-y-2">
+                    <div className="flex items-center justify-between text-xs px-0.5">
+                      <label
+                        className={`text-xs font-semibold flex items-center gap-1.5 ${
+                          isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-800"
+                        }`}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-stone-500">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        </svg>
+                        <span>Pesan Tertulis</span>
+                      </label>
+                      <span className="text-[11px] text-stone-400 font-medium">
+                        {guestMessage.length > 0 ? `${guestMessage.length} karakter` : "Opsional"}
+                      </span>
+                    </div>
+
+                    <div className="relative rounded-2xl transition-all bg-stone-50/80 border border-stone-200 focus-within:border-stone-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-stone-400/15 shadow-xs">
+                      <textarea
+                        rows={3}
+                        placeholder="Tuliskan ucapan dan doa terbaik Anda..."
+                        value={guestMessage}
+                        onChange={(e) => setGuestMessage(e.target.value)}
+                        className="w-full px-3.5 py-3 text-sm outline-none resize-none bg-transparent rounded-2xl leading-relaxed text-stone-900 placeholder:text-stone-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bottom: Voice Note Integration */}
+                  {event.allow_voice_note && (
+                    <div className="px-4 pb-4 pt-1 border-t border-stone-100">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs px-0.5">
+                          <span
+                            className={`font-semibold text-xs flex items-center gap-1.5 ${
+                              isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-800"
+                            }`}
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-stone-500">
+                              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                              <line x1="12" y1="19" x2="12" y2="22" />
+                            </svg>
+                            <span>Voice Note</span>
+                          </span>
+
+                          {isRecordingAudio ? (
+                            <span className="text-red-600 font-bold tabular-nums text-xs flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                              00:{audioSeconds.toString().padStart(2, "0")}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-stone-400 font-medium">
+                              {audioUrl ? "Tersimpan" : "Opsional, maks. 60 dtk"}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2.5">
+                          <button
+                            type="button"
+                            onClick={handleToggleVoiceRecording}
+                            className={`min-h-[44px] px-4 font-semibold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0 ${
+                              isRecordingAudio
+                                ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30"
+                                : isNurulIqraWedding
+                                  ? "bg-red-50 hover:bg-red-100 text-[#c51d24] border border-red-200"
+                                  : audioUrl
+                                    ? "bg-stone-900 hover:bg-stone-800 text-white border border-stone-900 shadow-xs"
+                                    : "bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200/80 shadow-xs"
+                            }`}
+                          >
+                            {isRecordingAudio ? (
+                              <>
+                                <span className="w-2.5 h-2.5 rounded-sm bg-white" />
+                                <span>Berhenti</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                </svg>
+                                <span>{audioUrl ? "Rekam Ulang" : "Rekam Suara"}</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Real-time Voice Frequency Graphic */}
+                          {isRecordingAudio && (
+                            <div className="flex-1 h-11 px-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-center overflow-hidden shadow-inner">
+                              <VoiceWaveformVisualizer
+                                stream={recordingStream}
+                                isRecording={isRecordingAudio}
+                                className="w-full h-7"
+                              />
+                            </div>
+                          )}
+
+                          {audioUrl && !isRecordingAudio && (
+                            <audio src={audioUrl} controls className="h-9 flex-1 max-w-[190px] opacity-90 rounded-lg" />
+                          )}
+
+                          {!isRecordingAudio && !audioUrl && (
+                            <p className="text-[11px] text-stone-500 leading-tight">
+                              Beri ucapan suara langsung untuk kedua mempelai
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {saveError && (
+                    <div className="p-3 mx-4 mb-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-medium">
+                      {saveError}
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit & Action Buttons connected directly beneath the card */}
+                <div className="space-y-2 pt-1">
+                  <button
+                    disabled={isSaving}
+                    onClick={handleSaveToGallery}
+                    className={`w-full min-h-[54px] font-bold text-sm uppercase tracking-wider transition-all rounded-2xl shadow-xl flex items-center justify-center gap-2.5 active:scale-[0.98] ${
+                      isNurulIqraWedding
+                        ? "bg-[#c51d24] hover:bg-[#a8161c] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
+                        : isJayaRikaWedding
+                          ? "bg-[#224DA5] hover:bg-[#1b3e85] disabled:bg-stone-800 disabled:text-stone-500 text-white shadow-blue-950/40"
+                          : "bg-white hover:bg-stone-100 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 shadow-[0_10px_25px_-5px_rgba(255,255,255,0.18),inset_0_1px_0_rgba(255,255,255,0.4)]"
+                    }`}
+                  >
+                    {isSaving ? (
+                      <>
+                        <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                        <span>Menyimpan ke Galeri...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Kirim ke Galeri</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep("preview")}
+                    className={`w-full min-h-[44px] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                      isNurulIqraWedding ? "text-stone-500 hover:text-[#c51d24]" : "text-stone-400 hover:text-white"
+                    }`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                    <span>Kembali ke Pratinjau Foto</span>
+                  </button>
+                </div>
               </div>
             </div>
           </main>
         )
       }
 
-      {/* ─── STEP 6: FINISHED ─── */}
+      {/* ─── STEP 6: FINISHED (STUDIO SHOWCASE) ─── */}
       {
         currentStep === "finished" && (
-          <main className={`flex-1 flex flex-col items-center justify-center px-5 py-8 relative z-10 ${isNurulIqraWedding ? "bg-transparent text-stone-900" : ""}`}>
-            <div className="w-full max-w-sm text-center space-y-6">
-              <div className="space-y-2">
-                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center">
-                  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </div>
-                <h3 className={`text-2xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-[family-name:var(--font-cinzel)]" : "text-white"}`}>
-                  Foto Berhasil Dikirim
-                </h3>
-                <p className={`text-sm ${isNurulIqraWedding ? "text-stone-600" : "text-stone-400"}`}>
-                  Terima kasih, <strong className={isNurulIqraWedding ? "text-[#c51d24] font-semibold" : "text-stone-200"}>{guestName}</strong>. Foto Anda telah tersimpan di galeri pernikahan.
-                </p>
-              </div>
+          <main
+            className={`flex-1 w-full min-h-[100dvh] flex flex-col justify-between px-4 sm:px-5 py-3 relative z-10 select-none overflow-y-auto ${
+              isNurulIqraWedding
+                ? "bg-gradient-to-b from-[#fffaf7] via-white to-[#fbf2ed] text-stone-900"
+                : "bg-radial from-[#18181c]/80 via-[#0e0e11] to-[#070709] text-white"
+            }`}
+            style={{
+              paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+              paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+            }}
+          >
+            {/* Ambient Studio Lighting (Theme Accent Glow) */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none overflow-hidden z-0"
+            >
+              <div
+                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[440px] rounded-full blur-[100px] ${
+                  isNurulIqraWedding ? "opacity-15 bg-[#c51d24]" : "opacity-25"
+                }`}
+                style={{
+                  backgroundColor: isNurulIqraWedding ? undefined : eventPrimaryColor || "#d97706",
+                }}
+              />
+              <div
+                className={`absolute inset-0 pointer-events-none ${
+                  isNurulIqraWedding
+                    ? "bg-gradient-to-b from-white/30 via-transparent to-red-950/5"
+                    : "bg-gradient-to-b from-black/20 via-transparent to-black/70"
+                }`}
+              />
+            </div>
 
-              {compositeDataUrl && (
-                <div className={`flex justify-center rounded-2xl border p-3 ${isNurulIqraWedding ? "bg-white/95 border-2 border-red-100 shadow-xl shadow-red-950/5" : "bg-black/30 border-stone-800"
-                  }`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={compositeDataUrl}
-                    alt="Foto tersimpan"
-                    className="max-h-56 object-contain rounded-xl drop-shadow"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <button
-                  onClick={typeof navigator !== "undefined" && "share" in navigator ? handleShare : handleDownload}
-                  className={`w-full min-h-[52px] font-bold text-sm uppercase tracking-wider rounded-xl transition-all shadow-lg ${isNurulIqraWedding
-                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
-                    : isJayaRikaWedding
-                      ? "bg-[#224DA5] hover:bg-[#1b3e85] active:scale-[0.98] text-white shadow-blue-950/30 font-semibold"
-                      : "bg-white active:bg-stone-200 text-stone-950 font-semibold"
-                    }`}
-                >
-                  {typeof navigator !== "undefined" && "share" in navigator ? "Bagikan Foto" : "Download Foto"}
-                </button>
-
+            <div className="w-full max-w-sm mx-auto flex-1 flex flex-col relative z-10 min-h-full py-1">
+              {/* Minimalist Top Indicator Bar */}
+              <header className="relative z-10 w-full flex items-center justify-between shrink-0 pb-1">
                 <Link
                   href={`/event/${event.slug}/gallery`}
-                  className={`w-full min-h-[48px] px-4 font-bold text-sm rounded-xl transition-colors flex items-center justify-center ${isNurulIqraWedding
-                    ? "bg-white hover:bg-red-50 border-2 border-[#c51d24] text-[#c51d24] font-[family-name:var(--font-cinzel)] shadow-sm"
-                    : isJayaRikaWedding
-                      ? "bg-stone-900 hover:bg-blue-950/30 border border-[#224DA5] text-[#224DA5]"
-                      : "bg-stone-800 active:bg-stone-700 border border-stone-700 text-stone-200"
-                    }`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
+                    isNurulIqraWedding
+                      ? "bg-stone-100 hover:bg-stone-200 text-stone-800"
+                      : "bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] text-white backdrop-blur-md shadow-sm"
+                  }`}
+                  aria-label="Lihat galeri event"
                 >
-                  Lihat Galeri Pernikahan
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="9" cy="9" r="1.5" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                  </svg>
                 </Link>
 
-                <button
-                  onClick={handleNewSession}
-                  className={`w-full min-h-[44px] text-sm transition-colors ${isNurulIqraWedding ? "text-stone-500 hover:text-[#c51d24]" : "text-stone-500 active:text-stone-300"
-                    }`}
+                <div
+                  className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xs border ${
+                    isNurulIqraWedding
+                      ? "bg-red-50/90 border-red-100 text-[#c51d24] font-[family-name:var(--font-cinzel)]"
+                      : "bg-white/[0.08] backdrop-blur-md border-white/[0.08] text-stone-200"
+                  }`}
                 >
-                  Ambil Foto Baru
-                </button>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span>Foto Tersimpan</span>
+                </div>
+
+                <div
+                  className={`text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full ${
+                    isNurulIqraWedding
+                      ? "text-stone-500 bg-stone-100/80"
+                      : "text-stone-400 bg-white/[0.05] border border-white/[0.06]"
+                  }`}
+                >
+                  Selesai
+                </div>
+              </header>
+
+              {/* Center Stage: Unified Luxury White Card + Action Buttons grouped together in optical center */}
+              <div className="my-auto py-2 w-full space-y-3">
+                <div
+                  className={`rounded-3xl transition-all overflow-hidden relative shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65),0_10px_25px_-5px_rgba(0,0,0,0.4)] ${
+                    isNurulIqraWedding
+                      ? "bg-white/95 border border-stone-200/90 shadow-[0_20px_50px_-15px_rgba(180,20,20,0.12)] text-stone-900"
+                      : "bg-white/95 backdrop-blur-xl border border-white/40 text-stone-900"
+                  }`}
+                >
+                  {/* Top Success Header */}
+                  <div className="p-4 sm:p-5 text-center space-y-2">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shadow-xs">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
+
+                    <h2 className={`text-xl font-bold tracking-tight text-stone-900 ${isNurulIqraWedding ? "font-[family-name:var(--font-cinzel)]" : ""}`}>
+                      Foto Berhasil Dikirim
+                    </h2>
+
+                    <p className="text-xs text-stone-600 max-w-xs mx-auto leading-relaxed">
+                      Terima kasih, <strong className="text-stone-900 font-bold">{guestName}</strong>. Momen indah Anda telah tersimpan rapi di galeri kenangan.
+                    </p>
+                  </div>
+
+                  {/* Subtle Separator */}
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+
+                  {/* Center Physical Photo Exhibition Display */}
+                  {compositeDataUrl && (
+                    <div className="p-3.5 sm:p-4 bg-stone-50/70 flex justify-center items-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={compositeDataUrl}
+                        alt="Foto tersimpan"
+                        className="max-h-[38dvh] sm:max-h-[42dvh] w-auto max-w-[80vw] object-contain rounded-xl drop-shadow-[0_12px_24px_rgba(0,0,0,0.2)] select-none"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Ergonomic Action Buttons directly beneath the card */}
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={typeof navigator !== "undefined" && "share" in navigator ? handleShare : handleDownload}
+                    className={`w-full min-h-[54px] font-bold text-sm uppercase tracking-wider rounded-2xl transition-all shadow-xl flex items-center justify-center gap-2.5 active:scale-[0.98] ${
+                      isNurulIqraWedding
+                        ? "bg-[#c51d24] hover:bg-[#a8161c] text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
+                        : isJayaRikaWedding
+                          ? "bg-[#224DA5] hover:bg-[#1b3e85] text-white shadow-blue-950/40"
+                          : "bg-stone-950 hover:bg-stone-800 text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5)]"
+                    }`}
+                  >
+                    {typeof navigator !== "undefined" && "share" in navigator ? (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="18" cy="5" r="3" />
+                          <circle cx="6" cy="12" r="3" />
+                          <circle cx="18" cy="19" r="3" />
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
+                        <span>Bagikan Foto</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        <span>Download Foto</span>
+                      </>
+                    )}
+                  </button>
+
+                  <Link
+                    href={`/event/${event.slug}/gallery`}
+                    className={`w-full min-h-[48px] px-4 font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2 border active:scale-[0.98] ${
+                      isNurulIqraWedding
+                        ? "bg-white hover:bg-red-50 border-stone-200 text-[#c51d24] font-[family-name:var(--font-cinzel)] shadow-xs"
+                        : isJayaRikaWedding
+                          ? "bg-stone-100 hover:bg-stone-200 border-stone-200 text-stone-800 shadow-xs"
+                          : "bg-stone-100 hover:bg-stone-200 border-stone-200 text-stone-800 shadow-xs"
+                    }`}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="9" cy="9" r="1.5" />
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                    </svg>
+                    <span>Lihat Galeri Pernikahan</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleNewSession}
+                    className={`w-full min-h-[44px] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                      isNurulIqraWedding ? "text-stone-500 hover:text-[#c51d24]" : "text-stone-400 hover:text-white"
+                    }`}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                      <path d="M21 3v5h-5" />
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                      <path d="M3 21v-5h5" />
+                    </svg>
+                    <span>Ambil Foto Baru</span>
+                  </button>
+                </div>
               </div>
             </div>
           </main>
         )
       }
 
-      {/* Footer (hidden for Nurul & Iqra, custom wedding, welcome, frame_select, camera, preview, and guestbook) */}
+      {/* Footer (hidden for Nurul & Iqra, custom wedding, welcome, frame_select, camera, preview, guestbook, and finished) */}
       {
-        !isNurulIqraWedding && !isCustomWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && currentStep !== "preview" && currentStep !== "guestbook" && (
+        !isNurulIqraWedding && !isCustomWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && currentStep !== "preview" && currentStep !== "guestbook" && currentStep !== "finished" && (
           <footer
             className="border-t border-stone-800/40 bg-[#111113] px-4 py-3 text-center text-[11px] text-stone-600"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
