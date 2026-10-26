@@ -1176,8 +1176,8 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             </div>
           )}
 
-      {/* Minimal Top Bar (hidden during camera, welcome, frame_select, and name_input screens) */}
-      {!isCustomWedding && currentStep !== "welcome" && currentStep !== "name_input" && currentStep !== "frame_select" && currentStep !== "camera" && (
+      {/* Minimal Top Bar (hidden during camera, welcome, frame_select, name_input, preview, and guestbook screens) */}
+      {!isCustomWedding && currentStep !== "welcome" && currentStep !== "name_input" && currentStep !== "frame_select" && currentStep !== "camera" && currentStep !== "preview" && currentStep !== "guestbook" && (
         <header
           className={`border-b px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${isNurulIqraWedding
             ? "border-red-100 bg-white/95 backdrop-blur-sm text-stone-900 shadow-sm"
@@ -1899,8 +1899,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               </div>
             )}
 
-            {/* Top Bar with Back button and Event Info (Header text hidden for custom wedding theme) */}
-            <div className={`px-4 py-3 flex items-center justify-between z-10 shrink-0 ${isNurulIqraWedding ? "bg-black/75 text-white backdrop-blur-sm" : isCustomWedding ? "bg-transparent text-white" : "bg-[#111113]/90 text-stone-200 backdrop-blur-sm"}`}>
+            {/* Top Bar with Back button, Event Info, and Flash Toggle */}
+            <div className={`px-4 py-3 flex items-center justify-between z-20 shrink-0 border-b border-white/5 ${isNurulIqraWedding ? "bg-black/75 text-white backdrop-blur-md" : isCustomWedding ? "bg-black/50 text-white backdrop-blur-md" : "bg-[#111113]/90 text-stone-200 backdrop-blur-md"}`}>
+              {/* Back Button */}
               <button
                 type="button"
                 onClick={() => {
@@ -1908,29 +1909,61 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   setCameraState("idle");
                   setCurrentStep("frame_select");
                 }}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-stone-400 active:text-white"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 active:scale-95 border border-white/10 flex items-center justify-center text-white transition-all backdrop-blur-md"
                 aria-label="Kembali ke pilih frame"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
               </button>
 
-              {!isCustomWedding && (
-                <div className="text-right">
-                  <span className="block text-[10px] uppercase tracking-wider text-white/60 font-medium">Virtual Photobooth</span>
-                  <span className="block text-sm font-semibold text-white truncate max-w-[180px]">{event.host_name || event.title}</span>
-                </div>
-              )}
+              {/* Title Info */}
+              <div className="text-center px-2 min-w-0 flex-1">
+                <span className="block text-xs font-bold text-white tracking-wide truncate">
+                  {event.host_name || event.title}
+                </span>
+                <span className="block text-[10px] uppercase tracking-widest text-white/50 font-medium">
+                  Virtual Photobooth
+                </span>
+              </div>
+
+              {/* Flash Toggle */}
+              <button
+                type="button"
+                onClick={() => setFlashOn((prev) => !prev)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all backdrop-blur-md ${
+                  flashOn
+                    ? "bg-amber-400 text-stone-950 shadow-md shadow-amber-400/30 font-bold"
+                    : "bg-white/10 hover:bg-white/15 border border-white/10 text-white/80 active:scale-95"
+                }`}
+                aria-label={flashOn ? "Matikan flash layar" : "Nyalakan flash layar"}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill={flashOn ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+              </button>
             </div>
 
-            {/* Camera Viewfinder (adaptive aspect ratio matching the target frame slot) */}
-            <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden px-4 py-2 min-h-0 w-full">
+            {/* Camera Viewfinder Stage (adaptive aspect ratio matching target frame slot) */}
+            <div className="flex-1 relative bg-[#070709] flex items-center justify-center overflow-hidden px-3 py-2 min-h-0 w-full">
+              {/* Ambient Studio Lighting (Theme Accent Glow) */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none overflow-hidden z-0 flex items-center justify-center"
+              >
+                <div
+                  className="w-[280px] h-[340px] rounded-full blur-[90px] opacity-20"
+                  style={{ backgroundColor: eventPrimaryColor || "#d97706" }}
+                />
+              </div>
+
               {(() => {
                 const activeSlotIdx = capturedPhotos.length < requiredShots ? capturedPhotos.length : Math.max(0, requiredShots - 1);
                 const activeSlotAspect = getTargetSlotAspect(activeSlotIdx);
 
                 return (
                   <div
-                    className="relative rounded-2xl overflow-hidden bg-[#161616] flex items-center justify-center shadow-2xl border border-white/15 transition-all duration-300"
+                    className="relative rounded-3xl overflow-hidden bg-[#141416] flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/15 transition-all duration-300 z-10"
                     style={{
                       aspectRatio: `${activeSlotAspect}`,
                       maxWidth: "100%",
@@ -1941,13 +1974,18 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   >
                     {cameraState === "error" ? (
                       <div className="px-6 py-8 text-center space-y-4 max-w-xs">
-                        <div className="w-16 h-16 mx-auto rounded-full bg-stone-800 flex items-center justify-center">
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 7.5a4 4 0 1 0 0-3" /><path d="m2 2 20 20" /><path d="M11.5 15H17a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1" /><path d="M7 7H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2" /></svg>
+                        <div className="w-16 h-16 mx-auto rounded-full bg-stone-800 flex items-center justify-center text-stone-400">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M16.5 7.5a4 4 0 1 0 0-3" />
+                            <path d="m2 2 20 20" />
+                            <path d="M11.5 15H17a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1" />
+                            <path d="M7 7H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2" />
+                          </svg>
                         </div>
                         <p className="text-sm text-stone-300 leading-relaxed">{cameraError}</p>
                         <button
                           onClick={() => startCamera()}
-                          className="min-h-[48px] px-6 bg-white text-stone-950 font-semibold text-sm rounded-lg"
+                          className="min-h-[48px] px-6 bg-white text-stone-950 font-semibold text-sm rounded-xl shadow-lg"
                         >
                           Coba Lagi
                         </button>
@@ -1965,60 +2003,63 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                               setStreamAspect(v.videoWidth / v.videoHeight);
                             }
                           }}
-                          className={`w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : "scale-x-100"} ${selectedFilter === "grayscale"
-                            ? "grayscale"
-                            : selectedFilter === "sepia"
-                              ? "sepia"
-                              : selectedFilter === "soft-glow"
-                                ? "brightness-105 contrast-95 saturate-110"
-                                : selectedFilter === "warm-vintage"
-                                  ? "sepia-[0.35] saturate-125"
-                                  : selectedFilter === "cool-cinema"
-                                    ? "hue-rotate-180 saturate-90"
-                                    : ""
-                            }`}
+                          className={`w-full h-full object-cover select-none pointer-events-none ${
+                            facingMode === "user" ? "-scale-x-100" : "scale-x-100"
+                          } ${
+                            selectedFilter === "grayscale"
+                              ? "grayscale"
+                              : selectedFilter === "sepia"
+                                ? "sepia"
+                                : selectedFilter === "soft-glow"
+                                  ? "brightness-105 contrast-95 saturate-110"
+                                  : selectedFilter === "warm-vintage"
+                                    ? "sepia-[0.35] saturate-125"
+                                    : selectedFilter === "cool-cinema"
+                                      ? "hue-rotate-180 saturate-90"
+                                      : ""
+                          }`}
                         />
 
-                        {/* Viewfinder Frame Corner Brackets */}
-                        <div className="absolute inset-3 pointer-events-none z-10 select-none">
-                          <span className="absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 border-white/50 rounded-tl-sm" />
-                          <span className="absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 border-white/50 rounded-tr-sm" />
-                          <span className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 border-white/50 rounded-bl-sm" />
-                          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 border-white/50 rounded-br-sm" />
+                        {/* Viewfinder Rule of Thirds Grid (Subtle Studio Guides) */}
+                        <div className="absolute inset-0 pointer-events-none z-10 opacity-20 select-none">
+                          <div className="absolute left-1/3 top-0 bottom-0 border-r border-white/40" />
+                          <div className="absolute left-2/3 top-0 bottom-0 border-r border-white/40" />
+                          <div className="absolute top-1/3 left-0 right-0 border-b border-white/40" />
+                          <div className="absolute top-2/3 left-0 right-0 border-b border-white/40" />
                         </div>
 
-                        {/* Flash toggle button at top-left of video */}
-                        <button
-                          type="button"
-                          onClick={() => setFlashOn((prev) => !prev)}
-                          className={`absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md z-20 ${flashOn ? "bg-white text-stone-950" : "bg-black/50 text-white/80 hover:text-white"}`}
-                          aria-label="Flash"
-                        >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill={flashOn ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                          </svg>
-                        </button>
+                        {/* Viewfinder Modern Corner Brackets */}
+                        <div className="absolute inset-3 pointer-events-none z-10 select-none">
+                          <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white/70 rounded-tl-md" />
+                          <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white/70 rounded-tr-md" />
+                          <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white/70 rounded-bl-md" />
+                          <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white/70 rounded-br-md" />
+                        </div>
 
-                        {/* Badge indicator when frame requires 1 shot */}
-                        {requiredShots === 1 && (
-                          <div className="absolute top-3 right-3 z-20 pointer-events-none">
-                            <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white/90 text-[11px] font-medium border border-white/15 shadow-sm">
-                              1 Foto
-                            </span>
-                          </div>
-                        )}
+                        {/* Active Slot Badge (Top Center of Viewfinder) */}
+                        <div className="absolute top-3 inset-x-0 flex justify-center z-20 pointer-events-none select-none">
+                          <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold tracking-wider uppercase border border-white/15 shadow-md flex items-center gap-1.5">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full animate-pulse"
+                              style={{ backgroundColor: eventPrimaryColor || "#ffffff" }}
+                            />
+                            {requiredShots > 1
+                              ? `Foto ${activeSlotIdx + 1} dari ${requiredShots}`
+                              : "1 Foto"}
+                          </span>
+                        </div>
 
                         {/* Countdown Overlay (3, 2, 1) */}
                         {countdown !== null && (
-                          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none select-none bg-black/35 backdrop-blur-[1px]">
+                          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none select-none bg-black/40 backdrop-blur-[2px]">
                             {requiredShots > 1 && (
-                              <span className="text-xs font-semibold uppercase tracking-widest text-white/90 mb-3 px-3 py-1 rounded-full bg-black/60 border border-white/20 backdrop-blur-md shadow-lg">
+                              <span className="text-xs font-semibold uppercase tracking-widest text-white mb-4 px-3.5 py-1 rounded-full bg-black/70 border border-white/20 backdrop-blur-md shadow-lg">
                                 Foto {activeSlotIdx + 1} dari {requiredShots}
                               </span>
                             )}
                             <div
                               key={countdown}
-                              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-black/65 border border-white/30 backdrop-blur-md flex items-center justify-center shadow-2xl animate-in zoom-in-75 fade-in duration-200"
+                              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-black/70 border-2 border-white/40 backdrop-blur-md flex items-center justify-center shadow-2xl animate-in zoom-in-75 fade-in duration-200"
                             >
                               <span className="text-6xl sm:text-7xl font-extrabold text-white tabular-nums drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)]">
                                 {countdown}
@@ -2033,84 +2074,90 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
               })()}
             </div>
 
-            {/* Filter Bar (compact, horizontal scroll) */}
-            <div className="flex gap-2 overflow-x-auto pb-1 px-4 max-w-md mx-auto w-full shrink-0">
+            {/* Filter Carousel (hidden scrollbars) */}
+            <div className="flex gap-2 overflow-x-auto py-1 px-4 max-w-md mx-auto w-full shrink-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {FILTERS.map((f) => (
                 <button
                   key={f.id}
                   disabled={cameraState !== "ready"}
                   onClick={() => setSelectedFilter(f.id)}
-                  className={`min-h-[36px] px-3.5 text-xs font-medium whitespace-nowrap border rounded-full transition-colors ${selectedFilter === f.id
-                    ? "bg-white text-stone-950 border-white"
-                    : "bg-stone-900/60 text-stone-400 border-stone-800 active:bg-stone-800"
-                    }`}
+                  className={`min-h-[36px] px-3.5 text-xs font-semibold whitespace-nowrap rounded-full transition-all active:scale-95 ${
+                    selectedFilter === f.id
+                      ? "bg-white text-stone-950 shadow-md font-bold"
+                      : "bg-white/10 text-stone-300 hover:text-white border border-white/10 backdrop-blur-sm"
+                  }`}
                 >
                   {f.name}
                 </button>
               ))}
             </div>
 
-            {/* Capture Slots Row: Thumbnails & Slot progress */}
-            <div className="flex items-center justify-center gap-2.5 px-4 py-2 shrink-0 max-w-md mx-auto w-full">
-              {Array.from({ length: requiredShots }).map((_, idx) => {
-                const photo = capturedPhotos[idx];
-                const isActive = idx === capturedPhotos.length;
-                const slotAspect = getTargetSlotAspect(idx);
+            {/* Capture Slots Progress (Filmstrip style) */}
+            {requiredShots > 1 && (
+              <div className="flex items-center justify-center gap-2.5 px-4 pt-1.5 pb-1 shrink-0 max-w-md mx-auto w-full select-none">
+                {Array.from({ length: requiredShots }).map((_, idx) => {
+                  const photo = capturedPhotos[idx];
+                  const isActive = idx === capturedPhotos.length;
+                  const slotAspect = getTargetSlotAspect(idx);
 
-                return (
-                  <div
-                    key={idx}
-                    className={`relative h-14 rounded-md overflow-hidden flex items-center justify-center border transition-all ${photo
-                      ? "border-white/80 shadow-md bg-stone-900"
-                      : isActive
-                        ? "border-white bg-white/10 ring-2 ring-white/50"
-                        : "border-white/20 bg-stone-900/60 text-white/40"
+                  return (
+                    <div
+                      key={idx}
+                      className={`relative h-12 rounded-lg overflow-hidden flex items-center justify-center transition-all ${
+                        photo
+                          ? "border-2 border-white shadow-md bg-stone-900"
+                          : isActive
+                            ? "border-2 border-amber-400 bg-amber-400/10 shadow-[0_0_12px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/50"
+                            : "border border-dashed border-white/20 bg-white/5 text-white/40"
                       }`}
-                    style={{ aspectRatio: `${slotAspect}` }}
-                  >
-                    {photo ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo}
-                          alt={`Foto ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteShot(idx)}
-                          aria-label={`Hapus foto ${idx + 1}`}
-                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white text-stone-950 flex items-center justify-center shadow-md hover:bg-red-500 hover:text-white transition-colors"
-                        >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-xs font-semibold text-white/50">{idx + 1}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      style={{ aspectRatio: `${slotAspect}` }}
+                    >
+                      {photo ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photo}
+                            alt={`Foto ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteShot(idx)}
+                            aria-label={`Hapus foto ${idx + 1}`}
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md hover:bg-red-500 active:scale-90 transition-transform"
+                          >
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-[10px] font-bold">
+                          <span>{idx + 1}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Bottom Controls Bar */}
+            {/* Bottom Shutter & Controls Bar */}
             <div
-              className="px-6 py-4 pb-6 bg-[#0d0d0d] border-t border-white/10 shrink-0"
+              className="px-6 py-4 bg-[#0a0a0c]/90 backdrop-blur-xl border-t border-white/10 shrink-0"
               style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
             >
               {capturedPhotos.length >= requiredShots ? (
-                /* All shots taken: 'Lanjut' button */
+                /* All shots taken: 'Lanjutkan' CTA */
                 <div className="max-w-xs mx-auto w-full">
                   <button
                     type="button"
                     onClick={handleProceedToPreview}
-                    className="w-full min-h-[52px] px-6 rounded-full bg-white text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-transform cursor-pointer"
+                    className="w-full min-h-[54px] px-6 rounded-2xl bg-white hover:bg-stone-100 text-stone-950 font-bold text-base flex items-center justify-between shadow-2xl active:scale-[0.98] transition-all cursor-pointer"
                   >
-                    <span className="tracking-tight pl-2">Lanjutkan</span>
-                    <span className="w-8 h-8 rounded-full bg-stone-950 text-white flex items-center justify-center shrink-0">
+                    <span className="tracking-tight pl-2">Lihat Hasil Foto</span>
+                    <span className="w-9 h-9 rounded-xl bg-stone-950 text-white flex items-center justify-center shrink-0">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="5" y1="12" x2="19" y2="12" />
                         <polyline points="12 5 19 12 12 19" />
@@ -2119,16 +2166,17 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                   </button>
                 </div>
               ) : (
-                /* Still capturing: Flip camera, Shutter, Gallery */
+                /* Still capturing: Flip Camera, Shutter, Gallery */
                 <div className="flex items-center justify-between max-w-xs mx-auto w-full">
                   {/* Flip camera */}
                   <button
                     type="button"
                     onClick={toggleCameraFacing}
                     disabled={countdown !== null}
-                    aria-label="Ganti kamera"
-                    className={`w-12 h-12 rounded-full bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${countdown !== null ? "opacity-35 pointer-events-none" : ""
-                      }`}
+                    aria-label="Ganti kamera depan atau belakang"
+                    className={`w-12 h-12 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white flex items-center justify-center active:scale-90 transition-all backdrop-blur-md shadow-md ${
+                      countdown !== null ? "opacity-30 pointer-events-none" : ""
+                    }`}
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 2.21 1 4.21 2.6 5.6" />
@@ -2144,14 +2192,16 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     onClick={startCountdown}
                     disabled={cameraState !== "ready" || countdown !== null || adjustOpen}
                     aria-label={countdown !== null ? `Hitungan mundur ${countdown} detik` : "Ambil foto"}
-                    className={`w-20 h-20 rounded-full border-2 p-1 flex items-center justify-center transition-all shadow-xl bg-transparent ${countdown !== null
-                      ? "border-amber-400 scale-95 opacity-90 cursor-wait"
-                      : "border-white/80 hover:scale-105 active:scale-95"
-                      }`}
+                    className={`w-20 h-20 rounded-full border-[3px] p-1 flex items-center justify-center transition-all shadow-2xl bg-transparent ${
+                      countdown !== null
+                        ? "border-amber-400 scale-95 opacity-90 cursor-wait"
+                        : "border-white/90 hover:scale-105 active:scale-95"
+                    }`}
                   >
                     <span
-                      className={`w-14 h-14 rounded-full block shadow-inner transition-colors ${countdown !== null ? "bg-amber-400 animate-pulse" : "bg-[#f6f4ee]"
-                        }`}
+                      className={`w-14 h-14 rounded-full block shadow-lg transition-all ${
+                        countdown !== null ? "bg-amber-400 animate-pulse" : "bg-white active:bg-stone-200"
+                      }`}
                     />
                   </button>
 
@@ -2160,9 +2210,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     type="button"
                     onClick={() => !countdown && fileInputRef.current?.click()}
                     disabled={countdown !== null}
-                    aria-label="Pilih dari galeri"
-                    className={`w-12 h-12 rounded-xl bg-[#2a2a2a] text-white flex items-center justify-center hover:bg-stone-700 active:scale-95 transition-all shadow-md ${countdown !== null ? "opacity-35 pointer-events-none" : ""
-                      }`}
+                    aria-label="Pilih foto dari galeri HP"
+                    className={`w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-white flex items-center justify-center active:scale-90 transition-all backdrop-blur-md shadow-md ${
+                      countdown !== null ? "opacity-30 pointer-events-none" : ""
+                    }`}
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="3" />
@@ -2185,39 +2236,126 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         )
       }
 
-      {/* ─── STEP 4: PREVIEW ─── */}
+      {/* ─── STEP 4: PREVIEW (STUDIO SHOWCASE) ─── */}
       {
         currentStep === "preview" && (
-          <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto relative z-10 ${isNurulIqraWedding ? "bg-transparent text-stone-900" : ""}`}>
-            <div className="w-full max-w-md mx-auto space-y-5 flex-1 flex flex-col">
-              <div>
-                <div className={`text-xs uppercase tracking-wider ${isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)] font-bold bg-red-50 px-2.5 py-0.5 rounded-full inline-block border border-red-100 mb-1" : isJayaRikaWedding ? "text-[#224DA5] font-semibold" : "text-[#c47a5a] font-semibold"}`}>
-                  Langkah 2 / 3
-                </div>
-                <h3 className={`text-xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-[family-name:var(--font-cinzel)] text-2xl" : "text-white"}`}>
-                  Hasil Foto Photobooth
-                </h3>
+          <main
+            className={`flex-1 w-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between px-5 py-3 relative z-10 select-none overflow-hidden ${
+              isNurulIqraWedding
+                ? "bg-gradient-to-b from-[#fffaf7] via-white to-[#fbf2ed] text-stone-900"
+                : "bg-radial from-[#18181c]/70 via-[#0e0e11] to-[#070709] text-white"
+            }`}
+            style={{
+              paddingTop: "max(1rem, env(safe-area-inset-top))",
+              paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
+            }}
+          >
+            {/* Ambient Studio Lighting (Theme Accent Glow) */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none overflow-hidden z-0"
+            >
+              <div
+                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[460px] rounded-full blur-[90px] ${
+                  isNurulIqraWedding ? "opacity-15 bg-[#c51d24]" : "opacity-30"
+                }`}
+                style={{
+                  backgroundColor: isNurulIqraWedding ? undefined : eventPrimaryColor || "#d97706",
+                }}
+              />
+              <div
+                className={`absolute inset-0 pointer-events-none ${
+                  isNurulIqraWedding
+                    ? "bg-gradient-to-b from-white/30 via-transparent to-red-950/5"
+                    : "bg-gradient-to-b from-black/20 via-transparent to-black/60"
+                }`}
+              />
+            </div>
+
+            {/* Minimalist Top Indicator Bar */}
+            <header className="relative z-10 w-full flex items-center justify-between pt-1 pb-1">
+              <div
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium shadow-xs border ${
+                  isNurulIqraWedding
+                    ? "bg-red-50/90 border-red-100 text-[#c51d24] font-[family-name:var(--font-cinzel)] font-bold"
+                    : "bg-white/10 backdrop-blur-md border-white/10 text-stone-200"
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isNurulIqraWedding ? "bg-[#c51d24] animate-pulse" : "animate-pulse"
+                  }`}
+                  style={{
+                    backgroundColor: isNurulIqraWedding ? undefined : eventPrimaryColor || "#ffffff",
+                  }}
+                />
+                <span className="tracking-wide">Review Hasil Foto</span>
               </div>
 
-              <div className={`flex-1 flex items-center justify-center rounded-2xl border p-3 min-h-0 ${isNurulIqraWedding ? "bg-white/95 backdrop-blur-sm border-2 border-red-100 shadow-xl shadow-red-950/5" : "bg-black/30 border-stone-800"
-                }`}>
-                {isCompositing ? (
-                  <div className={`py-12 text-sm flex items-center gap-2 ${isNurulIqraWedding ? "text-[#c51d24] font-medium" : "text-stone-400"}`}>
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#c51d24] animate-ping" />
-                    <span>Merender frame foto...</span>
+              <div
+                className={`text-[11px] font-semibold tracking-wider uppercase px-2.5 py-0.5 rounded-full ${
+                  isNurulIqraWedding
+                    ? "text-stone-500 bg-stone-100/80"
+                    : "text-stone-400 bg-white/5 border border-white/5"
+                }`}
+              >
+                Langkah 2 / 3
+              </div>
+            </header>
+
+            {/* Center Stage: The Framed Photo as Physical Print */}
+            <div className="flex-1 min-h-0 w-full flex items-center justify-center py-2 relative z-10">
+              {isCompositing ? (
+                <div className="flex flex-col items-center justify-center gap-3.5 py-12">
+                  <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div
+                      className="absolute inset-0 rounded-full border-2 animate-ping opacity-40"
+                      style={{
+                        borderColor: isNurulIqraWedding ? "#c51d24" : eventPrimaryColor || "#ffffff",
+                      }}
+                    />
+                    <div
+                      className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+                      style={{
+                        borderColor: isNurulIqraWedding
+                          ? "#c51d24 transparent #c51d24 #c51d24"
+                          : `${eventPrimaryColor || "#ffffff"} transparent ${
+                              eventPrimaryColor || "#ffffff"
+                            } ${eventPrimaryColor || "#ffffff"}`,
+                      }}
+                    />
                   </div>
-                ) : compositeDataUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <p
+                    className={`text-xs font-medium tracking-wide ${
+                      isNurulIqraWedding ? "text-[#c51d24]" : "text-stone-300"
+                    }`}
+                  >
+                    Merender cetakan foto...
+                  </p>
+                </div>
+              ) : compositeDataUrl ? (
+                <div className="relative max-h-[70dvh] flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={compositeDataUrl}
-                    alt="Hasil foto photobooth"
-                    className="max-h-[55dvh] w-auto object-contain rounded-xl drop-shadow-md"
+                    alt="Hasil cetakan photobooth"
+                    className="max-h-[68dvh] sm:max-h-[70dvh] w-auto max-w-[88vw] sm:max-w-xs object-contain rounded-xl select-none"
+                    style={{
+                      filter: isNurulIqraWedding
+                        ? "drop-shadow(0 18px 30px rgba(180, 20, 20, 0.15)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12))"
+                        : "drop-shadow(0 22px 40px rgba(0, 0, 0, 0.9)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6))",
+                    }}
                   />
-                ) : null}
-              </div>
+                </div>
+              ) : null}
+            </div>
 
-              <div className="grid grid-cols-2 gap-3">
+            {/* Ergonomic Bottom Action Buttons */}
+            <div className="relative z-10 w-full pt-1 pb-1">
+              <div className="grid grid-cols-2 gap-3 max-w-md mx-auto w-full">
+                {/* Secondary: Foto Ulang (Retake) */}
                 <button
+                  type="button"
                   onClick={() => {
                     setCurrentStep("camera");
                     setCapturedPhotos([]);
@@ -2225,127 +2363,321 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     setCameraState("idle");
                     startCamera();
                   }}
-                  className={`min-h-[50px] px-4 font-semibold text-sm rounded-xl transition-all active:scale-[0.98] ${isNurulIqraWedding
-                    ? "bg-white hover:bg-red-50/50 border-2 border-stone-200 hover:border-[#c51d24] text-stone-700 hover:text-[#c51d24] shadow-sm"
-                    : "bg-stone-800 active:bg-stone-700 border border-stone-700 text-stone-200"
-                    }`}
+                  className={`min-h-[52px] px-4 font-semibold text-sm rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+                    isNurulIqraWedding
+                      ? "bg-white hover:bg-stone-50 border-2 border-stone-200 text-stone-700 shadow-sm"
+                      : "bg-white/10 hover:bg-white/15 active:bg-white/20 border border-white/15 text-stone-200 backdrop-blur-md shadow-sm"
+                  }`}
                 >
-                  Foto Ulang
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                    <path d="M21 3v5h-5" />
+                    <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                    <path d="M3 21v-5h5" />
+                  </svg>
+                  <span>Foto Ulang</span>
                 </button>
 
+                {/* Primary: Lanjut (Continue to Guestbook) */}
                 <button
+                  type="button"
                   onClick={() => setCurrentStep("guestbook")}
-                  className={`min-h-[50px] px-4 font-bold text-sm uppercase tracking-wider rounded-xl transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 ${isNurulIqraWedding
-                    ? "bg-[#c51d24] hover:bg-[#a8161c] text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
-                    : isJayaRikaWedding
-                      ? "bg-[#224DA5] hover:bg-[#1b3e85] text-white shadow-blue-950/30"
-                      : "bg-white active:bg-stone-200 text-stone-950"
-                    }`}
+                  className={`min-h-[52px] px-4 font-bold text-sm uppercase tracking-wider rounded-2xl transition-all active:scale-[0.98] shadow-xl flex items-center justify-center gap-2 ${
+                    isNurulIqraWedding
+                      ? "bg-[#c51d24] hover:bg-[#a8161c] text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
+                      : isJayaRikaWedding
+                        ? "bg-[#224DA5] hover:bg-[#1b3e85] text-white shadow-blue-950/40"
+                        : "bg-white hover:bg-stone-100 text-stone-950 shadow-black/40"
+                  }`}
                 >
                   <span>Lanjut</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
           </main>
         )
       }
-
-      {/* ─── STEP 5: GUESTBOOK ─── */}
+          {/* ─── STEP 5: GUESTBOOK (STUDIO SHOWCASE) ─── */}
       {
         currentStep === "guestbook" && (
-          <main className={`flex-1 flex flex-col px-5 py-6 overflow-y-auto relative z-10 ${isNurulIqraWedding ? "bg-transparent text-stone-900" : ""}`}>
-            <div className="w-full max-w-sm mx-auto space-y-5">
-              <div>
-                <div className={`text-xs uppercase tracking-wider ${isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)] font-bold bg-red-50 px-2.5 py-0.5 rounded-full inline-block border border-red-100 mb-1" : isJayaRikaWedding ? "text-[#224DA5] font-semibold" : "text-[#c47a5a] font-semibold"}`}>
-                  Langkah 3 / 3
-                </div>
-                <h3 className={`text-xl font-bold tracking-tight ${isNurulIqraWedding ? "text-stone-950 font-[family-name:var(--font-cinzel)] text-2xl" : "text-white"}`}>
-                  Ucapan & Doa
-                </h3>
-                <p className={`text-xs mt-1 ${isNurulIqraWedding ? "text-stone-600" : "text-stone-400"}`}>
-                  Tulis pesan untuk {event.host_name}
-                </p>
-              </div>
+          <main
+            className={`flex-1 w-full min-h-[100dvh] flex flex-col justify-between px-5 py-4 relative z-10 select-none overflow-y-auto ${
+              isNurulIqraWedding
+                ? "bg-gradient-to-b from-[#fffaf7] via-white to-[#fbf2ed] text-stone-900"
+                : "bg-radial from-[#18181c]/70 via-[#0e0e11] to-[#070709] text-white"
+            }`}
+            style={{
+              paddingTop: "max(1rem, env(safe-area-inset-top))",
+              paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
+            }}
+          >
+            {/* Ambient Studio Lighting (Theme Accent Glow) */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none overflow-hidden z-0"
+            >
+              <div
+                className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[400px] rounded-full blur-[100px] ${
+                  isNurulIqraWedding ? "opacity-15 bg-[#c51d24]" : "opacity-25"
+                }`}
+                style={{
+                  backgroundColor: isNurulIqraWedding ? undefined : eventPrimaryColor || "#d97706",
+                }}
+              />
+              <div
+                className={`absolute inset-0 pointer-events-none ${
+                  isNurulIqraWedding
+                    ? "bg-gradient-to-b from-white/30 via-transparent to-red-950/5"
+                    : "bg-gradient-to-b from-black/20 via-transparent to-black/60"
+                }`}
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label className={`block text-xs uppercase tracking-wider font-bold ${isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
-                  }`}>
-                  Pesan Tertulis
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Tuliskan ucapan dan doa terbaik Anda..."
-                  value={guestMessage}
-                  onChange={(e) => setGuestMessage(e.target.value)}
-                  className={`w-full px-4 py-3 text-base outline-none resize-none rounded-xl transition-all ${isNurulIqraWedding
-                    ? "bg-white border-2 border-stone-200 focus:border-[#c51d24] focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400 shadow-sm"
-                    : isJayaRikaWedding
-                      ? "bg-stone-900/80 border border-stone-700 focus:border-[#224DA5] focus:ring-4 focus:ring-[#224DA5]/20 text-white"
-                      : "bg-stone-900/80 border border-stone-700 focus:border-stone-400 text-white"
+            <div className="w-full max-w-sm mx-auto space-y-4 flex-1 flex flex-col justify-between relative z-10">
+              <div className="space-y-4">
+                {/* Minimalist Top Indicator Bar */}
+                <header className="relative z-10 w-full flex items-center justify-between pb-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep("preview")}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
+                      isNurulIqraWedding
+                        ? "bg-stone-100 hover:bg-stone-200 text-stone-800"
+                        : "bg-white/10 hover:bg-white/15 border border-white/10 text-white backdrop-blur-md"
                     }`}
-                />
+                    aria-label="Kembali ke pratinjau foto"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                  </button>
+
+                  <div
+                    className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold shadow-xs border ${
+                      isNurulIqraWedding
+                        ? "bg-red-50/90 border-red-100 text-[#c51d24] font-[family-name:var(--font-cinzel)]"
+                        : "bg-white/10 backdrop-blur-md border-white/10 text-stone-200"
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isNurulIqraWedding ? "bg-[#c51d24] animate-pulse" : "animate-pulse"
+                      }`}
+                      style={{
+                        backgroundColor: isNurulIqraWedding ? undefined : eventPrimaryColor || "#ffffff",
+                      }}
+                    />
+                    <span>Buku Tamu & Doa</span>
+                  </div>
+
+                  <div
+                    className={`text-[11px] font-semibold tracking-wider uppercase px-2.5 py-0.5 rounded-full ${
+                      isNurulIqraWedding
+                        ? "text-stone-500 bg-stone-100/80"
+                        : "text-stone-400 bg-white/5 border border-white/5"
+                    }`}
+                  >
+                    3 / 3
+                  </div>
+                </header>
+
+                {/* Mini Souvenir Badge: Connecting the Photo to the Wish */}
+                {compositeDataUrl && (
+                  <div
+                    className={`p-3 rounded-2xl border backdrop-blur-md flex items-center gap-3.5 shadow-lg ${
+                      isNurulIqraWedding
+                        ? "bg-white/90 border-red-100 shadow-red-950/5 text-stone-900"
+                        : "bg-white/[0.07] border-white/10 shadow-black/40 text-white"
+                    }`}
+                  >
+                    <div className="relative h-16 w-12 shrink-0 rounded-lg overflow-hidden bg-black/40 border border-white/20 shadow-md">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={compositeDataUrl}
+                        alt="Foto Souvenir"
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium text-stone-400 uppercase tracking-wider">
+                        <span>Foto Anda Siap</span>
+                        <span>•</span>
+                        <span className={`font-semibold truncate ${isNurulIqraWedding ? "text-[#c51d24]" : "text-white"}`}>
+                          {guestName}
+                        </span>
+                      </div>
+                      <p className={`text-xs font-medium truncate mt-0.5 ${isNurulIqraWedding ? "text-stone-800" : "text-stone-200"}`}>
+                        Tinggalkan ucapan untuk {event.host_name || event.title}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pesan Tertulis Card */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs px-1">
+                    <label
+                      className={`uppercase tracking-wider font-bold text-[11px] flex items-center gap-1.5 ${
+                        isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
+                      }`}
+                    >
+                      Pesan Tertulis
+                    </label>
+                    <span className="text-[11px] text-stone-400">
+                      {guestMessage.length > 0 ? `${guestMessage.length} karakter` : "Opsional"}
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder="Tuliskan ucapan dan doa terbaik Anda..."
+                    value={guestMessage}
+                    onChange={(e) => setGuestMessage(e.target.value)}
+                    className={`w-full px-4 py-3.5 text-sm outline-none resize-none rounded-2xl transition-all shadow-inner ${
+                      isNurulIqraWedding
+                        ? "bg-white border-2 border-stone-200 focus:border-[#c51d24] focus:ring-4 focus:ring-[#c51d24]/10 text-stone-900 placeholder:text-stone-400"
+                        : isJayaRikaWedding
+                          ? "bg-white/[0.06] hover:bg-white/[0.08] focus:bg-white/[0.1] border border-white/10 focus:border-[#224DA5] focus:ring-4 focus:ring-[#224DA5]/20 text-white placeholder:text-stone-500"
+                          : "bg-white/[0.06] hover:bg-white/[0.08] focus:bg-white/[0.1] border border-white/10 focus:border-white/30 focus:ring-4 focus:ring-white/5 text-white placeholder:text-stone-500"
+                    }`}
+                  />
+                </div>
+
+                {/* Voice Note Recorder (if enabled) */}
+                {event.allow_voice_note && (
+                  <div
+                    className={`p-3.5 rounded-2xl border backdrop-blur-md space-y-2.5 shadow-md ${
+                      isNurulIqraWedding
+                        ? "bg-white/95 border-2 border-red-100/80 shadow-red-950/5 text-stone-900"
+                        : "bg-white/[0.06] border-white/10 text-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs px-0.5">
+                      <span
+                        className={`font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 ${
+                          isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)]" : "text-stone-300 font-mono"
+                        }`}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                          <line x1="12" y1="19" x2="12" y2="22" />
+                        </svg>
+                        <span>Voice Note</span>
+                      </span>
+                      {isRecordingAudio && (
+                        <span className="text-red-400 font-bold tabular-nums text-xs flex items-center gap-1 animate-pulse">
+                          <span className="w-2 h-2 rounded-full bg-red-500" />
+                          00:{audioSeconds.toString().padStart(2, "0")}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleToggleVoiceRecording}
+                        className={`min-h-[44px] px-4 font-semibold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center gap-2 ${
+                          isRecordingAudio
+                            ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 animate-pulse"
+                            : isNurulIqraWedding
+                              ? "bg-red-50 hover:bg-red-100 text-[#c51d24] border border-red-100 font-medium"
+                              : audioUrl
+                                ? "bg-white/15 hover:bg-white/20 text-white border border-white/20"
+                                : "bg-white/10 hover:bg-white/15 text-stone-200 border border-white/15"
+                        }`}
+                      >
+                        {isRecordingAudio ? (
+                          <>
+                            <span className="w-2.5 h-2.5 rounded-sm bg-white" />
+                            <span>Berhenti</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                            </svg>
+                            <span>{audioUrl ? "Rekam Ulang" : "Rekam Suara"}</span>
+                          </>
+                        )}
+                      </button>
+
+                      {audioUrl && !isRecordingAudio && (
+                        <audio src={audioUrl} controls className="h-9 flex-1 max-w-[190px] opacity-90 rounded-lg" />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {saveError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-xs text-red-400 font-medium">
+                    {saveError}
+                  </div>
+                )}
               </div>
 
-              {event.allow_voice_note && (
-                <div className={`p-4 rounded-xl space-y-3 border ${isNurulIqraWedding ? "bg-white/95 border-2 border-red-100/80 shadow-md shadow-red-950/5" : "bg-stone-900/60 border-stone-800"
-                  }`}>
-                  <div className="flex items-center justify-between text-xs font-medium">
-                    <span className={isNurulIqraWedding ? "text-[#c51d24] font-[family-name:var(--font-cinzel)] font-bold uppercase tracking-wider" : "text-stone-300"}>Voice Note</span>
-                    {isRecordingAudio && (
-                      <span className="text-[#c51d24] font-semibold tabular-nums">
-                        ● 00:{audioSeconds.toString().padStart(2, "0")}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleToggleVoiceRecording}
-                      className={`min-h-[44px] px-4 font-semibold text-sm rounded-xl transition-colors ${isRecordingAudio
-                        ? "bg-red-900/80 text-white border border-red-700"
-                        : isNurulIqraWedding
-                          ? "bg-red-50 hover:bg-red-100 text-[#c51d24] border border-red-100 font-medium"
-                          : "bg-stone-800 active:bg-stone-700 text-stone-200 border border-stone-700"
-                        }`}
-                    >
-                      {isRecordingAudio ? "Berhenti" : "Rekam Suara"}
-                    </button>
-
-                    {audioUrl && !isRecordingAudio && (
-                      <audio src={audioUrl} controls className="h-9 flex-1 max-w-[180px]" />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {saveError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-                  {saveError}
-                </div>
-              )}
-
-              <div className="space-y-3 pt-1">
+              {/* Submit & Action Buttons */}
+              <div className="space-y-2.5 pt-3">
                 <button
                   disabled={isSaving}
                   onClick={handleSaveToGallery}
-                  className={`w-full min-h-[52px] font-bold text-sm uppercase tracking-wider transition-all rounded-xl shadow-lg ${isNurulIqraWedding
-                    ? "bg-[#c51d24] hover:bg-[#a8161c] active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
-                    : isJayaRikaWedding
-                      ? "bg-[#224DA5] hover:bg-[#1b3e85] active:scale-[0.98] disabled:bg-stone-800 disabled:text-stone-500 text-white shadow-blue-950/30"
-                      : "bg-white hover:bg-stone-100 active:bg-stone-200 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950"
-                    }`}
+                  className={`w-full min-h-[54px] font-bold text-sm uppercase tracking-wider transition-all rounded-2xl shadow-xl flex items-center justify-center gap-2.5 active:scale-[0.98] ${
+                    isNurulIqraWedding
+                      ? "bg-[#c51d24] hover:bg-[#a8161c] disabled:bg-stone-200 disabled:text-stone-400 text-white shadow-red-700/25 font-[family-name:var(--font-cinzel)]"
+                      : isJayaRikaWedding
+                        ? "bg-[#224DA5] hover:bg-[#1b3e85] disabled:bg-stone-800 disabled:text-stone-500 text-white shadow-blue-950/40"
+                        : "bg-white hover:bg-stone-100 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 shadow-black/40"
+                  }`}
                 >
-                  {isSaving ? "Menyimpan ke Galeri..." : "Kirim ke Galeri"}
+                  {isSaving ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      <span>Menyimpan ke Galeri...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Kirim ke Galeri</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
+                    </>
+                  )}
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setCurrentStep("preview")}
-                  className={`w-full min-h-[44px] text-sm transition-colors ${isNurulIqraWedding ? "text-stone-500 hover:text-[#c51d24]" : "text-stone-500 active:text-stone-300"
-                    }`}
+                  className={`w-full min-h-[44px] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                    isNurulIqraWedding ? "text-stone-500 hover:text-[#c51d24]" : "text-stone-400 hover:text-white"
+                  }`}
                 >
-                  ← Kembali ke Pratinjau
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                  <span>Kembali ke Pratinjau Foto</span>
                 </button>
               </div>
             </div>
@@ -2422,9 +2754,9 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         )
       }
 
-      {/* Footer (hidden for Nurul & Iqra, custom wedding, welcome, frame_select, and camera) */}
+      {/* Footer (hidden for Nurul & Iqra, custom wedding, welcome, frame_select, camera, preview, and guestbook) */}
       {
-        !isNurulIqraWedding && !isCustomWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && (
+        !isNurulIqraWedding && !isCustomWedding && currentStep !== "welcome" && currentStep !== "frame_select" && currentStep !== "camera" && currentStep !== "preview" && currentStep !== "guestbook" && (
           <footer
             className="border-t border-stone-800/40 bg-[#111113] px-4 py-3 text-center text-[11px] text-stone-600"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}

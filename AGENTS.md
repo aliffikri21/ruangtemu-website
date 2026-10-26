@@ -20,6 +20,14 @@ For UI, copy, people, mobile layout, or code comments work, load the antislop sk
 Before starting, ask the user when antislop applies: during the work, or after it is done.
 <!-- antislop:end -->
 
+<!-- caveman:start -->
+## caveman
+Always use the `caveman` skill for agent responses:
+- Terse caveman voice: answer first, fluff gone, all technical facts and exact code payloads kept.
+- No pleasantries, ceremony, filler, or recap.
+- Active by default to save tokens and context space on every prompt.
+<!-- caveman:end -->
+
 # MOBILE-FIRST MVP PRIORITY — RUANGTEMU VIRTUAL PHOTOBOOTH
 
 ## OBJECTIVE
