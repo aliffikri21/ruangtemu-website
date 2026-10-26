@@ -624,9 +624,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792936205.321249,
-    "seen": 1792962722.1557605,
-    "ast_hash": "63c2c61fd9d26f3e2811cec14200e7fb",
+    "mtime": 1793030160.0220263,
+    "seen": 1793030227.571004,
+    "ast_hash": "65db2d4a6ae2d877854141252cb44aea",
     "semantic_hash": ""
   },
   "docs/AUDIT.md": {
@@ -636,9 +636,9 @@
     "semantic_hash": ""
   },
   "docs/DESIGN.md": {
-    "mtime": 1792761665.953856,
-    "seen": 1792962722.1557605,
-    "ast_hash": "3ce54de9ef2b85d3f184ad5808c60205",
+    "mtime": 1793030178.593441,
+    "seen": 1793030227.571004,
+    "ast_hash": "afce7a055c8e5f7351a816d0f5d65834",
     "semantic_hash": ""
   },
   "app/apple-icon.png": {

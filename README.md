@@ -25,7 +25,7 @@
 10. [Rute Halaman & Endpoint API](#-rute-halaman--endpoint-api)
 11. [Mode Pemeliharaan (Maintenance Mode)](#-mode-pemeliharaan-maintenance-mode)
 12. [Integrasi Pembayaran (DOKU Gateway)](#-integrasi-pembayaran-doku-gateway)
-13. [Hak Akses & Kredensial Default](#-hak-akses--kredensial-default)
+13. [Hak Akses & Keamanan Sistem](#-hak-akses--keamanan-sistem)
 
 ---
 
@@ -368,12 +368,12 @@ Modul pembayaran diimplementasikan pada [lib/doku.ts](file:///d:/VSCode/ruangtem
 
 ---
 
-## 🔐 Hak Akses & Kredensial Default
+## 🔐 Hak Akses & Keamanan Sistem
 
-Untuk keperluan pengujian dan demonstrasi lokal:
-* **URL Admin Panel:** `http://localhost:3000/admin`
-* **Email:** `admin@ruangtemu.id`
-* **Password:** `ruangtemupalopo2026`
+Untuk pengoperasian dashboard manajemen:
+* **URL Admin Panel:** `/admin` (atau `http://localhost:3000/admin` pada lingkungan lokal).
+* **Konfigurasi Kredensial:** Dikelola melalui variabel lingkungan `.env.local` pada parameter `ADMIN_EMAIL` dan `ADMIN_PASSWORD`.
+* **Kebijakan Keamanan:** Demi menjaga privasi dan keamanan sistem, kredensial asli **tidak disimpan** di dalam repositori atau dokumentasi publik. Pastikan Anda mengonfigurasi email dan kata sandi yang aman pada file `.env.local` Anda sebelum menjalankan aplikasi.
 
 ---
 

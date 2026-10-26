@@ -476,8 +476,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Admin Authentication
-ADMIN_EMAIL=admin@ruangtemu.id
-ADMIN_PASSWORD=ruangtemupalopo2026
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your-secure-admin-password
 
 # WhatsApp & Social
 NEXT_PUBLIC_RUANGTEMU_WA=6282244866088
