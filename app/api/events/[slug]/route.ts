@@ -139,6 +139,12 @@ export async function PUT(
         };
       }
       updates.theme_config = safeThemeConfig;
+      if (
+        safeThemeConfig?.background?.image &&
+        (!updates.cover_image || updates.cover_image.includes("unsplash.com"))
+      ) {
+        updates.cover_image = safeThemeConfig.background.image;
+      }
     }
     if (body.package_tier !== undefined)
       updates.package_tier = body.package_tier;

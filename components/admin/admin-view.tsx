@@ -1424,7 +1424,7 @@ export function AdminView({
         : (editingEvent.payment_amount || chosenPkg.price))
       : editingEvent.payment_amount;
 
-    const updatePayload = {
+    const updatePayload: Record<string, any> = {
       title: editForm.title,
       host_name: editForm.host_name,
       client_name: editForm.host_name,
@@ -1435,6 +1435,7 @@ export function AdminView({
       city: editForm.city,
       description: editForm.description,
       category: editForm.category || editingEvent.category || "virtual_photobooth",
+      cover_image: editThemeConfig?.background?.image || editingEvent.cover_image,
       assigned_frames,
       default_frame_config: assigned_frames.length > 0
         ? assigned_frames[0].config_json
@@ -1474,6 +1475,7 @@ export function AdminView({
             };
             setEditThemeConfig(safeThemeConfig);
             updatePayload.theme_config = safeThemeConfig;
+            updatePayload.cover_image = upData.url;
           }
         } catch (uErr) {
           console.warn("Pre-save background upload fallback:", uErr);

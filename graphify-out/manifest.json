@@ -132,16 +132,16 @@
     "semantic_hash": "1b02817733f02f8015eabba9a2db68e2"
   },
   "app/api/events/[slug]/route.ts": {
-    "mtime": 1792831684.3362904,
-    "seen": 1792961407.5081677,
-    "ast_hash": "70a4a9589b02923a651d436f9c05cecf",
-    "semantic_hash": "70a4a9589b02923a651d436f9c05cecf"
+    "mtime": 1793107072.0663922,
+    "seen": 1793107213.2857597,
+    "ast_hash": "6edff3ffe13daed7555dab11eb145bbd",
+    "semantic_hash": ""
   },
   "app/api/events/route.ts": {
-    "mtime": 1792741879.6290915,
-    "seen": 1792961407.5081677,
-    "ast_hash": "8b7eb14c8001a9d9881e39bf8186d2fa",
-    "semantic_hash": "8b7eb14c8001a9d9881e39bf8186d2fa"
+    "mtime": 1793107091.120948,
+    "seen": 1793107213.2857597,
+    "ast_hash": "020196336e4171af2eb8e76a1138628f",
+    "semantic_hash": ""
   },
   "app/api/events/upload-bg/route.ts": {
     "mtime": 1792741717.8082464,
@@ -192,10 +192,10 @@
     "semantic_hash": ""
   },
   "app/event/[slug]/page.tsx": {
-    "mtime": 1792960912.147658,
-    "seen": 1792961407.5081677,
-    "ast_hash": "2f5cf9195826ef0f8927005f1cb2a9f8",
-    "semantic_hash": "2f5cf9195826ef0f8927005f1cb2a9f8"
+    "mtime": 1793107034.487212,
+    "seen": 1793107213.288007,
+    "ast_hash": "c27ae2ea868d1c00a2c626370e6be349",
+    "semantic_hash": ""
   },
   "app/event/[slug]/projection/page.tsx": {
     "mtime": 1792437088.8801868,
@@ -252,9 +252,9 @@
     "semantic_hash": "0d956755f38f2ac4b481fd5cff741096"
   },
   "components/admin/admin-view.tsx": {
-    "mtime": 1793039824.5175657,
-    "seen": 1793039856.9926398,
-    "ast_hash": "34fc00e640d0ddb12f0a87d127646d87",
+    "mtime": 1793107128.8576,
+    "seen": 1793107213.2900255,
+    "ast_hash": "433c5f99e0d34ae89621ff3190c5a986",
     "semantic_hash": ""
   },
   "components/admin/doku-payment-modal.tsx": {

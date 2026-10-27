@@ -1,17 +1,17 @@
 # Graph Report - ruangtemu-test  (2026-10-27)
 
 ## Corpus Check
-- 122 files · ~163,874 words
+- 122 files · ~164,020 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: .ico 2, .css 2, .example 1)
 
 ## Summary
-- 1273 nodes · 1918 edges · 92 communities (80 shown, 12 thin omitted)
+- 1273 nodes · 1921 edges · 88 communities (80 shown, 8 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 16 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d3a2c6df`
+- Built from commit: `b0d2f130`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -43,7 +43,7 @@
 - contrast-check.py
 - eslint.config.mjs
 - getEventBySlug
-- react
+- index.ts
 - scripts
 - CurvedLoop.tsx
 - AGENTS.md
@@ -62,7 +62,7 @@
 - Group 1: Hard Gate (absolute, no exceptions)
 - Caveman Help
 - export-zip/route.ts
-- frame-detect.ts
+- admin-charts.tsx
 - Group 2: Purpose-Gate (technique allowed, purpose required)
 - Rules
 - Rules
@@ -70,14 +70,13 @@
 - HomePage
 - Decorative Elements
 - Caveman Compress
-- time-input-24.tsx
+- booking-modal.tsx
 - next
 - antislop-ui
 - Layout & Components
 - Visual & Color
 - caveman-commit
 - caveman-review
-- googleapis@^188.0.0
 - Group 3: Quality Locks (consistency)
 - Playwright E2E Testing Skill
 - packages/route.ts
@@ -95,16 +94,13 @@
 - Delivery Gate (Mandatory)
 - skills/caveman-learn — the Caveman Learn editing skill (Apache-2.0, public)
 - caveman-learn skill
-- lucide-react
 - Part 3: Liveliness Toolkit
 - This is NOT the Next.js you know
 - MOBILE-FIRST MVP PRIORITY — RUANGTEMU VIRTUAL PHOTOBOOTH
 - megacave/README.md
 - ultracave/README.md
-- qrcode
+- canvas-confetti
 - @playwright/test
-- jszip
-- @types/three@^0.186.0
 
 ## God Nodes (most connected - your core abstractions)
 1. `AdminView()` - 44 edges
@@ -127,13 +123,13 @@
   docs/AUDIT.md → lib/frame-canvas.ts
 - `DELETE()` --calls--> `deleteBooking()`  [EXTRACTED]
   app/api/bookings/route.ts → lib/db.ts
-- `generateMetadata()` --calls--> `getEventBySlug()`  [EXTRACTED]
-  app/event/[slug]/page.tsx → lib/db.ts
+- `AdminPage()` --calls--> `AdminView()`  [EXTRACTED]
+  app/admin/page.tsx → components/admin/admin-view.tsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (92 total, 12 thin omitted)
+## Communities (88 total, 8 thin omitted)
 
 ### Community 0 - "db.ts"
 Cohesion: 0.15
@@ -156,12 +152,12 @@ Cohesion: 0.10
 Nodes (28): dynamic, POST(), dynamic, POST(), dynamic, GET(), POST(), dynamic (+20 more)
 
 ### Community 5 - "save-frame.ts"
-Cohesion: 0.22
-Nodes (12): DELETE(), dynamic, POST(), revalidate, RouteContext, POST(), clearEventEntries(), createEntry() (+4 more)
+Cohesion: 0.17
+Nodes (17): POST(), DELETE(), dynamic, POST(), revalidate, RouteContext, POST(), POST() (+9 more)
 
 ### Community 6 - "virtual-booth.tsx"
-Cohesion: 0.08
-Nodes (31): EventPhotoboothPage(), generateMetadata(), Props, CameraState, DAYS_ID, FILTERS, formatIndonesianDateUpper(), formatIndonesianFullDate() (+23 more)
+Cohesion: 0.10
+Nodes (28): CameraState, DAYS_ID, FILTERS, formatIndonesianDateUpper(), formatIndonesianFullDate(), FRAME_TEMPLATES, isLightHex(), MONTHS_ID (+20 more)
 
 ### Community 7 - "compress.py"
 Cohesion: 0.12
@@ -189,11 +185,11 @@ Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModu
 
 ### Community 13 - "dependencies"
 Cohesion: 0.09
-Nodes (23): dependencies, clsx@^2.1.1, exceljs@^4.4.0, motion@^14.3.0, mysql2@^3.24.5, next@16.3.5, react@19.2.8, react-dom@19.2.8 (+15 more)
+Nodes (23): dependencies, clsx@^2.1.1, googleapis@^188.0.0, lucide-react@^1.47.0, mysql2@^3.24.5, next@16.3.5, react@19.2.8, react-dom@19.2.8 (+15 more)
 
 ### Community 14 - "app/page.tsx"
-Cohesion: 0.12
-Nodes (15): 100vh Sections, Desktop-Sized Everything, Fixed Pixel Type, Huge Empty Padding, Scale & Sizing, ClientReviewItem, DEFAULT_LANDING_PACKAGES, DUMMY_QUOTES_POOL (+7 more)
+Cohesion: 0.33
+Nodes (4): ClientReviewItem, DEFAULT_LANDING_PACKAGES, DUMMY_QUOTES_POOL, INITIAL_CLIENT_REVIEWS
 
 ### Community 15 - "maintenance/page.tsx"
 Cohesion: 0.38
@@ -240,12 +236,12 @@ Cohesion: 0.33
 Nodes (5): eslintConfig, eslint@^9, eslint-config-next@16.3.5, eslint, eslint-config-next
 
 ### Community 26 - "getEventBySlug"
-Cohesion: 0.22
-Nodes (16): GET(), POST(), DELETE(), GET(), PUT(), POST(), buildSafeFramePayload(), createEvent() (+8 more)
+Cohesion: 0.21
+Nodes (15): GET(), DELETE(), GET(), PUT(), EventPhotoboothPage(), generateMetadata(), Props, buildSafeFramePayload() (+7 more)
 
-### Community 27 - "react"
-Cohesion: 0.12
-Nodes (18): Props, AdminCharts(), AdminChartsProps, FILTER_LABELS, getWitaHour(), AdminViewProps, Booking, BookingStatus (+10 more)
+### Community 27 - "index.ts"
+Cohesion: 0.14
+Nodes (17): FrameUploadSlot, DetectionResult, detectTransparentRegions(), floodFill(), loadImageFromUrl(), mergeOverlapping(), BookingStatus, EventFrame (+9 more)
 
 ### Community 28 - "scripts"
 Cohesion: 0.29
@@ -264,12 +260,12 @@ Cohesion: 0.05
 Nodes (39): 10. Data Access Layer (`lib/db.ts`), 11.1 `components/photobooth/virtual-booth.tsx` (657 baris), 11.2 `components/admin/admin-view.tsx` (640 baris), 11.3 `lib/frame-canvas.ts` (11.7KB), 11.4 `lib/audio.ts` (2.9KB), 11. Komponen Utama, 12. Environment Variables, 13. Technical Debt & Migration Gaps (+31 more)
 
 ### Community 33 - "booking-modal.tsx"
-Cohesion: 0.16
-Nodes (17): BookingForm(), DokuPaymentModal(), DokuPaymentModalProps, BOOKING_PACKAGES, BookingModal(), BookingModalProps, BookingServiceCategory, PackageOption (+9 more)
+Cohesion: 0.19
+Nodes (14): BookingForm(), BookingPage(), PackageOption, packageOptions, DokuPaymentModal(), DokuPaymentModalProps, BookingModal(), Footer() (+6 more)
 
 ### Community 34 - "react"
-Cohesion: 0.33
-Nodes (3): Props, DateInputDMYProps, react
+Cohesion: 0.20
+Nodes (6): Props, Props, DateInputDMYProps, qrcode@^1.5.4, qrcode, react
 
 ### Community 35 - "Tone & Voice"
 Cohesion: 0.05
@@ -280,8 +276,8 @@ Cohesion: 0.06
 Nodes (32): 1. `database/mysql_schema.sql` (Initial Database Schema), 1. Mobile-First Virtual Photobooth (Tamu), 2. `database/mysql_seed.sql` (Seed Data), 2. Manajemen Multi-Event & Isolasi Data, 3. Galeri Acara & Mode Proyeksi Venue (Live Projection), 4. Landing Page Komersial & Live UI Editor, 5. Dual Database Support (MySQL & Supabase), 6. Sistem Pemeliharaan (Maintenance Mode) (+24 more)
 
 ### Community 37 - "antislop-layoutmobile"
-Cohesion: 0.08
-Nodes (25): antislop-layoutmobile, Bottom Nav That Eats Content, Breakpoint Driven by Device List, Breakpoints, Columns That Don't Collapse, Desktop-Only Layout, Fixed-Width Children, Fixed-Width Grid (+17 more)
+Cohesion: 0.05
+Nodes (38): 100vh Sections, antislop-layoutmobile, Bottom Nav That Eats Content, Breakpoint Driven by Device List, Breakpoints, Columns That Don't Collapse, Desktop-Only Layout, Desktop-Sized Everything (+30 more)
 
 ### Community 39 - "RUANGTEMU VIRTUAL PHOTOBOOTH — AUDIT REPORT"
 Cohesion: 0.07
@@ -312,12 +308,12 @@ Cohesion: 0.14
 Nodes (12): caveman-help, Example output, How to invoke, See also, What it does, Caveman Help, Configure Default Mode, Deactivate (+4 more)
 
 ### Community 46 - "export-zip/route.ts"
-Cohesion: 0.19
-Nodes (13): dynamic, GET(), revalidate, GET(), cleanFilename(), dynamic, fetchFileBuffer(), GET() (+5 more)
+Cohesion: 0.16
+Nodes (15): dynamic, GET(), revalidate, GET(), cleanFilename(), dynamic, fetchFileBuffer(), GET() (+7 more)
 
-### Community 47 - "frame-detect.ts"
-Cohesion: 0.33
-Nodes (8): FrameUploadSlot, DetectionResult, detectTransparentRegions(), floodFill(), loadImageFromUrl(), mergeOverlapping(), FrameType, PhotoSlot
+### Community 47 - "admin-charts.tsx"
+Cohesion: 0.39
+Nodes (7): AdminCharts(), AdminChartsProps, FILTER_LABELS, getWitaHour(), AdminViewProps, Booking, GalleryEntry
 
 ### Community 48 - "Group 2: Purpose-Gate (technique allowed, purpose required)"
 Cohesion: 0.15
@@ -347,13 +343,13 @@ Nodes (12): AI Capsule Badges, Colored Left Stripe, Decorative Elements, Decorat
 Cohesion: 0.17
 Nodes (11): Boundaries, Caveman Compress, Compress, Compression Rules, Pattern, Preserve EXACTLY (never modify), Preserve Structure, Process (+3 more)
 
-### Community 55 - "time-input-24.tsx"
-Cohesion: 0.50
-Nodes (4): COMMON_EVENT_TIMES, parseTo24Hour(), TimeInput24(), TimeInput24Props
+### Community 55 - "booking-modal.tsx"
+Cohesion: 0.18
+Nodes (12): BOOKING_PACKAGES, BookingModalProps, BookingServiceCategory, PackageOption, PHOTOBOOTH_PACKAGES, VIRTUAL_PHOTOBOOTH_PACKAGES, COMMON_EVENT_TIMES, parseTo24Hour() (+4 more)
 
 ### Community 56 - "next"
-Cohesion: 0.11
-Nodes (9): AlbumPageProps, BookingPage(), PackageOption, packageOptions, Footer(), Navbar(), config, nextConfig (+1 more)
+Cohesion: 0.13
+Nodes (4): AlbumPageProps, config, nextConfig, next
 
 ### Community 57 - "antislop-ui"
 Cohesion: 0.18
@@ -388,8 +384,8 @@ Cohesion: 0.29
 Nodes (10): dynamic, GET(), PATCH(), revalidate, getPackageBySlug(), getPackages(), mapPackageRow(), toggleEntryApproval() (+2 more)
 
 ### Community 66 - "admin/page.tsx"
-Cohesion: 0.21
-Nodes (10): AdminPage(), dynamic, metadata, revalidate, dynamic, GET(), getEventPrice(), revalidate (+2 more)
+Cohesion: 0.18
+Nodes (12): AdminPage(), dynamic, metadata, revalidate, dynamic, GET(), getEventPrice(), revalidate (+4 more)
 
 ### Community 67 - "antislop"
 Cohesion: 0.25
@@ -451,23 +447,23 @@ Nodes (4): Design Read (how the dials are set), Levers (how the dials become vis
 Cohesion: 0.67
 Nodes (3): antislop, caveman, This is NOT the Next.js you know
 
-### Community 91 - "qrcode"
+### Community 91 - "canvas-confetti"
 Cohesion: 0.33
-Nodes (4): canvas-confetti@^1.9.4, qrcode@^1.5.4, canvas-confetti, qrcode
+Nodes (4): canvas-confetti@^1.9.4, @supabase/ssr@^0.12.7, canvas-confetti, @supabase/ssr
 
 ## Knowledge Gaps
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `next` connect `next` to `db.ts`, `packages/route.ts`, `admin/page.tsx`, `react`, `doku.ts`, `save-frame.ts`, `virtual-booth.tsx`, `layout.tsx`, `admin-view.tsx`, `maintenance.ts`, `package.json`, `dependencies`, `export-zip/route.ts`, `maintenance/page.tsx`, `app/page.tsx`, `gallery/page.tsx`, `getEventBySlug`, `react`?**
+- **Why does `next` connect `next` to `db.ts`, `packages/route.ts`, `admin/page.tsx`, `booking-modal.tsx`, `doku.ts`, `save-frame.ts`, `react`, `layout.tsx`, `admin-view.tsx`, `maintenance.ts`, `virtual-booth.tsx`, `package.json`, `dependencies`, `export-zip/route.ts`, `maintenance/page.tsx`, `app/page.tsx`, `gallery/page.tsx`, `getEventBySlug`?**
   _High betweenness centrality (0.073) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `AdminView()` (e.g. with `handleClickOutside()` and `IconBooking()`) actually correct?**
   _`AdminView()` has 7 INFERRED edges - model-reasoned connections that need verification._
 - **Should `db.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.14624505928853754 - nodes in this community are weakly interconnected._
-- **Why does `react` connect `react` to `admin-view.tsx`, `booking-modal.tsx`, `virtual-booth.tsx`, `theme-config.tsx`, `package.json`, `dependencies`, `app/page.tsx`, `maintenance/page.tsx`, `time-input-24.tsx`, `gallery/page.tsx`, `next`, `react`, `CurvedLoop.tsx`?**
+- **Why does `react` connect `react` to `booking-modal.tsx`, `admin-view.tsx`, `antislop-layoutmobile`, `virtual-booth.tsx`, `theme-config.tsx`, `package.json`, `dependencies`, `app/page.tsx`, `maintenance/page.tsx`, `admin-charts.tsx`, `booking-modal.tsx`, `gallery/page.tsx`, `CurvedLoop.tsx`?**
   _High betweenness centrality (0.037) - this node is a cross-community bridge._
 - **Should `admin-view.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.09851551956815115 - nodes in this community are weakly interconnected._

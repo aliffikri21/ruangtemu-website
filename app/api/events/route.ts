@@ -74,10 +74,6 @@ export async function POST(req: NextRequest) {
       venue: body.venue || "Palopo",
       city: body.city || "Palopo",
       description: body.description || "",
-      cover_image:
-        typeof body.cover_image === "string" && body.cover_image.startsWith("data:image/")
-          ? await saveLandingBgImage(body.cover_image, `${slug}-cover`)
-          : body.cover_image || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
       category: body.category || "virtual_photobooth",
       status: "ACTIVE",
       is_active: true,
@@ -120,6 +116,12 @@ export async function POST(req: NextRequest) {
             },
           }
         : undefined,
+      cover_image:
+        typeof body.cover_image === "string" && body.cover_image.startsWith("data:image/")
+          ? await saveLandingBgImage(body.cover_image, `${slug}-cover`)
+          : body.cover_image ||
+            body.theme_config?.background?.image ||
+            "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
     };
 
     const newEvent = await createEvent(eventPayload);
