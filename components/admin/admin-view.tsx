@@ -518,7 +518,7 @@ export function AdminView({
   initialPackages,
   initialEntries,
 }: AdminViewProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -1671,31 +1671,37 @@ export function AdminView({
     ]);
   };
 
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const cleanUsername = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
-
-    const isValidAdmin =
-      (cleanUsername === "admin" || cleanUsername === "admin@ruangtemu.id" || cleanUsername === "admin@ruangtemu.online") &&
-      (cleanPassword === "ruangtemu21" || cleanPassword === "admin");
-
-    const isValidDev =
-      (cleanUsername === "dev" || cleanUsername === "dev@ruangtemu.id" || cleanUsername === "dev@ruangtemu.online") &&
-      (cleanPassword === "admin" || cleanPassword === "dev" || cleanPassword === "ruangtemu21");
-
-    if (isValidAdmin || isValidDev) {
-      setIsAuthenticated(true);
-      setLoginError("");
-    } else {
-      setLoginError("Username atau password tidak valid.");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email, password }),
+      });
+      if (res.ok) {
+        setIsAuthenticated(true);
+        setLoginError("");
+        window.location.reload();
+      } else {
+        const data = await res.json();
+        setLoginError(data.error || "Username atau password tidak valid.");
+      }
+    } catch {
+      setLoginError("Gagal menghubungi server autentikasi.");
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
     setIsAuthenticated(false);
     setPassword("");
     setLoginError("");
+    window.location.href = "/admin/login";
   };
 
   const handleStatusChange = async (bookingId: string, newStatus: BookingStatus) => {

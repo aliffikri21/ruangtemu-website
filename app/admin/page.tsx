@@ -1,3 +1,6 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { verifyAdminToken } from "@/lib/auth";
 import { getEvents, getBookings, getPackages, getAllEntries } from "@/lib/db";
 import { AdminView } from "@/components/admin/admin-view";
 import { Metadata } from "next";
@@ -11,6 +14,14 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("rt_admin_session")?.value;
+  const isAuthenticated = await verifyAdminToken(sessionToken);
+
+  if (!isAuthenticated) {
+    redirect("/admin/login");
+  }
+
   const events = await getEvents();
   const bookings = await getBookings();
   const packages = await getPackages();
@@ -25,4 +36,3 @@ export default async function AdminPage() {
     />
   );
 }
-

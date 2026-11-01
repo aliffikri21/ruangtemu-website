@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { updateEvent, deleteEvent, getEvents, getEventBySlug } from "@/lib/db";
 import { FrameItem } from "@/types";
 import { saveFrameImage, saveLandingBgImage } from "@/lib/save-frame";
+import { verifyAdminToken } from "@/lib/auth";
 
 export async function GET(
   _req: NextRequest,
@@ -30,6 +31,16 @@ export async function PUT(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const sessionToken = req.cookies.get("rt_admin_session")?.value;
+    const isAdmin = await verifyAdminToken(sessionToken);
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Diperlukan akses admin" },
+        { status: 401 }
+      );
+    }
+
     const { slug } = await params;
     const body = await req.json();
 
@@ -181,10 +192,20 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const sessionToken = req.cookies.get("rt_admin_session")?.value;
+    const isAdmin = await verifyAdminToken(sessionToken);
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Diperlukan akses admin" },
+        { status: 401 }
+      );
+    }
+
     const { slug } = await params;
     let eventId = slug;
     const allEvents = await getEvents();

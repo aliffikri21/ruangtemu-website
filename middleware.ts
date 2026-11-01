@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifyAdminToken } from "@/lib/auth";
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - static assets with extensions (.svg, .png, .jpg, .jpeg, .gif, .webp, .ico, .css, .js)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
   ],
 };
 
@@ -19,13 +19,54 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://gjvppqonfk
 const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdnBwcW9uZmtiaWJsZ2h2dXVuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTA4NzY3MCwiZXhwIjoyMTA2NjYzNjcwfQ.FYPU98oFzPB631xe-a8lkdQKMq7MCmp6cnlptp4McYM";
+  "";
+
+// Daftar endpoint API sensitif & mutasi yang wajib otentikasi admin
+function isSensitiveAdminApi(pathname: string, method: string): boolean {
+  if (pathname.startsWith("/api/admin")) return true;
+  if (pathname === "/api/entries" && method === "GET") return true;
+  if (pathname.startsWith("/api/entries/") && method === "DELETE") return true;
+  if (pathname === "/api/bookings" && (method === "GET" || method === "PATCH" || method === "DELETE")) return true;
+  if (pathname === "/api/events" && method === "POST") return true;
+  if (pathname.startsWith("/api/events/") && (method === "PUT" || method === "DELETE")) return true;
+  if (pathname.endsWith("/entries") && method === "DELETE") return true;
+  if (pathname.includes("/export-zip")) return true;
+  if (pathname === "/api/frames/upload" && method === "POST") return true;
+  if (pathname === "/api/events/upload-bg" && method === "POST") return true;
+  return false;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method.toUpperCase();
 
-  // 1. Admin dashboard routes are ALWAYS accessible so admins/developers can manage maintenance
-  if (pathname.startsWith("/admin")) {
+  // 1. Lewatkan rute auth publik dan halaman login admin
+  if (pathname === "/admin/login" || pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
+  // 2. Proteksi rute Admin & API Admin Mutasi / Sensitif
+  const isAdminPage = pathname.startsWith("/admin");
+  const isAdminApi = isSensitiveAdminApi(pathname, method);
+
+  if (isAdminPage || isAdminApi) {
+    const sessionToken = request.cookies.get("rt_admin_session")?.value;
+    const isAuthenticated = await verifyAdminToken(sessionToken);
+
+    if (!isAuthenticated) {
+      if (isAdminApi) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized: Sesi admin tidak valid atau kedaluwarsa" },
+          { status: 401 }
+        );
+      }
+
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Admin terotentikasi selalu diizinkan masuk
     const response = NextResponse.next();
     if (request.cookies.has("rt_admin_bypass")) {
       response.cookies.delete("rt_admin_bypass");
@@ -33,37 +74,42 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // 2. Query maintenance mode directly from Supabase REST in real time (cache: "no-store")
-  let isMaintenance = false;
-  try {
-    const queryUrl = `${SUPABASE_URL}/rest/v1/events?slug=eq.__system_maintenance__&select=is_active`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch(queryUrl, {
-      signal: controller.signal,
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-      cache: "no-store",
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        isMaintenance = Boolean(data[0].is_active);
-      }
-    }
-  } catch {
-    // Fail-open: If query fails or network is offline, site continues to work normally
-    isMaintenance = false;
+  // 3. Lewatkan API publik lainnya dari maintenance check HTML
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
   }
 
-  // 3. Maintenance mode is ACTIVE
+  // 4. Query maintenance mode directly from Supabase REST in real time (cache: "no-store")
+  let isMaintenance = false;
+  if (SUPABASE_KEY) {
+    try {
+      const queryUrl = `${SUPABASE_URL}/rest/v1/events?slug=eq.__system_maintenance__&select=is_active`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      const res = await fetch(queryUrl, {
+        signal: controller.signal,
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+        cache: "no-store",
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          isMaintenance = Boolean(data[0].is_active);
+        }
+      }
+    } catch {
+      isMaintenance = false;
+    }
+  }
+
+  // 5. Maintenance mode is ACTIVE
   if (isMaintenance) {
-    // Already on the maintenance page -> allow viewing
     if (pathname === "/maintenance") {
       const response = NextResponse.next();
       if (request.cookies.has("rt_admin_bypass")) {
@@ -72,7 +118,6 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    // All public paths (homepage '/', '/booking', '/event/...', etc.) redirect to /maintenance
     const response = NextResponse.redirect(new URL("/maintenance", request.url), 307);
     if (request.cookies.has("rt_admin_bypass")) {
       response.cookies.delete("rt_admin_bypass");
@@ -80,8 +125,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // 4. Maintenance mode is INACTIVE
-  // If someone directly visits /maintenance while the site is online, redirect to homepage
+  // 6. Maintenance mode is INACTIVE
   if (pathname === "/maintenance") {
     return NextResponse.redirect(new URL("/", request.url), 307);
   }

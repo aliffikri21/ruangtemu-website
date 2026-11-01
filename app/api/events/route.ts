@@ -2,11 +2,36 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEvents, createEvent, deleteBooking } from "@/lib/db";
 import { EventItem } from "@/types";
 import { saveFrameImage, saveLandingBgImage } from "@/lib/save-frame";
+import { verifyAdminToken } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const events = await getEvents();
-    return NextResponse.json({ success: true, events });
+    const sessionToken = req.cookies.get("rt_admin_session")?.value;
+    const isAdmin = await verifyAdminToken(sessionToken);
+
+    if (isAdmin) {
+      return NextResponse.json({ success: true, events });
+    }
+
+    // Sanitasi data untuk pengunjung publik (hapus info finansial & invoice)
+    const sanitizedEvents = events.map((e) => ({
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+      client_name: e.client_name,
+      host_name: e.host_name,
+      venue: e.venue,
+      city: e.city,
+      date: e.date,
+      category: e.category,
+      cover_image: e.cover_image,
+      theme_config: e.theme_config,
+      is_active: e.is_active,
+      status: e.status,
+    }));
+
+    return NextResponse.json({ success: true, events: sanitizedEvents });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Server error";
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
@@ -15,6 +40,16 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const sessionToken = req.cookies.get("rt_admin_session")?.value;
+    const isAdmin = await verifyAdminToken(sessionToken);
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Diperlukan akses admin" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
 
     if (!body.title || !body.host_name) {
