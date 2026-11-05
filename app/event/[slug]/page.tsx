@@ -9,6 +9,11 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// =========================================================================================
+// 1. GENERATE METADATA (SEO & WhatsApp Link Preview)
+// Saat tautan QR/URL acara dibagikan via WhatsApp/Instagram, fungsi ini otomatis menarik
+// judul acara dan foto cover langsung dari database untuk dijadikan kartu preview dinamis.
+// =========================================================================================
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
@@ -72,6 +77,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// =========================================================================================
+// 2. HALAMAN UTAMA PHOTOBOOTH TAMU (Server Component)
+// Alur Kerja:
+// 1. Tamu memindai QR Code di meja pesta -> membuka URL: /event/[slug] (misal: /event/wedding-aldi-maya)
+// 2. Server Next.js mengeksekusi fungsi ini di level SERVER (bukan browser client)
+// 3. Menarik data event dari PostgreSQL Supabase berdasarkan slug URL via getEventBySlug(slug)
+// 4. Jika event tidak ada, arahkan otomatis ke halaman notFound (404)
+// 5. Jika event aktif, kirim data event ke komponen VirtualBooth untuk membuka kamera & pilihan frame
+// =========================================================================================
 export default async function EventPhotoboothPage({ params }: Props) {
   const { slug } = await params;
   const event = await getEventBySlug(slug);

@@ -847,18 +847,26 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     });
   };
 
+  // =========================================================================================
+  // FUNGSI UTAMA PENGIRIMAN FOTO & BUKU TAMU KE DATABASE (HTTP POST)
+  // Dipanggil saat tamu menekan tombol "Kirim Foto & Ucapan" di akhir sesi photobooth:
+  // 1. Mengambil foto komposit hasil penggabungan webcam + template frame dari HTML5 Canvas
+  // 2. Kompresi gambar dinamis agar muatan aman (< 2.5 MB)
+  // 3. Mengirimkan request HTTP POST ke endpoint backend: /api/events/[slug]/entries
+  // =========================================================================================
   const handleSaveToGallery = async () => {
     if (!compositeDataUrl || isSaving) return;
     setIsSaving(true);
     setSaveError(null);
 
     try {
-      // Ensure photo size is safe for Vercel payload limits (< 4.5MB)
+      // Pastikan ukuran foto aman untuk jaringan mobile (< 2.5MB) sebelum dikirim
       let photoToSend = compositeDataUrl;
       if (photoToSend.length > 2.5 * 1024 * 1024) {
         photoToSend = await compressDataUrl(photoToSend, 0.82, 1200);
       }
 
+      // REQUEST HTTP POST KE DATABASE SUPABASE VIA NEXT.JS API ROUTE
       const res = await fetch(`/api/events/${event.slug}/entries`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

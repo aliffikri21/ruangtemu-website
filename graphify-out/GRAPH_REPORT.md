@@ -1,7 +1,7 @@
-# Graph Report - ruangtemu-test  (2026-11-02)
+# Graph Report - ruangtemu-test  (2026-11-05)
 
 ## Corpus Check
-- 126 files · ~166,298 words
+- 126 files · ~167,452 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: .ico 2, .css 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4b021b4e`
+- Built from commit: `94a7bbee`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -483,7 +483,7 @@ Nodes (3): drawRoundedPill(), VoiceWaveformVisualizer(), VoiceWaveformVisualizer
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `next` connect `next` to `db.ts`, `admin-view.tsx`, `doku.ts`, `verifyAdminToken`, `virtual-booth.tsx`, `maintenance.ts`, `package.json`, `dependencies`, `app/page.tsx`, `gallery/page.tsx`, `getDbClient`, `getEventBySlug`, `index.ts`, `react`, `export-zip/route.ts`, `layout.tsx`, `maintenance/page.tsx`, `[slug]/route.ts`, `bookings/route.ts`, `login/route.ts`, `status/route.ts`, `checkout/route.ts`, `notification/route.ts`, `logout/route.ts`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
+  _High betweenness centrality (0.077) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `AdminView()` (e.g. with `handleClickOutside()` and `IconBooking()`) actually correct?**
   _`AdminView()` has 7 INFERRED edges - model-reasoned connections that need verification._
 - **Should `admin-view.tsx` be split into smaller, more focused modules?**

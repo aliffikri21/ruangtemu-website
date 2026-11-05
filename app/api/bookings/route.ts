@@ -4,7 +4,10 @@ import { verifyAdminToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// Rate limiting booking form spam
+// =========================================================================================
+// PENGATURAN RATE LIMITER (Pencegah Spam Formulir Pemesanan)
+// Membatasi setiap alamat IP agar maksimal hanya boleh submit 5 reservasi per 10 menit
+// =========================================================================================
 const bookingAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_BOOKINGS_PER_WINDOW = 5;
 const BOOKING_WINDOW_MS = 10 * 60 * 1000; // 10 menit
@@ -17,8 +20,14 @@ function getClientIp(req: NextRequest): string {
   return req.headers.get("x-real-ip") || "127.0.0.1";
 }
 
+// =========================================================================================
+// 1. METHOD GET: Mengambil Daftar Semua Reservasi Pemesanan Klien (Khusus Admin)
+// Alur: Dashboard Admin membuka tab "Reservasi & Booking" -> fetch GET ke rute ini ->
+//       Server cek hak admin -> query ke tabel `bookings` -> kembalikan list reservasi
+// =========================================================================================
 export async function GET(req: NextRequest) {
   try {
+    // Verifikasi sesi cookie admin
     const sessionToken = req.cookies.get("rt_admin_session")?.value;
     const isAdmin = await verifyAdminToken(sessionToken);
 
@@ -26,6 +35,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized: Diperlukan akses admin" }, { status: 401 });
     }
 
+    // Ambil data seluruh pemesanan dari database
     const bookings = await getBookings();
     return NextResponse.json({ success: true, bookings });
   } catch (error: any) {
@@ -33,9 +43,14 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// =========================================================================================
+// 2. METHOD POST: Pengunjung Mengisi Formulir Booking Paket di Halaman Web Publik
+// Alur: Pengunjung mengisi nama, WhatsApp, tanggal pesta, paket yang dipilih di web ->
+//       Server periksa rate limiter -> validasi kolom wajib -> simpan ke database `bookings`
+// =========================================================================================
 export async function POST(req: NextRequest) {
   try {
-    // Rate limiter check
+    // Langkah 1: Cek batas spam pengiriman dari IP yang sama
     const ip = getClientIp(req);
     const now = Date.now();
     const record = bookingAttempts.get(ip);
@@ -56,8 +71,10 @@ export async function POST(req: NextRequest) {
       bookingAttempts.set(ip, { count: 1, resetAt: now + BOOKING_WINDOW_MS });
     }
 
+    // Langkah 2: Ambil isi data JSON dari formulir pemesanan
     const body = await req.json();
 
+    // Langkah 3: Validasi kelengkapan data wajib
     if (!body.customer_name || !body.customer_phone || !body.event_date || !body.location) {
       return NextResponse.json(
         { error: "Semua kolom wajib harus diisi" },
@@ -65,6 +82,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Langkah 4: Simpan baris baru ke tabel `bookings` via fungsi createBooking()
     const booking = await createBooking({
       customer_name: String(body.customer_name).slice(0, 100),
       customer_email: body.customer_email ? String(body.customer_email).slice(0, 100) : "",
@@ -94,6 +112,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// =========================================================================================
+// 3. METHOD PATCH: Mengubah Status Reservasi / Pembayaran (Khusus Admin)
+// Alur: Admin klik "Konfirmasi Pembayaran" atau ubah status di tabel -> kirim PATCH ->
+//       Server periksa sesi admin -> update kolom tabel `bookings`
+// =========================================================================================
 export async function PATCH(req: NextRequest) {
   try {
     const sessionToken = req.cookies.get("rt_admin_session")?.value;
@@ -117,6 +140,9 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+// =========================================================================================
+// 4. METHOD DELETE: Menghapus Data Reservasi (Khusus Admin)
+// =========================================================================================
 export async function DELETE(req: NextRequest) {
   try {
     const sessionToken = req.cookies.get("rt_admin_session")?.value;

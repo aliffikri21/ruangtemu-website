@@ -4,17 +4,27 @@ import { EventItem } from "@/types";
 import { saveFrameImage, saveLandingBgImage } from "@/lib/save-frame";
 import { verifyAdminToken } from "@/lib/auth";
 
+// =========================================================================================
+// 1. METHOD GET: Mengambil Daftar Semua Event Acara
+// Alur: Digunakan oleh halaman beranda (daftar testimoni klien) dan Dashboard Admin
+//       - Jika pemanggil adalah ADMIN: Mengembalikan seluruh data lengkap termasuk omzet uang
+//       - Jika pemanggil adalah PUBLIK: Data finansial otomatis disembunyikan (disanitasi)
+// =========================================================================================
 export async function GET(req: NextRequest) {
   try {
+    // Tarik seluruh daftar acara dari database PostgreSQL via fungsi getEvents()
     const events = await getEvents();
+
+    // Periksa apakah pengguna memiliki cookie sesi admin yang sah
     const sessionToken = req.cookies.get("rt_admin_session")?.value;
     const isAdmin = await verifyAdminToken(sessionToken);
 
+    // Jika Admin: Berikan seluruh data tanpa sensor
     if (isAdmin) {
       return NextResponse.json({ success: true, events });
     }
 
-    // Sanitasi data untuk pengunjung publik (hapus info finansial & invoice)
+    // Jika Pengunjung Biasa: Sensor informasi sensitif (harga, invoice, metode bayar)
     const sanitizedEvents = events.map((e) => ({
       id: e.id,
       slug: e.slug,
@@ -38,8 +48,14 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// =========================================================================================
+// 2. METHOD POST: Membuat Event Virtual Photobooth Baru (Khusus Admin)
+// Alur: Admin mengisi form event di dashboard -> klik "Buat Acara" -> kirim JSON POST ->
+//       Server validasi hak admin -> simpan template frame -> buat baris baru di tabel `events`
+// =========================================================================================
 export async function POST(req: NextRequest) {
   try {
+    // Langkah 1: Autentikasi Keamanan - Hanya admin terotentikasi yang boleh membuat event baru
     const sessionToken = req.cookies.get("rt_admin_session")?.value;
     const isAdmin = await verifyAdminToken(sessionToken);
 
@@ -50,6 +66,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Langkah 2: Ambil data formulir event dari body request
     const body = await req.json();
 
     if (!body.title || !body.host_name) {
@@ -59,6 +76,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Langkah 3: Buat slug URL yang bersih (contoh: "The Wedding Aldi & Maya" -> "the-wedding-aldi-maya")
     const slug = (
       body.slug ||
       body.title
@@ -67,6 +85,7 @@ export async function POST(req: NextRequest) {
         .replace(/(^-|-$)/g, "")
     );
 
+    // Langkah 4: Simpan aset template frame yang dipilih untuk event ini ke penyimpanan storage
     const assigned_frames = Array.isArray(body.assigned_frames) && body.assigned_frames.length > 0
       ? await Promise.all(
           body.assigned_frames.map(async (fr: any, idx: number) => {
@@ -98,6 +117,7 @@ export async function POST(req: NextRequest) {
         )
       : [];
 
+    // Langkah 5: Susun objek data event sesuai skema tabel PostgreSQL `events`
     const eventPayload: Omit<EventItem, "id" | "created_at"> = {
       slug,
       title: body.title,
@@ -159,8 +179,10 @@ export async function POST(req: NextRequest) {
             "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop",
     };
 
+    // Langkah 6: Simpan ke database via fungsi createEvent()
     const newEvent = await createEvent(eventPayload);
 
+    // Langkah 7: Jika event dibuat dari hasil konversi pemesanan (booking), bersihkan data booking terkait
     if (body.booking_id) {
       try {
         await deleteBooking(body.booking_id);
@@ -169,6 +191,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Langkah 8: Respon sukses 201 Created dengan data event yang baru terbuat
     return NextResponse.json({ success: true, event: newEvent }, { status: 201 });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Server error";
