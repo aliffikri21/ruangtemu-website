@@ -174,11 +174,19 @@ export function getDefaultThemeConfigForEvent(event?: Partial<EventItem>): Landi
     event?.slug?.toLowerCase().includes("ilva") ||
     event?.title?.toLowerCase().includes("ilva");
 
+  const isFestamsa =
+    event?.slug?.toLowerCase().includes("festamsa") ||
+    event?.title?.toLowerCase().includes("festamsa") ||
+    event?.event_name?.toLowerCase().includes("festamsa");
+
+  const isWeddingEvent =
+    (event?.event_type === "wedding" || isJayaRika || isIlvaRicky) && !isFestamsa;
+
   const coupleName = isJayaRika
     ? "Jaya & Rika"
     : isIlvaRicky
       ? "Ilva & Ricky"
-      : (event?.host_name || event?.title || "Jaya & Rika");
+      : (event?.host_name || event?.title || (isWeddingEvent ? "Jaya & Rika" : (event?.title || "Event")));
 
   const dateText = isJayaRika
     ? "12/10/2026"
@@ -211,15 +219,15 @@ export function getDefaultThemeConfigForEvent(event?: Partial<EventItem>): Landi
     },
     header: {
       show: true,
-      left: "The Wedding",
-      right: "Memories",
+      left: isWeddingEvent ? "The Wedding" : "",
+      right: isWeddingEvent ? "Memories" : "",
       color: isJayaRika ? accentColor : "#ffffff",
       size: 15,
     },
     title: {
       show: true,
       text: coupleName,
-      font: "Great Vibes",
+      font: isWeddingEvent ? "Great Vibes" : "Poppins",
       size: 58,
       color: isJayaRika ? accentColor : "#ffffff",
       top: 18,
@@ -877,13 +885,21 @@ export function resolveGuestNameConfig(
     event?.slug?.toLowerCase().includes("iqra") ||
     event?.title?.toLowerCase().includes("nurul");
 
+  const isFestamsa =
+    event?.slug?.toLowerCase().includes("festamsa") ||
+    event?.title?.toLowerCase().includes("festamsa") ||
+    event?.event_name?.toLowerCase().includes("festamsa");
+
+  const isWeddingEvent =
+    (event?.event_type === "wedding" || isJayaRika || isIlvaRicky || isNurulIqra) && !isFestamsa;
+
   const fallbackCouple = isJayaRika
     ? "Jaya & Rika"
     : isIlvaRicky
     ? "Ilva & Ricky"
     : isNurulIqra
     ? "Nurul & Iqra"
-    : (event?.host_name || event?.title || "Jaya & Rika");
+    : (event?.host_name || event?.title || (isWeddingEvent ? "Jaya & Rika" : (event?.title || "Event")));
 
   const fallbackBg = isJayaRika
     ? "/images/events/bg-jayarika.png"
@@ -911,9 +927,9 @@ export function resolveGuestNameConfig(
     },
     header: {
       show: c.header?.show ?? base.header.show,
-      badge: c.header?.badge ?? base.header.badge,
+      badge: c.header?.badge !== undefined ? c.header.badge : (isWeddingEvent ? base.header.badge : ""),
       title: c.header?.title || fallbackCouple,
-      font: c.header?.font || base.header.font,
+      font: c.header?.font || (isWeddingEvent ? base.header.font : "Poppins"),
       color: c.header?.color || base.header.color,
       size: c.header?.size ?? base.header.size,
     },

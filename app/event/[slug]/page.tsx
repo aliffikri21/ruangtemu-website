@@ -42,7 +42,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : `${appBaseUrl}${rawBg.startsWith("/") ? "" : "/"}${rawBg}`;
 
   const eventTitle = event.title || event.event_name || "Virtual Photobooth";
-  const hostName = event.host_name || event.client_name || "Mempelai";
+  const isWeddingEvent =
+    event.event_type === "wedding" &&
+    !event.slug?.toLowerCase().includes("festamsa") &&
+    !event.title?.toLowerCase().includes("festamsa");
+  const hostName =
+    event.host_name ||
+    event.client_name ||
+    (isWeddingEvent ? "Mempelai" : eventTitle);
   const pageUrl = `${appBaseUrl}/event/${slug}`;
   const description = `Abadikan momen spesial Anda di ${eventTitle}. Ambil foto langsung dengan frame custom eksklusif dan tinggalkan pesan ucapan untuk ${hostName}.`;
 

@@ -187,11 +187,29 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
   const themeConfig = resolveLandingThemeConfig(event.theme_config, event);
 
-  const rawHeaderLeft = themeConfig.header?.left?.trim() || "The Wedding";
-  const desktopBadgeText =
-    rawHeaderLeft.toLowerCase().includes("wedding") && !rawHeaderLeft.toLowerCase().includes("of")
+  const isFestamsa =
+    event.slug?.toLowerCase().includes("festamsa") ||
+    event.title?.toLowerCase().includes("festamsa") ||
+    event.event_name?.toLowerCase().includes("festamsa");
+
+  const isWeddingEvent =
+    (event.event_type === "wedding" || isNurulIqraWedding || isCustomWedding) && !isFestamsa;
+
+  // Header left text:
+  // If explicitly provided in themeConfig (including empty string ""), respect it.
+  // Otherwise, only default to "The Wedding" if it's actually a wedding event.
+  const rawHeaderLeft =
+    typeof themeConfig.header?.left === "string"
+      ? themeConfig.header.left.trim()
+      : isWeddingEvent
+        ? "The Wedding"
+        : "";
+
+  const desktopBadgeText = rawHeaderLeft
+    ? rawHeaderLeft.toLowerCase().includes("wedding") && !rawHeaderLeft.toLowerCase().includes("of")
       ? `${rawHeaderLeft} of`
-      : rawHeaderLeft;
+      : rawHeaderLeft
+    : "";
 
   const desktopCoupleTitle =
     themeConfig.title?.text?.trim() ||
@@ -199,7 +217,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     event.host_name ||
     event.title;
 
-  const desktopFont = themeConfig.title?.font || "Great Vibes";
+  const desktopFont = themeConfig.title?.font || (isWeddingEvent ? "Great Vibes" : "Poppins");
   const isScriptFont = ["great vibes", "allura", "dancing script"].some((f) =>
     desktopFont.toLowerCase().includes(f)
   );
@@ -247,9 +265,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
   const onPrimaryTextColor = isLightPrimary ? "#09090b" : "#ffffff";
   const onPrimarySubtextColor = isLightPrimary ? "rgba(9, 9, 11, 0.75)" : "rgba(255, 255, 255, 0.85)";
 
-  const frameSelectHeader = themeConfig.header?.left
-    ? `${themeConfig.header.left.replace(/^the\s+/i, "").toUpperCase()} MEMORIES`
-    : "WEDDING MEMORIES";
+  const frameSelectHeader = rawHeaderLeft
+    ? `${rawHeaderLeft.replace(/^the\s+/i, "").toUpperCase()} MEMORIES`
+    : isWeddingEvent
+      ? "WEDDING MEMORIES"
+      : "";
 
   const frameSelectDate = formatIndonesianDateUpper(rawDate);
 
@@ -1106,12 +1126,14 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
         {/* Bottom Poster Typography matching reference layout */}
         <div className="flex-1 flex flex-col justify-end items-center pb-12 lg:pb-16 text-center px-8 relative z-10 w-full max-w-xl">
           <div className="flex flex-col items-center gap-1.5 w-full">
-            <span
-              className="text-white/85 text-xs md:text-sm tracking-[0.25em] uppercase font-serif italic"
-              style={{ fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif` }}
-            >
-              {desktopBadgeText}
-            </span>
+            {desktopBadgeText ? (
+              <span
+                className="text-white/85 text-xs md:text-sm tracking-[0.25em] uppercase font-serif italic"
+                style={{ fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif` }}
+              >
+                {desktopBadgeText}
+              </span>
+            ) : null}
             <h1
               className={`text-white leading-tight drop-shadow-xl ${
                 isScriptFont
@@ -1617,15 +1639,17 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
             </button>
 
             <div className="flex flex-col items-center text-center px-10">
-              <span
-                className="text-[11px] sm:text-xs font-serif tracking-[0.25em] uppercase font-medium"
-                style={{
-                  color: onPrimarySubtextColor,
-                  fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif`,
-                }}
-              >
-                {frameSelectHeader}
-              </span>
+              {frameSelectHeader ? (
+                <span
+                  className="text-[11px] sm:text-xs font-serif tracking-[0.25em] uppercase font-medium"
+                  style={{
+                    color: onPrimarySubtextColor,
+                    fontFamily: `'Playfair Display', 'Cormorant Garamond', 'Cinzel', serif`,
+                  }}
+                >
+                  {frameSelectHeader}
+                </span>
+              ) : null}
               <h2
                 className="text-3xl sm:text-4xl md:text-5xl font-normal leading-tight drop-shadow-md py-0.5"
                 style={{
@@ -2564,10 +2588,10 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           </span>
                         </div>
                         <h3 className={`text-sm font-bold tracking-tight mt-1 line-clamp-1 ${isNurulIqraWedding ? "text-stone-900 font-[family-name:var(--font-cinzel)]" : "text-stone-900"}`}>
-                          Doa untuk {event.host_name || event.title}
+                          {isWeddingEvent ? `Doa untuk ${event.host_name || event.title}` : `Ucapan untuk ${event.host_name || event.title}`}
                         </h3>
                         <p className="text-xs mt-0.5 line-clamp-1 text-stone-500">
-                          Tuliskan ucapan kesan dan doa restu Anda
+                          {isWeddingEvent ? "Tuliskan ucapan kesan dan doa restu Anda" : "Tuliskan pesan dan ucapan terbaik Anda"}
                         </p>
                       </div>
                     </div>
@@ -2682,7 +2706,7 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
                           {!isRecordingAudio && !audioUrl && (
                             <p className="text-[11px] text-stone-500 leading-tight">
-                              Beri ucapan suara langsung untuk kedua mempelai
+                              {isWeddingEvent ? "Beri ucapan suara langsung untuk kedua mempelai" : "Beri pesan suara langsung untuk acara ini"}
                             </p>
                           )}
                         </div>
