@@ -192,6 +192,13 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
     event.title?.toLowerCase().includes("festamsa") ||
     event.event_name?.toLowerCase().includes("festamsa");
 
+  const isSchoolOrPensi =
+    isFestamsa ||
+    event.event_type === "prom" ||
+    event.event_type === "graduation" ||
+    event.title?.toLowerCase().includes("pensi") ||
+    event.slug?.toLowerCase().includes("pensi");
+
   const isWeddingEvent =
     (event.event_type === "wedding" || isNurulIqraWedding || isCustomWedding) && !isFestamsa;
 
@@ -2588,10 +2595,18 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                           </span>
                         </div>
                         <h3 className={`text-sm font-bold tracking-tight mt-1 line-clamp-1 ${isNurulIqraWedding ? "text-stone-900 font-[family-name:var(--font-cinzel)]" : "text-stone-900"}`}>
-                          {isWeddingEvent ? `Doa untuk ${event.host_name || event.title}` : `Ucapan untuk ${event.host_name || event.title}`}
+                          {isSchoolOrPensi
+                            ? `Kesan & Pesan untuk ${event.host_name || event.title}`
+                            : isWeddingEvent
+                              ? `Doa untuk ${event.host_name || event.title}`
+                              : `Ucapan untuk ${event.host_name || event.title}`}
                         </h3>
                         <p className="text-xs mt-0.5 line-clamp-1 text-stone-500">
-                          {isWeddingEvent ? "Tuliskan ucapan kesan dan doa restu Anda" : "Tuliskan pesan dan ucapan terbaik Anda"}
+                          {isSchoolOrPensi
+                            ? "Tuliskan kesan dan pesan serumu di PENSI ini"
+                            : isWeddingEvent
+                              ? "Tuliskan ucapan kesan dan doa restu Anda"
+                              : "Tuliskan pesan dan ucapan terbaik Anda"}
                         </p>
                       </div>
                     </div>
@@ -2621,7 +2636,13 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
                     <div className="relative rounded-2xl transition-all bg-stone-50/80 border border-stone-200 focus-within:border-stone-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-stone-400/15 shadow-xs">
                       <textarea
                         rows={3}
-                        placeholder="Tuliskan ucapan dan doa terbaik Anda..."
+                        placeholder={
+                          isSchoolOrPensi
+                            ? "Tuliskan kesan, pesan, atau cerita serumu di PENSI ini..."
+                            : isWeddingEvent
+                              ? "Tuliskan ucapan dan doa terbaik Anda..."
+                              : "Tuliskan pesan dan ucapan terbaik Anda..."
+                        }
                         value={guestMessage}
                         onChange={(e) => setGuestMessage(e.target.value)}
                         className="w-full px-3.5 py-3 text-sm outline-none resize-none bg-transparent rounded-2xl leading-relaxed text-stone-900 placeholder:text-stone-400"
@@ -2706,7 +2727,11 @@ export function VirtualBooth({ event }: VirtualBoothProps) {
 
                           {!isRecordingAudio && !audioUrl && (
                             <p className="text-[11px] text-stone-500 leading-tight">
-                              {isWeddingEvent ? "Beri ucapan suara langsung untuk kedua mempelai" : "Beri pesan suara langsung untuk acara ini"}
+                              {isSchoolOrPensi
+                                ? "Rekam pesan suara atau keseruanmu di PENSI ini"
+                                : isWeddingEvent
+                                  ? "Beri ucapan suara langsung untuk kedua mempelai"
+                                  : "Beri pesan suara langsung untuk acara ini"}
                             </p>
                           )}
                         </div>
