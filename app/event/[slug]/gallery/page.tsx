@@ -114,6 +114,23 @@ export default function EventGalleryPage({ params }: Props) {
   const isNurulIqra = slug.includes("nurul") || slug.includes("iqra");
   const isJayaRika = slug.includes("jaya") || slug.includes("rika");
 
+  const isFestamsa =
+    slug.toLowerCase().includes("festamsa") ||
+    event?.slug?.toLowerCase().includes("festamsa") ||
+    event?.title?.toLowerCase().includes("festamsa") ||
+    event?.event_name?.toLowerCase().includes("festamsa");
+
+  const isSchoolOrPensi =
+    isFestamsa ||
+    event?.event_type === "prom" ||
+    event?.event_type === "graduation" ||
+    event?.event_type === "other" ||
+    event?.title?.toLowerCase().includes("pensi") ||
+    event?.slug?.toLowerCase().includes("pensi");
+
+  const isWeddingEvent =
+    (event?.event_type === "wedding" || isNurulIqra || isJayaRika) && !isFestamsa;
+
   const themeConfig = event ? resolveLandingThemeConfig(event.theme_config, event) : null;
 
   // Resolve primary color: prioritizes main CTA button color (cta1.bg) from Landing Page Editor
@@ -145,18 +162,30 @@ export default function EventGalleryPage({ params }: Props) {
   const displayHostName =
     themeConfig?.title?.text?.replace(/\n/g, " ")?.trim() ||
     event?.host_name ||
-    (slug.includes("ilva") ? "Ilva & Ricky" : slug.includes("jaya") ? "Jaya & Rika" : event?.title || "Wedding Memories");
+    (slug.includes("ilva")
+      ? "Ilva & Ricky"
+      : slug.includes("jaya")
+        ? "Jaya & Rika"
+        : event?.title || (isWeddingEvent ? "Wedding Memories" : "Galeri Kenangan"));
 
   const displayFont =
     themeConfig?.title?.font ||
-    (isNurulIqra ? "Great Vibes" : "Great Vibes");
+    (isWeddingEvent ? "Great Vibes" : "Poppins");
 
-  const isScriptFont = ["Great Vibes", "Allura", "Dancing Script"].includes(displayFont);
+  const isScriptFont = ["Great Vibes", "Allura", "Dancing Script"].some((f) =>
+    displayFont.toLowerCase().includes(f.toLowerCase())
+  );
 
   const headerBadge =
-    themeConfig?.header?.left && themeConfig?.header?.right
-      ? `${themeConfig.header.left} ${themeConfig.header.right}`.toUpperCase()
-      : "WEDDING MEMORIES";
+    themeConfig?.header?.left?.trim() && themeConfig?.header?.right?.trim()
+      ? `${themeConfig.header.left.trim()} ${themeConfig.header.right.trim()}`.toUpperCase()
+      : themeConfig?.header?.left?.trim()
+        ? `${themeConfig.header.left.trim().replace(/^the\s+/i, "")} MEMORIES`.toUpperCase()
+        : isSchoolOrPensi
+          ? "PENSI MEMORIES"
+          : isWeddingEvent
+            ? "WEDDING MEMORIES"
+            : "GALERI KENANGAN";
 
   if (!isLoading && event?.category === "photobooth") {
     return (
@@ -193,9 +222,11 @@ export default function EventGalleryPage({ params }: Props) {
         </Link>
 
         <div className="text-right select-none">
-          <span className="block font-sans text-[11px] tracking-wider font-semibold text-stone-600 uppercase">
-            {headerBadge}
-          </span>
+          {headerBadge ? (
+            <span className="block font-sans text-[11px] tracking-wider font-semibold text-stone-600 uppercase">
+              {headerBadge}
+            </span>
+          ) : null}
           <span
             className={`block select-none ${
               isScriptFont
