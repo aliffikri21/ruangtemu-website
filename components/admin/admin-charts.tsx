@@ -108,11 +108,17 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
       }
     });
 
+    const rawMax = Math.max(peakCount, 1);
+    const yMax = rawMax % 2 === 0 ? rawMax : rawMax + 1;
+    const yMid = Math.round(yMax / 2);
+
     return {
       slots: displaySlots,
       peakHour,
       peakCount,
-      maxVal: Math.max(peakCount, 1),
+      maxVal: rawMax,
+      yMax,
+      yMid,
     };
   }, [filteredEntries]);
 
@@ -342,7 +348,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
             {/* ───── LEFT: HOURLY PHOTO ACTIVITY BAR CHART (7 of 12) ───── */}
             <div className={`lg:col-span-7 p-5 rounded-2xl border flex flex-col justify-between ${isDarkMode ? "bg-[#25262B]/40 border-white/5" : "bg-slate-50/70 border-[#E0E5F2]"}`}>
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div>
                     <h4 className="text-sm font-bold flex items-center gap-1.5">
                       Aktivitas Pemotretan per Jam
@@ -351,84 +357,124 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                       </span>
                     </h4>
                     <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>
-                      Distribusi jam tamu memotret di venue (Zona Waktu Palopo / WITA)
+                      Distribusi jam tamu memotret di venue (WITA / UTC+8)
                     </p>
                   </div>
                   {hourlyAnalysis.peakCount > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20 flex items-center gap-1">
+                    <span className="self-start sm:self-auto text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20 flex items-center gap-1">
                       <span>🔥</span> Jam Tersibuk: {String(hourlyAnalysis.peakHour).padStart(2, "0")}:00 WITA
                     </span>
                   )}
                 </div>
 
                 {/* The Tailwind CSS Bar Chart */}
-                <div className="mt-6">
+                <div className="mt-4">
                   {filteredEntries.length === 0 ? (
-                    <div className="h-48 flex flex-col items-center justify-center text-center">
+                    <div className="h-56 sm:h-64 flex flex-col items-center justify-center text-center">
                       <div className="w-10 h-10 rounded-full bg-slate-200/50 dark:bg-white/5 flex items-center justify-center text-slate-400 mb-2">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="12" x2="16" y2="14"/></svg>
                       </div>
                       <p className="text-xs text-slate-400">Belum ada foto pada filter rentang waktu ini</p>
                     </div>
                   ) : (
-                    <div className="relative pt-6">
-                      {/* Grid guideline lines */}
-                      <div className="absolute inset-x-0 top-6 bottom-6 flex flex-col justify-between pointer-events-none opacity-20">
-                        <div className="border-b border-dashed border-slate-400 w-full" />
-                        <div className="border-b border-dashed border-slate-400 w-full" />
-                        <div className="border-b border-dashed border-slate-400 w-full" />
-                      </div>
-
-                      {/* Bar columns */}
-                      <div className="flex items-end gap-1.5 sm:gap-2.5 h-44 pb-6 relative z-10">
-                        {hourlyAnalysis.slots.map((slot) => {
-                          const heightPercent = Math.max(
-                            slot.count > 0 ? Math.round((slot.count / hourlyAnalysis.maxVal) * 100) : 4,
-                            slot.count > 0 ? 12 : 4
-                          );
-                          const isPeak = slot.hour === hourlyAnalysis.peakHour && slot.count > 0;
-
-                          return (
-                            <div
-                              key={slot.hour}
-                              className="flex-1 flex flex-col items-center h-full justify-end group relative cursor-pointer"
-                            >
-                              {/* Hover Floating Tooltip */}
-                              <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-30 transform -translate-y-1 group-hover:translate-y-0 duration-150">
-                                <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap border border-white/10">
-                                  {slot.count} Foto • {slot.label}
-                                </div>
-                              </div>
-
-                              {/* Top Bar count indicator for peak or non-zero */}
-                              {slot.count > 0 && (
-                                <span className={`text-[9px] font-bold mb-1 transition-opacity ${isPeak ? "text-amber-500 font-extrabold" : "text-slate-400 opacity-60 group-hover:opacity-100"}`}>
-                                  {slot.count}
-                                </span>
-                              )}
-
-                              {/* Bar Pillar */}
-                              <div className="w-full max-w-[28px] h-full flex items-end">
-                                <div
-                                  style={{ height: `${heightPercent}%` }}
-                                  className={`w-full rounded-t-md transition-all duration-300 group-hover:brightness-110 ${
-                                    slot.count === 0
-                                      ? isDarkMode ? "bg-white/5" : "bg-slate-200/60"
-                                      : isPeak
-                                      ? "bg-gradient-to-t from-amber-600 via-amber-500 to-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.3)]"
-                                      : "bg-gradient-to-t from-[#4318FF] to-[#6AD2FF] shadow-[0_2px_8px_rgba(67,24,255,0.2)]"
-                                  }`}
-                                />
-                              </div>
-
-                              {/* X-Axis Hour Label */}
-                              <span className={`text-[9px] sm:text-[10px] font-medium mt-2 whitespace-nowrap flex flex-col items-center leading-none ${isPeak ? "text-[#4318FF] dark:text-blue-400 font-bold" : isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                                <span>{String(slot.hour).padStart(2, "0")}:00</span>
-                                <span className="text-[8px] opacity-75 mt-0.5">WITA</span>
-                              </span>
+                    <div className="w-full overflow-x-auto pb-1 scrollbar-thin">
+                      <div className="min-w-[520px] sm:min-w-0">
+                        {/* Chart grid: Main Plot (h-52 sm:h-60) + X-axis labels */}
+                        <div className="flex flex-col h-56 sm:h-64">
+                          {/* Main chart row: Y-axis scale + Bar pillars */}
+                          <div className="flex-1 flex gap-2 relative min-h-0">
+                            {/* Y-axis Ticks */}
+                            <div className="flex flex-col justify-between items-end pr-1 text-[10px] font-mono text-slate-400 select-none shrink-0 w-6 py-0.5">
+                              <span className="leading-none">{hourlyAnalysis.yMax}</span>
+                              <span className="leading-none">{hourlyAnalysis.yMid}</span>
+                              <span className="leading-none">0</span>
                             </div>
-                          );
-                        })}
+
+                            {/* Plot Area */}
+                            <div className="flex-1 relative min-h-0">
+                              {/* 3 Guideline lines */}
+                              <div className="absolute inset-x-0 inset-y-0.5 flex flex-col justify-between pointer-events-none opacity-25">
+                                <div className="border-b border-dashed border-slate-400 dark:border-slate-500 w-full" />
+                                <div className="border-b border-dashed border-slate-400 dark:border-slate-500 w-full" />
+                                <div className="border-b border-slate-300 dark:border-white/10 w-full" />
+                              </div>
+
+                              {/* Bar Columns Container */}
+                              <div className="flex items-end gap-1.5 sm:gap-2 h-full relative z-10">
+                                {hourlyAnalysis.slots.map((slot) => {
+                                  const heightPercent = slot.count > 0
+                                    ? Math.max(8, Math.round((slot.count / hourlyAnalysis.yMax) * 100))
+                                    : 0;
+                                  const isPeak = slot.hour === hourlyAnalysis.peakHour && slot.count > 0;
+
+                                  return (
+                                    <div
+                                      key={slot.hour}
+                                      className="flex-1 flex flex-col items-center h-full justify-end group relative cursor-pointer"
+                                    >
+                                      {/* Hover Floating Tooltip */}
+                                      <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-30 transform -translate-y-1 group-hover:translate-y-0 duration-150">
+                                        <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap border border-white/10 flex items-center gap-1.5">
+                                          <span className={`w-1.5 h-1.5 rounded-full ${isPeak ? "bg-amber-400" : "bg-blue-400"}`} />
+                                          <span>{slot.count} Foto • {slot.label}</span>
+                                        </div>
+                                      </div>
+
+                                      {/* Bar Track & Fill */}
+                                      <div className={`w-full max-w-[28px] sm:max-w-[34px] h-full rounded-t-lg flex flex-col justify-end p-0.5 transition-colors relative ${
+                                        isDarkMode ? "bg-white/[0.03] group-hover:bg-white/[0.07]" : "bg-slate-100/90 group-hover:bg-slate-200/70"
+                                      }`}>
+                                        {/* Count badge floating inside or above bar */}
+                                        {slot.count > 0 && (
+                                          <span className={`absolute -top-4 inset-x-0 text-center text-[10px] font-bold transition-transform ${
+                                            isPeak ? "text-amber-500 font-extrabold scale-110" : "text-slate-500 dark:text-slate-400 group-hover:text-blue-500"
+                                          }`}>
+                                            {slot.count}
+                                          </span>
+                                        )}
+
+                                        {/* Animated Fill */}
+                                        <div
+                                          style={{ height: `${heightPercent}%` }}
+                                          className={`w-full rounded-t-md transition-all duration-300 ${
+                                            slot.count === 0
+                                              ? "h-0"
+                                              : isPeak
+                                              ? "bg-gradient-to-t from-amber-600 via-amber-500 to-amber-300 shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
+                                              : "bg-gradient-to-t from-[#4318FF] via-indigo-500 to-[#6AD2FF] shadow-[0_2px_10px_rgba(67,24,255,0.25)]"
+                                          }`}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* X-Axis Row: offset by Y-axis width (w-6 + gap-2) */}
+                          <div className="flex gap-2 pt-2">
+                            <div className="shrink-0 w-6" />
+                            <div className="flex-1 flex gap-1.5 sm:gap-2">
+                              {hourlyAnalysis.slots.map((slot) => {
+                                const isPeak = slot.hour === hourlyAnalysis.peakHour && slot.count > 0;
+                                return (
+                                  <div key={slot.hour} className="flex-1 text-center">
+                                    <span className={`text-[10px] font-mono whitespace-nowrap block transition-colors ${
+                                      isPeak
+                                        ? "text-amber-500 font-bold"
+                                        : slot.count > 0
+                                        ? isDarkMode ? "text-slate-300 font-semibold" : "text-slate-700 font-semibold"
+                                        : isDarkMode ? "text-slate-500" : "text-slate-400"
+                                    }`}>
+                                      {String(slot.hour).padStart(2, "0")}:00
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -436,7 +482,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
               </div>
 
               {/* Footer hint */}
-              <div className={`mt-3 pt-3 border-t text-[11px] flex items-center justify-between ${isDarkMode ? "border-white/5 text-slate-400" : "border-[#E0E5F2] text-[#8F9BBA]"}`}>
+              <div className={`mt-4 pt-3 border-t text-[11px] flex items-center justify-between ${isDarkMode ? "border-white/5 text-slate-400" : "border-[#E0E5F2] text-[#8F9BBA]"}`}>
                 <span>Total pemotretan: <strong className={isDarkMode ? "text-white" : "text-[#1B2559]"}>{filteredEntries.length} kali</strong></span>
                 <span className="flex items-center gap-3">
                   <span className="inline-flex items-center gap-1">
