@@ -1,8 +1,27 @@
+/**
+ * =========================================================================================
+ * RUANGTEMU DATA ACCESS LAYER (DAL) / DATABASE ABSTRACTION LAYER
+ * File: lib/db.ts
+ * 
+ * Modul ini adalah pusat seluruh interaksi data antara aplikasi Next.js dan Database Supabase (PostgreSQL).
+ * Mengimplementasikan prinsip Single Responsibility: seluruh query SELECT, INSERT, UPDATE, dan DELETE
+ * dibungkus dalam fungsi-fungsi asinkron yang konsisten dan type-safe.
+ * 
+ * FITUR UTAMA:
+ * 1. Hybrid Resilience: Terhubung ke Supabase saat online, otomatis fallback ke Mock Store jika offline/testing.
+ * 2. Row Mapping: Mengonversi format kolom database (snake_case) ke kontrak TypeScript (camelCase).
+ * 3. Media Purge Synchronization: Menghapus baris database sekaligus membersihkan file di Supabase Storage.
+ * =========================================================================================
+ */
+
 import { randomUUID } from "crypto";
 import { EventItem, Package, Booking, GalleryEntry, BookingStatus, FrameItem, FrameConfig } from "@/types";
 import { getDbClient, isSupabaseConfigured } from "./supabase";
 import { deleteMediaFiles } from "./save-frame";
 
+/**
+ * Helper: Mem-parse data JSON dari kolom teks/JSONB database dengan nilai fallback yang aman.
+ */
 function parseJsonField<T>(val: any, fallback: T): T {
   if (!val) return fallback;
   if (typeof val === "object") return val as T;
@@ -14,7 +33,7 @@ function parseJsonField<T>(val: any, fallback: T): T {
 }
 
 // ============================================================================
-// IN-MEMORY MOCK STORE (Fallback for offline/local development without Supabase)
+// 1. IN-MEMORY MOCK STORE (Fallback offline saat Supabase tidak terhubung)
 // ============================================================================
 export let mockPackages: Package[] = [
   {
@@ -484,8 +503,15 @@ let mockBookings: Booking[] = [];
 let mockEntries: GalleryEntry[] = [];
 
 // ============================================================================
-// ROW MAPPERS
+// 2. ROW MAPPERS (Serializer / Deserializer Skema Database ke TypeScript)
+// Fungsi mapper bertanggung jawab memastikan integritas tipe data:
+// mengonversi kolom snake_case PostgreSQL menjadi tipe camelCase TypeScript.
 // ============================================================================
+
+/**
+ * Mapper Paket: Mengonversi baris tabel 'packages' menjadi objek Package.
+ * Menghitung varian harga cetak foto 2R vs 4R dan mem-parse fitur JSON.
+ */
 function mapPackageRow(row: any): Package {
   const price = Number(row.price || 0);
   let price_4r: number | undefined = row.price_4r ? Number(row.price_4r) : undefined;
@@ -518,6 +544,11 @@ function mapPackageRow(row: any): Package {
   };
 }
 
+/**
+ * Mapper Acara (Event): Mengonversi baris tabel 'events' menjadi objek EventItem.
+ * Menggabungkan daftar frame kustom (assignedFrames), tema landing page,
+ * dan kalkulasi statistik dinamis (total_photos, total_wishes, total_voice_notes).
+ */
 function mapEventRow(row: any, assignedFrames?: FrameItem[], computedStats?: { total_photos: number; total_wishes: number; total_voice_notes: number }): EventItem {
   const parsedFrameConfig: FrameConfig = parseJsonField<FrameConfig>(row.default_frame_config, {
     type: "strip_3",
@@ -597,6 +628,11 @@ function encodeBookingNotes(userNotes?: string | null, meta?: Record<string, any
   return clean ? `${clean}\n${metaString}` : metaString;
 }
 
+/**
+ * Mapper Pemesanan (Booking): Mengonversi baris tabel 'bookings' menjadi objek Booking.
+ * Mem-parse catatan metadata tersembunyi, mendeteksi kategori (fisik vs virtual),
+ * dan meresolusi status transaksi pembayaran.
+ */
 function mapBookingRow(row: any): Booking {
   const { cleanNotes, meta } = parseBookingNotes(row.notes);
   const pkgNameLower = String(row.package_name || "").toLowerCase();
@@ -648,6 +684,10 @@ function mapBookingRow(row: any): Booking {
   };
 }
 
+/**
+ * Mapper Galeri (Entry): Mengonversi baris tabel 'entries' menjadi objek GalleryEntry.
+ * Menyimpan tautan foto hasil jepretan, voice note audio, pesan ucapan tamu, dan status moderasi.
+ */
 function mapEntryRow(row: any): GalleryEntry {
   return {
     id: String(row.id),
@@ -667,8 +707,15 @@ function mapEntryRow(row: any): GalleryEntry {
 }
 
 // ============================================================================
-// PACKAGES API
+// 3. PACKAGES API (Katalog Layanan Photobooth Fisik & Virtual)
+// Menyediakan data daftar harga, paket durasi jam, jenis cetak foto (2R/4R),
+// dan fasilitas untuk halaman landing page dan formulir booking.
 // ============================================================================
+
+/**
+ * Mengambil seluruh paket yang tersedia, diurutkan berdasarkan harga termurah.
+ * SQL: SELECT * FROM packages ORDER BY price ASC;
+ */
 export async function getPackages(): Promise<Package[]> {
   const client = getDbClient();
   if (client) {
@@ -690,6 +737,10 @@ export async function getPackages(): Promise<Package[]> {
   return mockPackages;
 }
 
+/**
+ * Mengambil detail satu paket berdasarkan slug unik URL.
+ * SQL: SELECT * FROM packages WHERE slug = :slug LIMIT 1;
+ */
 export async function getPackageBySlug(slug: string): Promise<Package | null> {
   const client = getDbClient();
   if (client) {
@@ -781,8 +832,16 @@ export async function updatePackage(
 }
 
 // ============================================================================
-// EVENTS API
+// 4. EVENTS API (Pusat Manajemen Acara Virtual Photobooth)
+// Mengelola data acara, tema tampilan, relasi frame kustom, dan statistik tamu.
 // ============================================================================
+
+/**
+ * Mengambil seluruh acara untuk Dashboard Admin.
+ * Menggunakan Relational JOIN:
+ * - events JOIN event_frames JOIN frames (mengambil template frame yang di-assign)
+ * - events JOIN entries (menghitung total_photos, total_wishes, total_voice_notes)
+ */
 export async function getEvents(): Promise<EventItem[]> {
   const client = getDbClient();
   if (client) {
@@ -851,6 +910,12 @@ export async function getEvents(): Promise<EventItem[]> {
     );
 }
 
+/**
+ * Fungsi Inti Halaman Tamu: Mengambil 1 acara spesifik berdasarkan URL slug unik.
+ * Dipanggil oleh Server Component di app/event/[slug]/page.tsx.
+ * Menghubungkan template frame kustom dan menghitung foto terunggah.
+ * SQL: SELECT * FROM events WHERE slug = :slug OR id = :slug LIMIT 1;
+ */
 export async function getEventBySlug(slug: string): Promise<EventItem | null> {
   const client = getDbClient();
   if (client) {
@@ -942,6 +1007,14 @@ function buildSafeFramePayload(fr: FrameItem, index: number, eventId?: string) {
   };
 }
 
+/**
+ * Membuat Acara Baru (Operator Dashboard):
+ * 1. Validasi keunikan slug di tabel 'events'
+ * 2. INSERT baris acara baru ke tabel 'events'
+ * 3. UPSERT template frame ke tabel 'frames'
+ * 4. INSERT relasi jembatan ke tabel 'event_frames' (Many-to-Many)
+ * SQL: INSERT INTO events (...) VALUES (...);
+ */
 export async function createEvent(event: Omit<EventItem, "id" | "created_at">): Promise<EventItem> {
   const newEvent: EventItem = {
     ...event,
@@ -1059,6 +1132,12 @@ export async function createEvent(event: Omit<EventItem, "id" | "created_at">): 
   return newEvent;
 }
 
+/**
+ * Memperbarui Informasi Acara (Operator Dashboard):
+ * Mengupdate konfigurasi acara, tema landing page, status aktif/selesai,
+ * dan sinkronisasi daftar frame kustom (event_frames).
+ * SQL: UPDATE events SET ... WHERE id = :id;
+ */
 export async function updateEvent(
   id: string,
   updates: Partial<EventItem> & { assigned_frames?: FrameItem[] }
@@ -1184,6 +1263,11 @@ export async function updateEvent(
   return null;
 }
 
+/**
+ * Menghapus Acara dari Database:
+ * Menghapus data event berdasarkan primary key ID.
+ * SQL: DELETE FROM events WHERE id = :id;
+ */
 export async function deleteEvent(id: string): Promise<boolean> {
   const client = getDbClient();
   if (client) {
@@ -1242,8 +1326,15 @@ export async function updateEventPaymentByInvoice(
 
 
 // ============================================================================
-// BOOKINGS API
+// 5. BOOKINGS API (Pemesanan Layanan Photobooth & CRM)
+// Mengelola transaksi reservasi acara dari calon pelanggan (formulir /booking),
+// tracking status pembayaran, dan integrasi invoice.
 // ============================================================================
+
+/**
+ * Mengambil seluruh daftar pesanan (bookings) untuk Dashboard Admin.
+ * SQL: SELECT * FROM bookings ORDER BY created_at DESC;
+ */
 export async function getBookings(): Promise<Booking[]> {
   const client = getDbClient();
   if (client) {
@@ -1334,6 +1425,11 @@ function normalizePackageId(pkgId?: string | null): string | null {
   return null;
 }
 
+/**
+ * Membuat Pesanan Reservasi Baru (Formulir Publik /booking):
+ * Menormalkan ID paket, menghitung total harga, dan meng-insert ke tabel 'bookings'.
+ * SQL: INSERT INTO bookings (...) VALUES (...);
+ */
 export async function createBooking(
   booking: Omit<Booking, "id" | "created_at" | "status"> & { status?: BookingStatus }
 ): Promise<Booking> {
@@ -1555,8 +1651,15 @@ export async function deleteBooking(id: string): Promise<boolean> {
 }
 
 // ============================================================================
-// ENTRIES API (Guest Photobooth & Gallery)
+// 6. ENTRIES API (Hasil Foto Photobooth Tamu & Galeri Album)
+// Mengelola data interaksi tamu: jepretan kamera, pesan guestbook, voice note,
+// isolasi data galeri per acara, serta sinkronisasi penghapusan file di Storage.
 // ============================================================================
+
+/**
+ * Mengambil SELURUH foto dari semua acara untuk Moderasi di Dashboard Admin.
+ * SQL: SELECT * FROM entries ORDER BY created_at DESC;
+ */
 export async function getAllEntries(): Promise<GalleryEntry[]> {
   const client = getDbClient();
   if (client) {
@@ -1581,6 +1684,12 @@ export async function getAllEntries(): Promise<GalleryEntry[]> {
   );
 }
 
+/**
+ * Query Kunci Galeri Acara (Data Isolation):
+ * Mengambil foto yang sudah disetujui (is_approved = true) khusus untuk satu acara.
+ * Memastikan foto Event A tidak pernah tercampur ke Event B.
+ * SQL: SELECT * FROM entries WHERE (event_id = :id OR event_slug = :id) AND is_approved = true ORDER BY created_at DESC;
+ */
 export async function getEventEntries(eventId: string): Promise<GalleryEntry[]> {
   const client = getDbClient();
   if (client) {
@@ -1605,6 +1714,12 @@ export async function getEventEntries(eventId: string): Promise<GalleryEntry[]> 
   return mockEntries.filter((e) => e.event_id === eventId || e.event_slug === eventId);
 }
 
+/**
+ * Menyimpan Foto Photobooth Baru ke Database:
+ * Dipanggil setelah tamu menekan tombol "Kirim ke Galeri" di halaman guestbook.
+ * Menyimpan tautan foto CDN, voice note, pesan ucapan, nama tamu, dan filter yang dipakai.
+ * SQL: INSERT INTO entries (...) VALUES (...);
+ */
 export async function createEntry(
   entry: Omit<GalleryEntry, "id" | "created_at" | "likes_count" | "is_approved">
 ): Promise<GalleryEntry> {
@@ -1671,6 +1786,13 @@ export async function toggleEntryApproval(id: string, is_approved: boolean): Pro
   return false;
 }
 
+/**
+ * Menghapus Satu Foto Galeri (Sinkronisasi Database + Storage):
+ * 1. Ambil URL foto dan voice note dari database
+ * 2. Hapus file fisik dari Supabase Storage Bucket ('ruangtemu-media')
+ * 3. Hapus baris dari tabel 'entries'
+ * SQL: DELETE FROM entries WHERE id = :id;
+ */
 export async function deleteEntry(id: string): Promise<boolean> {
   const client = getDbClient();
   if (client) {
@@ -1707,6 +1829,13 @@ export async function deleteEntry(id: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * Menghapus Seluruh Foto Suatu Acara (Bulk Purge):
+ * 1. Ambil seluruh URL media terkait event
+ * 2. Hapus seluruh file fisik media di Supabase Storage secara massal
+ * 3. Hapus seluruh baris di tabel 'entries' untuk event tersebut
+ * SQL: DELETE FROM entries WHERE event_id = :id;
+ */
 export async function clearEventEntries(eventId: string, eventSlug?: string): Promise<boolean> {
   const client = getDbClient();
   if (client) {
