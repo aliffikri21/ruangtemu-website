@@ -395,10 +395,22 @@ function IconSmartphoneOff({ size = 20, className = "" }: { size?: number; class
   );
 }
 
-function AdminMobileGuard() {
+function AdminMobileGuard({ isDarkMode }: { isDarkMode?: boolean } = {}) {
   const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null);
+  const [internalDark, setInternalDark] = useState(false);
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ruangtemu_admin_dark");
+      if (saved === "true") {
+        setInternalDark(true);
+      } else if (saved === null && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        setInternalDark(true);
+      }
+    } catch {
+      // ignore
+    }
+
     const updateSize = () => {
       setScreenSize({
         width: typeof window !== "undefined" ? window.innerWidth : 0,
@@ -414,52 +426,121 @@ function AdminMobileGuard() {
     };
   }, []);
 
+  const activeDark = isDarkMode !== undefined ? isDarkMode : internalDark;
+
   return (
     <div
       id="admin-mobile-guard"
-      className="admin-mobile-guard fixed inset-0 z-[999999] bg-[#0B1021] text-white flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto select-none"
+      className={`admin-mobile-guard fixed inset-0 z-[999999] flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto select-none transition-colors duration-200 ${
+        activeDark ? "bg-[#0E0E10] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
+      }`}
     >
-      <div className="w-full max-w-md bg-[#131B35]/95 border border-white/10 rounded-3xl p-6 sm:p-8 text-center shadow-2xl backdrop-blur-xl relative my-auto">
-        {/* Glow accent */}
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#4318FF]/20 rounded-full blur-3xl pointer-events-none" />
+      {/* Decorative ambient gradients matching Horizon UI */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#4318FF]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#6AD2FF]/15 rounded-full blur-3xl pointer-events-none" />
+
+      <div
+        className={`w-full max-w-md rounded-3xl p-6 sm:p-8 text-center border relative my-auto backdrop-blur-md transition-all duration-200 ${
+          activeDark
+            ? "bg-[#1A1B20]/95 border-white/10 shadow-2xl"
+            : "bg-white/95 border-[#E0E5F2] shadow-[0_20px_50px_rgba(112,144,176,0.14)]"
+        }`}
+      >
+        {/* Brand header with Logo */}
+        <div className="flex items-center justify-center gap-2.5 mb-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-ruangtemu.jpg"
+            alt="RUANGTEMU"
+            className="w-8 h-8 rounded-xl object-cover shadow-xs border border-black/5"
+          />
+          <div className="text-left">
+            <span className={`text-sm font-extrabold tracking-tight block leading-none ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
+              RUANGTEMU
+            </span>
+            <span className={`text-[10px] font-semibold leading-none ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+              Photobooth Admin Panel
+            </span>
+          </div>
+        </div>
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold mb-5">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-5 ${
+            activeDark
+              ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
+              : "bg-amber-500/10 border border-amber-500/25 text-amber-700"
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
           Akses Smartphone Dibatasi
         </div>
 
-        {/* Icon container */}
-        <div className="relative mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1E2958] to-[#121938] border border-white/10 flex items-center justify-center text-[#4318FF] shadow-inner mb-5">
-          <IconDesktopTablet size={40} className="text-white drop-shadow" />
-          <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center">
+        {/* Device Icon Artwork */}
+        <div
+          className={`relative mx-auto w-20 h-20 rounded-2xl flex items-center justify-center shadow-xs mb-5 border transition-all ${
+            activeDark
+              ? "bg-gradient-to-br from-[#1E2958] to-[#121938] border-white/10 text-white"
+              : "bg-gradient-to-br from-[#F4F7FE] to-[#E9EDF7] border-[#E0E5F2] text-[#4318FF]"
+          }`}
+        >
+          <IconDesktopTablet size={40} className={activeDark ? "text-white drop-shadow" : "text-[#4318FF]"} />
+          <div
+            className={`absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-lg flex items-center justify-center shadow-xs border ${
+              activeDark
+                ? "bg-red-500/20 border-red-500/40 text-red-400"
+                : "bg-red-50 border-red-200 text-red-500"
+            }`}
+          >
             <IconSmartphoneOff size={14} />
           </div>
         </div>
 
         {/* Title & Message */}
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug mb-2">
+        <h2
+          className={`text-xl sm:text-2xl font-extrabold tracking-tight leading-snug mb-2 ${
+            activeDark ? "text-white" : "text-[#1B2559]"
+          }`}
+        >
           Silakan Gunakan Mode Desktop
         </h2>
-        <p className="text-xs sm:text-sm text-[#A3AED0] leading-relaxed mb-5">
-          Dashboard Admin <strong className="text-white font-medium">RUANGTEMU</strong> hanya dapat diakses melalui perangkat tablet ke atas (lebar minimum 768px) atau komputer/laptop.
+        <p
+          className={`text-xs sm:text-sm leading-relaxed mb-5 ${
+            activeDark ? "text-slate-300" : "text-[#8F9BBA]"
+          }`}
+        >
+          Dashboard Admin <strong className={activeDark ? "text-white font-bold" : "text-[#1B2559] font-bold"}>RUANGTEMU</strong> hanya dapat diakses melalui perangkat tablet ke atas (lebar minimum 768px) atau komputer/laptop.
         </p>
 
         {/* Instructions Box */}
-        <div className="text-left bg-[#0E1428] border border-white/10 rounded-2xl p-4 mb-5 space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#E0E5F2] uppercase tracking-wider">
-            <IconShieldCheck size={14} className="text-[#01B574]" />
+        <div
+          className={`text-left rounded-2xl p-4 mb-5 space-y-2.5 border transition-colors ${
+            activeDark
+              ? "bg-[#25262B]/80 border-white/10"
+              : "bg-[#F4F7FE] border-[#E0E5F2]"
+          }`}
+        >
+          <div
+            className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${
+              activeDark ? "text-slate-200" : "text-[#1B2559]"
+            }`}
+          >
+            <IconShieldCheck size={15} className="text-[#05CD99]" />
             <span>Cara Buka di Smartphone:</span>
           </div>
-          <ol className="text-xs text-[#8F9BBA] space-y-2 pl-4 list-decimal leading-relaxed">
+          <ol
+            className={`text-xs space-y-2 pl-4 list-decimal leading-relaxed ${
+              activeDark ? "text-slate-300" : "text-[#707EAE]"
+            }`}
+          >
             <li>
-              Buka menu browser Anda (ikon <strong className="text-white">titik tiga ⋮</strong> di Chrome atau <strong className="text-white">aA</strong> di Safari).
+              Buka menu browser Anda (ikon <strong className={activeDark ? "text-white font-semibold" : "text-[#1B2559] font-semibold"}>titik tiga ⋮</strong> di Chrome atau <strong className={activeDark ? "text-white font-semibold" : "text-[#1B2559] font-semibold"}>aA</strong> di Safari).
             </li>
             <li>
-              Aktifkan opsi <strong className="text-[#4318FF] font-semibold bg-[#4318FF]/10 px-1.5 py-0.5 rounded">Situs Desktop</strong> atau <strong className="text-[#4318FF] font-semibold bg-[#4318FF]/10 px-1.5 py-0.5 rounded">Desktop Site</strong>.
+              Aktifkan opsi <strong className="text-[#4318FF] font-bold bg-[#4318FF]/10 px-1.5 py-0.5 rounded">Situs Desktop</strong> atau <strong className="text-[#4318FF] font-bold bg-[#4318FF]/10 px-1.5 py-0.5 rounded">Desktop Site</strong>.
             </li>
             <li>
-              Tekan tombol <strong className="text-white">Muat Ulang Halaman</strong> di bawah ini.
+              Tekan tombol <strong className={activeDark ? "text-white font-semibold" : "text-[#1B2559] font-semibold"}>Muat Ulang Halaman</strong> di bawah ini.
             </li>
           </ol>
         </div>
@@ -470,7 +551,7 @@ function AdminMobileGuard() {
             type="button"
             id="admin-reload-btn"
             onClick={() => window.location.reload()}
-            className="w-full h-11 px-5 rounded-xl bg-[#4318FF] hover:bg-[#3311DB] text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#4318FF]/20 active:scale-95 cursor-pointer"
+            className="w-full h-11 px-5 rounded-xl bg-[#4318FF] hover:bg-[#3311DB] text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-[0_12px_24px_-6px_rgba(67,24,255,0.35)] active:scale-95 cursor-pointer"
           >
             <IconRefresh size={16} />
             <span>Muat Ulang Halaman</span>
@@ -478,7 +559,11 @@ function AdminMobileGuard() {
 
           <Link
             href="/"
-            className="w-full h-10 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+            className={`w-full h-11 px-4 rounded-xl border font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
+              activeDark
+                ? "bg-white/5 hover:bg-white/10 border-white/10 text-white"
+                : "bg-[#F4F7FE] hover:bg-[#EAEFFD] border-[#E0E5F2] text-[#1B2559] hover:text-[#4318FF]"
+            }`}
           >
             Kembali ke Beranda
           </Link>
@@ -486,8 +571,12 @@ function AdminMobileGuard() {
 
         {/* Live resolution indicator */}
         {screenSize && (
-          <p className="mt-4 text-[10px] text-[#707EAE]">
-            Ukuran Layar Anda: <span className="font-mono text-[#A3AED0]">{screenSize.width} × {screenSize.height} px</span> (Dibutuhkan min. 768px)
+          <p className={`mt-4 text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+            Ukuran Layar Anda:{" "}
+            <span className={`font-mono font-bold ${activeDark ? "text-[#6AD2FF]" : "text-[#4318FF]"}`}>
+              {screenSize.width} × {screenSize.height} px
+            </span>{" "}
+            (Dibutuhkan min. 768px)
           </p>
         )}
       </div>
@@ -2180,7 +2269,7 @@ export function AdminView({
       <div className={`min-h-screen flex items-center justify-center p-6 transition-colors ${isDarkMode ? "admin-dark bg-[#0E0E10] text-[#F8F9FA]" : "bg-[#f0f1f3] text-[#1B2559]"
         }`}>
         {/* Mobile Guard (< 768px) */}
-        <AdminMobileGuard />
+        <AdminMobileGuard isDarkMode={isDarkMode} />
 
         <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-sm p-8 space-y-6">
           <div className="flex items-center gap-3 mb-2">
@@ -2316,7 +2405,7 @@ export function AdminView({
     <div className={`min-h-screen flex transition-colors duration-200 ${isDarkMode ? "admin-dark bg-[#121214] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
       }`}>
       {/* Mobile Guard (< 768px) */}
-      <AdminMobileGuard />
+      <AdminMobileGuard isDarkMode={isDarkMode} />
 
       {/* ──────── SIDEBAR (RUANGTEMU PHOTOBOOTH) ──────── */}
       <aside
