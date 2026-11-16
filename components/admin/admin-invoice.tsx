@@ -1736,14 +1736,20 @@ export function AdminInvoice({
                     : "bg-white hover:bg-[#F4F7FE] border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF]"
                 }`}
               >
-                <span>📋</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
                 <span>Salin Teks Format WhatsApp</span>
               </button>
             </div>
 
             <div className={`border-t pt-3 text-center ${activeDark ? "border-white/10" : "border-[#E0E5F2]"}`}>
-              <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
-                🛡️ Format penawaran otomatis ramah WhatsApp &amp; siap download PDF invoice.
+              <p className={`text-[11px] inline-flex items-center justify-center gap-1.5 ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#4318FF] shrink-0">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>Format penawaran otomatis ramah WhatsApp &amp; siap unduh PDF invoice.</span>
               </p>
             </div>
           </div>
@@ -1766,8 +1772,14 @@ export function AdminInvoice({
                 <span className={`text-xs font-semibold uppercase tracking-wider ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                   Total Invoice Terbit
                 </span>
-                <span className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center text-sm font-bold">
-                  📄
+                <span className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                  </svg>
                 </span>
               </div>
               <div className="mt-2 flex items-baseline justify-between">
@@ -1790,8 +1802,11 @@ export function AdminInvoice({
                 <span className={`text-xs font-semibold uppercase tracking-wider ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                   Pembayaran Lunas
                 </span>
-                <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-sm font-bold">
-                  💰
+                <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
                 </span>
               </div>
               <div className="mt-2 flex items-baseline justify-between">
@@ -1818,8 +1833,11 @@ export function AdminInvoice({
                 <span className={`text-xs font-semibold uppercase tracking-wider ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                   Piutang / Belum Lunas
                 </span>
-                <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm font-bold">
-                  ⏳
+                <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
                 </span>
               </div>
               <div className="mt-2 flex items-baseline justify-between">
@@ -1845,8 +1863,11 @@ export function AdminInvoice({
           >
             {/* Search Box */}
             <div className="relative flex-1 max-w-md">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                🔍
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
               </span>
               <input
                 type="text"
@@ -1914,7 +1935,11 @@ export function AdminInvoice({
                 }`}
                 title="Ekspor Rekap Pembukuan ke File CSV (Excel)"
               >
-                <span>📊</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
                 <span>Export CSV</span>
               </button>
 
@@ -1930,7 +1955,10 @@ export function AdminInvoice({
                   }`}
                   title="Hapus Semua Data Arsip Pembukuan"
                 >
-                  <span>🗑️</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
                   <span>Kosongkan Arsip</span>
                 </button>
               )}
@@ -1941,7 +1969,10 @@ export function AdminInvoice({
                 onClick={() => setActiveInvoiceTab("generator")}
                 className="h-9 px-3.5 rounded-xl bg-[#4318FF] hover:bg-[#3311DB] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-[#4318FF]/20 cursor-pointer"
               >
-                <span>+</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
                 <span>Buat Invoice Baru</span>
               </button>
             </div>
@@ -1974,8 +2005,10 @@ export function AdminInvoice({
               if (filteredArchives.length === 0) {
                 return (
                   <div className="py-16 px-4 text-center space-y-3">
-                    <div className="w-14 h-14 rounded-2xl bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center text-2xl mx-auto">
-                      📁
+                    <div className="w-14 h-14 rounded-2xl bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center mx-auto">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                      </svg>
                     </div>
                     <h4 className={`text-base font-bold ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
                       Tidak Ada Invoice Ditemukan
@@ -1990,7 +2023,11 @@ export function AdminInvoice({
                       onClick={() => setActiveInvoiceTab("generator")}
                       className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-[#4318FF] hover:bg-[#3311DB] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
                     >
-                      <span>+ Terbitkan Invoice Sekarang</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                      <span>Terbitkan Invoice Sekarang</span>
                     </button>
                   </div>
                 );
@@ -2013,7 +2050,7 @@ export function AdminInvoice({
                         <th className="py-3 px-4">Paket Layanan</th>
                         <th className="py-3 px-4 text-right">Total Biaya</th>
                         <th className="py-3 px-4 text-center">Status Pembayaran</th>
-                        <th className="py-3 px-4 text-center w-36">Aksi</th>
+                        <th className="py-3 px-4 text-center min-w-[340px]">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y ${activeDark ? "divide-white/5" : "divide-slate-100"}`}>
@@ -2045,13 +2082,21 @@ export function AdminInvoice({
                             </p>
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px]">
                               {arch.customerPhone && (
-                                <span className={activeDark ? "text-slate-400" : "text-slate-600"}>
-                                  📱 {arch.customerPhone}
+                                <span className={`inline-flex items-center gap-1 ${activeDark ? "text-slate-400" : "text-slate-600"}`}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+                                    <path d="M12 18h.01" />
+                                  </svg>
+                                  {arch.customerPhone}
                                 </span>
                               )}
                               {arch.customerAddress && (
-                                <span className={activeDark ? "text-slate-400" : "text-slate-500"}>
-                                  📍 {arch.customerAddress}
+                                <span className={`inline-flex items-center gap-1 ${activeDark ? "text-slate-400" : "text-slate-500"}`}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                  </svg>
+                                  {arch.customerAddress}
                                 </span>
                               )}
                             </div>
@@ -2062,8 +2107,12 @@ export function AdminInvoice({
                             <span className={`font-semibold block ${activeDark ? "text-slate-200" : "text-slate-800"}`}>
                               {arch.eventDate}
                             </span>
-                            <span className="text-[11px] text-[#4318FF] font-medium block">
-                              🕒 {arch.eventTime}
+                            <span className="text-[11px] text-[#4318FF] font-medium inline-flex items-center gap-1 mt-0.5">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                              </svg>
+                              {arch.eventTime}
                             </span>
                           </td>
 
@@ -2105,17 +2154,25 @@ export function AdminInvoice({
                             </select>
                           </td>
 
-                          {/* Aksi */}
-                          <td className="py-3.5 px-4 text-center">
-                            <div className="flex items-center justify-center gap-1">
+                          {/* Aksi (Icon + Teks Profesional) */}
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1.5">
                               {/* Detail / Preview */}
                               <button
                                 type="button"
                                 onClick={() => handleOpenInvoiceModal(arch)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-[#4318FF] hover:text-white hover:border-[#4318FF] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                  activeDark
+                                    ? "bg-white/5 hover:bg-[#4318FF] hover:border-[#4318FF] text-slate-200 hover:text-white border-white/10"
+                                    : "bg-[#F4F7FE] hover:bg-[#4318FF] hover:border-[#4318FF] text-[#1B2559] hover:text-white border-[#E0E5F2]"
+                                }`}
                                 title="Lihat Detail & Pratinjau Invoice Resmi"
                               >
-                                👁️
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                  <circle cx="12" cy="12" r="3" />
+                                </svg>
+                                <span>Detail</span>
                               </button>
 
                               {/* Download PDF */}
@@ -2126,40 +2183,71 @@ export function AdminInvoice({
                                   setIsModalOpen(true);
                                   setTimeout(() => handleDownloadPDF(), 350);
                                 }}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-[#4318FF] hover:text-white hover:border-[#4318FF] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                  activeDark
+                                    ? "bg-blue-950/30 hover:bg-blue-600 text-blue-300 hover:text-white border-blue-900/40 hover:border-blue-600"
+                                    : "bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border-blue-200 hover:border-blue-600"
+                                }`}
                                 title="Download File PDF (1 Lembar A4)"
                               >
-                                📥
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                <span>PDF</span>
                               </button>
 
                               {/* WhatsApp */}
                               <button
                                 type="button"
                                 onClick={() => handleSendToWhatsApp(arch)}
-                                className="p-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40 hover:bg-[#25D366] hover:text-white text-emerald-600 transition-colors cursor-pointer"
+                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                  activeDark
+                                    ? "bg-emerald-950/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border-emerald-900/40 hover:border-emerald-600"
+                                    : "bg-emerald-50 hover:bg-[#25D366] text-emerald-600 hover:text-white border-emerald-200 hover:border-[#25D366]"
+                                }`}
                                 title="Kirim ke WhatsApp Klien"
                               >
-                                💬
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 18.26c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.49c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.17 1.73 2.64 4.19 3.7.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z" />
+                                </svg>
+                                <span>WhatsApp</span>
                               </button>
 
                               {/* Load / Edit in Generator */}
                               <button
                                 type="button"
                                 onClick={() => handleLoadArchiveToGenerator(arch)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-blue-600 hover:text-white text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                  activeDark
+                                    ? "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-white/10"
+                                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-200"
+                                }`}
                                 title="Muat Data ke Form Kasir (Edit/Duplikat)"
                               >
-                                ✏️
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                </svg>
+                                <span>Edit</span>
                               </button>
 
                               {/* Hapus */}
                               <button
                                 type="button"
                                 onClick={() => handleDeleteArchive(arch.id, arch.invoiceNumber)}
-                                className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40 hover:bg-rose-600 hover:text-white text-rose-500 transition-colors cursor-pointer"
+                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                  activeDark
+                                    ? "bg-rose-950/30 hover:bg-rose-600 text-rose-300 hover:text-white border-rose-900/40 hover:border-rose-600"
+                                    : "bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border-rose-200 hover:border-rose-600"
+                                }`}
                                 title="Hapus dari Buku Arsip"
                               >
-                                🗑️
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                                <span>Hapus</span>
                               </button>
                             </div>
                           </td>
