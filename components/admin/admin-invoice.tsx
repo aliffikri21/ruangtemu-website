@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Booking, EventItem, Package } from "@/types";
 import { formatRupiah } from "@/lib/utils";
@@ -253,8 +253,77 @@ export function AdminInvoice({
   const [archiveSearch, setArchiveSearch] = useState("");
   const [archiveStatusFilter, setArchiveStatusFilter] = useState<"all" | "Lunas" | "DP (Uang Muka)" | "Belum Dibayar">("all");
   const [selectedArchiveDetail, setSelectedArchiveDetail] = useState<InvoiceArchiveItem | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(null);
 
-  // Inisialisasi Invoice Number, Logo, dan Arsip dari localStorage
+  // Fungsi Sinkronisasi Arsip dengan Cloud Supabase
+  const syncWithCloud = useCallback(async (silent = false) => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch("/api/invoices");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.archives)) {
+          // Bersihkan data dummy dari cloud jika ada
+          const cleanedCloud: InvoiceArchiveItem[] = data.archives.filter(
+            (item: any) =>
+              !item.id?.startsWith("inv-seed-") &&
+              item.invoiceNumber !== "INV-PB748446" &&
+              item.invoiceNumber !== "INV-PB819203"
+          );
+
+          // Cek apakah ada invoice di localStorage yang belum masuk cloud (misal dibuat offline)
+          let currentLocal: InvoiceArchiveItem[] = [];
+          try {
+            const saved = localStorage.getItem("rt_invoice_archives");
+            if (saved) currentLocal = JSON.parse(saved);
+          } catch {}
+
+          const cloudNumbers = new Set(cleanedCloud.map((a) => a.invoiceNumber));
+          const localOnly = currentLocal.filter(
+            (l) =>
+              !cloudNumbers.has(l.invoiceNumber) &&
+              !l.id?.startsWith("inv-seed-") &&
+              l.invoiceNumber !== "INV-PB748446" &&
+              l.invoiceNumber !== "INV-PB819203"
+          );
+
+          if (localOnly.length > 0) {
+            // Push invoice lokal yang belum ada di cloud
+            const merged = [...localOnly, ...cleanedCloud].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            setArchives(merged);
+            localStorage.setItem("rt_invoice_archives", JSON.stringify(merged));
+            fetch("/api/invoices", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "sync_batch", archives: merged }),
+            }).catch(() => {});
+          } else {
+            setArchives(cleanedCloud);
+            localStorage.setItem("rt_invoice_archives", JSON.stringify(cleanedCloud));
+          }
+
+          setLastSyncedTime(
+            new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WITA"
+          );
+          if (!silent) {
+            showToast(`Sinkronisasi cloud berhasil (${cleanedCloud.length} invoice).`);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn("Gagal sinkronisasi cloud:", err?.message);
+      if (!silent) {
+        showToast("Gagal sinkronisasi cloud, memuat cache lokal.", "warning");
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  // Inisialisasi Invoice Number, Logo, dan Arsip dari localStorage + Cloud
   useEffect(() => {
     setInvNumber("INV-PB" + Math.floor(100000 + Math.random() * 900000));
     try {
@@ -264,12 +333,12 @@ export function AdminInvoice({
       // ignore
     }
 
+    // 1. Baca cache cepat dari localStorage (0ms render)
     try {
       const savedArchives = localStorage.getItem("rt_invoice_archives");
       if (savedArchives !== null) {
         const parsed = JSON.parse(savedArchives);
         if (Array.isArray(parsed)) {
-          // Bersihkan data dummy bawaan (inv-seed-* atau invoiceNumber dummy) jika tersimpan sebelumnya
           const cleaned = parsed.filter(
             (item) =>
               !item.id?.startsWith("inv-seed-") &&
@@ -277,19 +346,15 @@ export function AdminInvoice({
               item.invoiceNumber !== "INV-PB819203"
           );
           setArchives(cleaned);
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem("rt_invoice_archives", JSON.stringify(cleaned));
-          }
-          return;
         }
       }
-      // Inisialisasi awal: arsip kosong bersih tanpa data dummy
-      setArchives([]);
-      localStorage.setItem("rt_invoice_archives", JSON.stringify([]));
     } catch {
-      setArchives([]);
+      // ignore
     }
-  }, []);
+
+    // 2. Sinkronisasi otomatis dengan Cloud Supabase
+    syncWithCloud(true);
+  }, [syncWithCloud]);
 
   // Jam Real-time WITA
   useEffect(() => {
@@ -562,7 +627,25 @@ export function AdminInvoice({
     const nextArchives = [newArchive, ...archives.filter((a) => a.invoiceNumber !== currentInvoiceNum)];
     persistArchives(nextArchives);
 
-    showToast(`Invoice ${currentInvoiceNum} berhasil diterbitkan & masuk Buku Arsip!`);
+    // Kirim & Sinkronkan langsung ke Cloud Supabase
+    fetch("/api/invoices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create", archive: newArchive }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.archives)) {
+          setArchives(data.archives);
+          localStorage.setItem("rt_invoice_archives", JSON.stringify(data.archives));
+          setLastSyncedTime(
+            new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WITA"
+          );
+        }
+      })
+      .catch((e) => console.warn("Background cloud save error:", e));
+
+    showToast(`Invoice ${currentInvoiceNum} berhasil diterbitkan & tersinkronisasi ke Cloud!`);
 
     // Otomatis siapkan nomor invoice baru untuk klien berikutnya agar tidak bertabrakan
     setInvNumber("INV-PB" + Math.floor(100000 + Math.random() * 900000));
@@ -578,6 +661,13 @@ export function AdminInvoice({
         setIsModalOpen(false);
         setSelectedArchiveDetail(null);
       }
+
+      // Sync hapus ke Cloud Supabase
+      fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", id, invoiceNumber: invoiceNum }),
+      }).catch((e) => console.warn("Background cloud delete error:", e));
     }
   };
 
@@ -591,6 +681,13 @@ export function AdminInvoice({
         setIsModalOpen(false);
         setSelectedArchiveDetail(null);
       }
+
+      // Sync kosongkan ke Cloud Supabase
+      fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clear_all", confirm: true }),
+      }).catch((e) => console.warn("Background cloud clear error:", e));
     }
   };
 
@@ -605,6 +702,13 @@ export function AdminInvoice({
     if (selectedArchiveDetail?.id === id) {
       setSelectedArchiveDetail((prev) => (prev ? { ...prev, paymentStatus: newStatus } : null));
     }
+
+    // Sync status ke Cloud Supabase
+    fetch("/api/invoices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update_status", id, paymentStatus: newStatus }),
+    }).catch((e) => console.warn("Background cloud status error:", e));
   };
 
   // Muat data dari arsip kembali ke formulir generator kasir
@@ -1127,16 +1231,44 @@ export function AdminInvoice({
           </button>
         </div>
 
-        {/* Info Cepat Status / Total Terbit */}
-        <div className="hidden sm:flex items-center gap-3 px-3 text-xs">
-          <span className={activeDark ? "text-slate-400" : "text-[#707EAE]"}>
-            Total Arsip Tercatat:{" "}
+        {/* Info Cepat Status / Total Terbit & Cloud Sync Indicator */}
+        <div className="flex items-center gap-3 px-3 text-xs overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => syncWithCloud(false)}
+            disabled={isSyncing}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+              activeDark
+                ? "bg-white/5 hover:bg-white/10 text-emerald-400 border-white/10"
+                : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
+            }`}
+            title="Klik untuk sinkronisasi instan dengan Cloud Supabase"
+          >
+            <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isSyncing ? "animate-ping" : "animate-pulse"}`} />
+            <span>{isSyncing ? "Sinkron..." : "Cloud Sync"}</span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={isSyncing ? "animate-spin" : ""}
+            >
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+            </svg>
+          </button>
+          <span className="hidden sm:inline text-slate-300 dark:text-white/20">•</span>
+          <span className={`hidden sm:inline ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
+            Total Arsip:{" "}
             <strong className={activeDark ? "text-white" : "text-[#1B2559]"}>
               {archives.length} Surat
             </strong>
           </span>
-          <span className="text-slate-300 dark:text-white/20">•</span>
-          <span className="text-emerald-500 font-bold">
+          <span className="hidden sm:inline text-slate-300 dark:text-white/20">•</span>
+          <span className="hidden sm:inline text-emerald-500 font-bold">
             Lunas: {archives.filter((a) => a.paymentStatus === "Lunas").length}
           </span>
         </div>
@@ -1962,6 +2094,34 @@ export function AdminInvoice({
                   <span>Kosongkan Arsip</span>
                 </button>
               )}
+
+              {/* Tombol Sinkronisasi Cloud */}
+              <button
+                type="button"
+                onClick={() => syncWithCloud(false)}
+                disabled={isSyncing}
+                className={`h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeDark
+                    ? "bg-[#4318FF]/20 hover:bg-[#4318FF]/30 border-[#4318FF]/40 text-[#6AD2FF]"
+                    : "bg-[#4318FF]/10 hover:bg-[#4318FF]/20 border-[#4318FF]/20 text-[#4318FF]"
+                }`}
+                title="Sinkronisasi manual dengan server cloud Supabase"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={isSyncing ? "animate-spin" : ""}
+                >
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                </svg>
+                <span>{isSyncing ? "Menyinkronkan..." : "Sync Cloud"}</span>
+              </button>
 
               {/* Buat Invoice Baru */}
               <button
