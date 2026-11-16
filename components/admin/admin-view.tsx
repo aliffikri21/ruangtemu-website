@@ -7046,6 +7046,7 @@ export function AdminView({
               isDarkMode={isDarkMode}
               bookings={bookings}
               events={events}
+              packages={packagesList}
             />
           )}
         </main>

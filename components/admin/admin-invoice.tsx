@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Booking, EventItem } from "@/types";
+import { Booking, EventItem, Package } from "@/types";
 import { formatRupiah } from "@/lib/utils";
 
 // Pilihan Paket Resmi RUANGTEMU Photobooth Palopo
@@ -121,15 +121,47 @@ interface AdminInvoiceProps {
   isDarkMode?: boolean;
   bookings?: Booking[];
   events?: EventItem[];
+  packages?: Package[];
   standalone?: boolean;
 }
 
 export function AdminInvoice({
-  isDarkMode = false,
+  isDarkMode,
   bookings = [],
   events = [],
+  packages = [],
   standalone = false,
 }: AdminInvoiceProps) {
+  // ── State Dark Mode (Sync dengan localStorage dan Parent) ──
+  const [internalDark, setInternalDark] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ruangtemu_admin_dark");
+      if (saved === "true") {
+        setInternalDark(true);
+      } else if (saved === null && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        setInternalDark(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const activeDark = isDarkMode !== undefined ? isDarkMode : internalDark;
+
+  const toggleStandaloneDark = () => {
+    setInternalDark((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("ruangtemu_admin_dark", String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
   // ── State Data Klien & Event ──
   const [custName, setCustName] = useState("");
   const [custPhone, setCustPhone] = useState("");
@@ -439,15 +471,16 @@ export function AdminInvoice({
     setIsModalOpen(true);
   };
 
-  return (
-    <div className={`space-y-6 ${isDarkMode ? "text-slate-100" : "text-[#1B2559]"}`}>
+  // Konten Utama
+  const content = (
+    <div className={`space-y-6 transition-colors duration-200 ${activeDark ? "text-slate-100" : "text-[#1B2559]"}`}>
       {/* ─── STANDALONE TOP BAR (Jika diakses via /invoice langsung) ─── */}
       {standalone && (
         <header
-          className={`px-4 sm:px-6 py-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors ${
-            isDarkMode
+          className={`px-4 sm:px-6 py-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors duration-200 ${
+            activeDark
               ? "bg-[#1A1B20] border-white/10"
-              : "bg-white border-[#E0E5F2]"
+              : "bg-white border-[#E0E5F2] shadow-[0_18px_40px_rgba(112,144,176,0.06)]"
           }`}
         >
           <div className="flex items-center gap-3">
@@ -468,32 +501,63 @@ export function AdminInvoice({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-bold tracking-tight">RUANGTEMU PHOTOBOOTH</h1>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 border border-[#4318FF]/20">
                   Sistem Kasir
                 </span>
               </div>
-              <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>
-                Jl. Anggrek Blok EE No. 24 Kota Palopo • WhatsApp Invoice Generator
+              <p className={`text-xs ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                Jl. Anggrek Blok EE No. 24 Kota Palopo • Generator Invoice &amp; Penawaran WhatsApp
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* Jam Digital Real-time */}
             <div
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                isDarkMode ? "bg-[#25262B] border-white/10 text-slate-300" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+                activeDark ? "bg-[#25262B] border-white/10 text-slate-300" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>{currentTime}</span>
             </div>
 
+            {/* Toggle Mode Gelap (Standalone) */}
+            <button
+              type="button"
+              onClick={toggleStandaloneDark}
+              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                activeDark
+                  ? "bg-[#25262B] border-white/10 text-amber-400 hover:text-white"
+                  : "bg-[#F4F7FE] border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
+              }`}
+              title={activeDark ? "Beralih ke Mode Terang (Light Mode)" : "Beralih ke Mode Gelap (Dark Mode)"}
+            >
+              {activeDark ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              )}
+            </button>
+
             <Link
               href="/admin"
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${
-                isDarkMode
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeDark
                   ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                  : "bg-[#F4F7FE] border-[#E0E5F2] hover:bg-[#EAEFFD] text-[#1B2559]"
+                  : "bg-[#F4F7FE] border-[#E0E5F2] hover:bg-[#EAEFFD] text-[#1B2559] hover:text-[#4318FF]"
               }`}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -517,13 +581,15 @@ export function AdminInvoice({
       {/* ─── QUICK AUTOFILL BAR DARI DATA BOOKINGS (JIKA ADA) ─── */}
       {bookings && bookings.length > 0 && (
         <div
-          className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 ${
-            isDarkMode ? "bg-[#1A1B20]/60 border-white/10" : "bg-blue-50/60 border-blue-100"
+          className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-colors duration-200 ${
+            activeDark
+              ? "bg-[#1A1B20] border-white/10 text-white"
+              : "bg-white border-[#E0E5F2] text-[#1B2559]"
           }`}
         >
           <div className="flex items-center gap-2 text-xs font-semibold">
             <span className="text-base">⚡</span>
-            <span className={isDarkMode ? "text-blue-400" : "text-[#4318FF]"}>
+            <span className={activeDark ? "text-blue-400 font-bold" : "text-[#4318FF] font-bold"}>
               Tarik Otomatis dari Reservasi Klien:
             </span>
           </div>
@@ -531,9 +597,9 @@ export function AdminInvoice({
             onChange={(e) => handleAutofillBooking(e.target.value)}
             defaultValue=""
             className={`text-xs font-medium px-3 py-1.5 rounded-xl border outline-hidden cursor-pointer ${
-              isDarkMode
-                ? "bg-[#25262B] border-white/10 text-white"
-                : "bg-white border-[#E0E5F2] text-[#1B2559]"
+              activeDark
+                ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
             }`}
           >
             <option value="" disabled>
@@ -554,18 +620,18 @@ export function AdminInvoice({
         <div className="lg:col-span-7 space-y-6">
           {/* CARD 1: DATA KLIEN & DETAIL ACARA */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors ${
-              isDarkMode ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
+              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
             }`}
           >
             <div className="flex items-center justify-between border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:text-blue-400 flex items-center justify-center text-sm font-bold">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center text-sm font-bold">
                   👤
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Data Klien & Detail Acara</h3>
-                  <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                  <h3 className="text-sm font-bold">Data Klien &amp; Detail Acara</h3>
+                  <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                     Informasi identitas pemesan dan lokasi venue photobooth
                   </p>
                 </div>
@@ -575,7 +641,7 @@ export function AdminInvoice({
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="logoUploadHeader"
-                  className="text-xs font-semibold text-[#4318FF] hover:underline cursor-pointer flex items-center gap-1"
+                  className="text-xs font-semibold text-[#4318FF] dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -598,7 +664,9 @@ export function AdminInvoice({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Nama Klien / Penanggung Jawab *
                 </label>
                 <input
@@ -607,15 +675,17 @@ export function AdminInvoice({
                   onChange={(e) => setCustName(e.target.value)}
                   placeholder="Contoh: Rina & Budi (Wedding)"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${
-                    isDarkMode
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                    activeDark
+                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Nomor WhatsApp *
                 </label>
                 <div className="relative">
@@ -628,16 +698,18 @@ export function AdminInvoice({
                     onChange={(e) => setCustPhone(e.target.value)}
                     placeholder="81234567890"
                     className={`w-full pl-16 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${
-                      isDarkMode
-                        ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                      activeDark
+                        ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
+                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Tanggal Acara / Event *
                 </label>
                 <input
@@ -645,15 +717,17 @@ export function AdminInvoice({
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden cursor-pointer ${
-                    isDarkMode
-                      ? "bg-[#25262B] border-white/10 text-white"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+                    activeDark
+                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Jam Mulai Photobooth *
                 </label>
                 <div className="grid grid-cols-12 gap-2">
@@ -662,18 +736,18 @@ export function AdminInvoice({
                     value={eventTime}
                     onChange={(e) => setEventTime(e.target.value)}
                     className={`col-span-7 px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                      isDarkMode
-                        ? "bg-[#25262B] border-white/10 text-white"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+                      activeDark
+                        ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                     }`}
                   />
                   <select
                     value={timeZone}
                     onChange={(e) => setTimeZone(e.target.value)}
                     className={`col-span-5 px-2 py-2.5 rounded-xl border text-xs font-bold outline-hidden cursor-pointer ${
-                      isDarkMode
-                        ? "bg-[#25262B] border-white/10 text-white"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+                      activeDark
+                        ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                     }`}
                   >
                     <option value="WITA">WITA</option>
@@ -684,7 +758,9 @@ export function AdminInvoice({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Instagram Klien (Username)
                 </label>
                 <div className="relative">
@@ -697,16 +773,18 @@ export function AdminInvoice({
                     onChange={(e) => setCustInstagram(e.target.value.replace(/^@/, ""))}
                     placeholder="rina.wedding"
                     className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                      isDarkMode
-                        ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                      activeDark
+                        ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
                     }`}
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Lokasi Venue / Alamat Acara
                 </label>
                 <input
@@ -715,9 +793,9 @@ export function AdminInvoice({
                   onChange={(e) => setCustAddress(e.target.value)}
                   placeholder="Contoh: Ballroom Hotel Grand Pasundan, Palopo"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                    isDarkMode
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                    activeDark
+                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
                   }`}
                 />
               </div>
@@ -726,18 +804,18 @@ export function AdminInvoice({
 
           {/* CARD 2: PILIHAN PAKET PHOTOBOOTH & ADD-ON */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors ${
-              isDarkMode ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
+              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
             }`}
           >
             <div className="flex items-center justify-between border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm font-bold">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center text-sm font-bold">
                   📸
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Pilihan Paket Photobooth & Add-on</h3>
-                  <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                  <h3 className="text-sm font-bold">Pilihan Paket Photobooth &amp; Add-on</h3>
+                  <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                     Rincian layanan utama, jam operasional, dan add-on event
                   </p>
                 </div>
@@ -746,14 +824,16 @@ export function AdminInvoice({
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#4318FF]/10 hover:bg-[#4318FF]/20 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 border border-[#4318FF]/20 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <span>+</span> Tambah Layanan
               </button>
             </div>
 
             {/* Header Table */}
-            <div className="hidden sm:grid grid-cols-12 gap-2 px-2 text-xs font-bold text-slate-400 uppercase">
+            <div className={`hidden sm:grid grid-cols-12 gap-2 px-2 text-[11px] font-bold uppercase tracking-wider ${
+              activeDark ? "text-slate-400" : "text-[#707EAE]"
+            }`}>
               <div className="col-span-5">Pilihan Paket / Layanan</div>
               <div className="col-span-2 text-center">Durasi/Qty</div>
               <div className="col-span-3 text-right">Harga Paket</div>
@@ -762,13 +842,13 @@ export function AdminInvoice({
 
             {/* Dynamic Rows */}
             <div className="space-y-3">
-              {items.map((row, idx) => {
+              {items.map((row) => {
                 const isCustom = row.name === "Custom Paket Photobooth";
                 return (
                   <div
                     key={row.id}
-                    className={`grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border items-center transition-colors ${
-                      isDarkMode ? "bg-[#25262B]/50 border-white/5" : "bg-[#F4F7FE]/70 border-[#E0E5F2]/70"
+                    className={`grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border items-center transition-colors duration-200 ${
+                      activeDark ? "bg-[#25262B]/50 border-white/5" : "bg-[#F4F7FE]/70 border-[#E0E5F2]/80"
                     }`}
                   >
                     <div className="sm:col-span-5 space-y-1.5">
@@ -776,9 +856,9 @@ export function AdminInvoice({
                         value={row.name}
                         onChange={(e) => handleUpdateItem(row.id, { name: e.target.value })}
                         className={`w-full px-3 py-2 rounded-lg border text-xs sm:text-sm font-semibold outline-hidden cursor-pointer ${
-                          isDarkMode
-                            ? "bg-[#1A1B20] border-white/10 text-white"
-                            : "bg-white border-[#E0E5F2] text-[#1B2559]"
+                          activeDark
+                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                            : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                         }`}
                       >
                         <optgroup label="📸 Photobooth Fisik (Cetak Instan di Venue)">
@@ -818,9 +898,9 @@ export function AdminInvoice({
                           value={row.customName || ""}
                           onChange={(e) => handleUpdateItem(row.id, { customName: e.target.value })}
                           className={`w-full px-3 py-1.5 rounded-lg border text-xs outline-hidden ${
-                            isDarkMode
-                              ? "bg-[#1A1B20] border-white/10 text-white"
-                              : "bg-white border-[#E0E5F2] text-[#1B2559]"
+                            activeDark
+                              ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                              : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                           }`}
                         />
                       )}
@@ -834,9 +914,9 @@ export function AdminInvoice({
                         value={row.qty}
                         onChange={(e) => handleUpdateItem(row.id, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
                         className={`w-full px-2 py-2 rounded-lg border text-center text-xs sm:text-sm font-bold outline-hidden ${
-                          isDarkMode
-                            ? "bg-[#1A1B20] border-white/10 text-white"
-                            : "bg-white border-[#E0E5F2] text-[#1B2559]"
+                          activeDark
+                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                            : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                         }`}
                       />
                     </div>
@@ -850,9 +930,9 @@ export function AdminInvoice({
                         value={row.price}
                         onChange={(e) => handleUpdateItem(row.id, { price: Math.max(0, parseInt(e.target.value) || 0) })}
                         className={`w-full px-3 py-2 rounded-lg border text-right text-xs sm:text-sm font-bold outline-hidden ${
-                          isDarkMode
-                            ? "bg-[#1A1B20] border-white/10 text-white"
-                            : "bg-white border-[#E0E5F2] text-[#1B2559]"
+                          activeDark
+                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                            : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                         }`}
                       />
                     </div>
@@ -879,17 +959,17 @@ export function AdminInvoice({
 
           {/* CARD 3: STATUS DP & REKENING PEMBAYARAN */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors ${
-              isDarkMode ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
+              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
             }`}
           >
-            <div className="flex items-center gap-2 border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-bold">
+            <div className="flex items-center gap-2.5 border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm font-bold">
                 💳
               </div>
               <div>
-                <h3 className="text-sm font-bold">Status DP & Rekening Pembayaran</h3>
-                <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                <h3 className="text-sm font-bold">Status DP &amp; Rekening Pembayaran</h3>
+                <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                   Tujuan transfer rekening dan status pelunasan transaksi
                 </p>
               </div>
@@ -897,16 +977,18 @@ export function AdminInvoice({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Metode Pembayaran
                 </label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${
-                    isDarkMode
-                      ? "bg-[#25262B] border-white/10 text-white"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+                    activeDark
+                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                   }`}
                 >
                   <option value="Transfer Bank BCA (8800xxxxxx)">Transfer Bank - BCA</option>
@@ -918,16 +1000,18 @@ export function AdminInvoice({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Status Pembayaran
                 </label>
                 <select
                   value={paymentStatus}
                   onChange={(e) => setPaymentStatus(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${
-                    isDarkMode
-                      ? "bg-[#25262B] border-white/10 text-white"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+                    activeDark
+                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                   }`}
                 >
                   <option value="Belum Dibayar">Belum Dibayar (Unpaid)</option>
@@ -937,7 +1021,9 @@ export function AdminInvoice({
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Link Pembayaran / DP (Opsional)
                 </label>
                 <input
@@ -946,12 +1032,12 @@ export function AdminInvoice({
                   onChange={(e) => setPaymentLink(e.target.value)}
                   placeholder="https://mayar.link/pay/photobooth-dp atau link DOKU"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                    isDarkMode
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                    activeDark
+                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
                   }`}
                 />
-                <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                <p className={`text-[11px] mt-1 ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                   *Tautan ini akan otomatis disertakan dalam teks WhatsApp dan PDF invoice.
                 </p>
               </div>
@@ -962,27 +1048,43 @@ export function AdminInvoice({
         {/* ────── KOLOM KANAN: RINGKASAN BIAYA & AKSI (5/12) ────── */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           <div
-            className={`p-6 rounded-2xl border shadow-xl space-y-5 transition-colors ${
-              isDarkMode ? "bg-[#1A1B20] border-white/10 text-white" : "bg-slate-900 text-white border-slate-800"
+            className={`p-6 rounded-2xl border transition-colors duration-200 space-y-5 ${
+              activeDark
+                ? "bg-[#1A1B20] border-white/10 text-white shadow-xl"
+                : "bg-white border-[#E0E5F2] text-[#1B2559] shadow-[0_18px_40px_rgba(112,144,176,0.08)]"
             }`}
           >
             {/* Header Ringkasan */}
-            <div className="flex justify-between items-center border-b border-white/10 pb-4">
+            <div className={`flex justify-between items-center border-b pb-4 ${
+              activeDark ? "border-white/10" : "border-[#E0E5F2]"
+            }`}>
               <div>
-                <span className="text-xs uppercase tracking-wider text-slate-400 font-bold block">
+                <span className={`text-[11px] uppercase tracking-wider font-extrabold block ${
+                  activeDark ? "text-slate-400" : "text-[#707EAE]"
+                }`}>
                   Ringkasan Biaya Event
                 </span>
-                <span className="text-sm font-semibold text-white">Photobooth RUANGTEMU</span>
+                <span className={`text-sm font-extrabold ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
+                  Photobooth RUANGTEMU
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-white/10 text-emerald-400 border border-white/10">
+                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                  activeDark
+                    ? "bg-[#4318FF]/20 text-[#6AD2FF] border-[#4318FF]/40"
+                    : "bg-[#4318FF]/10 text-[#4318FF] border-[#4318FF]/20"
+                }`}>
                   {invNumber}
                 </span>
                 <button
                   type="button"
                   onClick={handleRegenerateInv}
                   title="Ganti nomor invoice acak"
-                  className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer text-xs ${
+                    activeDark
+                      ? "text-slate-400 hover:text-white hover:bg-white/10"
+                      : "text-[#707EAE] hover:text-[#4318FF] hover:bg-[#F4F7FE]"
+                  }`}
                 >
                   🔄
                 </button>
@@ -991,51 +1093,92 @@ export function AdminInvoice({
 
             {/* Breakdown Biaya */}
             <div className="space-y-3.5 text-sm">
-              <div className="flex justify-between text-slate-300">
-                <span>Subtotal Layanan ({items.length} item)</span>
-                <span className="font-semibold text-white">{formatRupiah(subtotal)}</span>
+              <div className="flex justify-between items-center">
+                <span className={activeDark ? "text-slate-300" : "text-[#707EAE]"}>
+                  Subtotal Layanan ({items.length} item)
+                </span>
+                <span className={`font-bold ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
+                  {formatRupiah(subtotal)}
+                </span>
               </div>
 
-              <div className="flex justify-between items-center text-slate-300">
-                <span>Diskon / Potongan (Rp)</span>
+              <div className="flex justify-between items-center">
+                <span className={activeDark ? "text-slate-300" : "text-[#707EAE]"}>
+                  Diskon / Potongan (Rp)
+                </span>
                 <input
                   type="number"
                   min="0"
                   step="25000"
                   value={discount}
                   onChange={(e) => setDiscount(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-32 px-2.5 py-1 bg-white/10 border border-white/15 rounded-lg text-right text-white font-mono text-xs outline-hidden focus:border-emerald-400"
+                  className={`w-32 px-3 py-1.5 rounded-lg text-right font-mono text-xs font-semibold outline-hidden transition-all ${
+                    activeDark
+                      ? "bg-[#25262B] border border-white/10 text-white focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                  }`}
                 />
               </div>
 
-              <div className="flex justify-between items-center text-slate-300">
-                <span>Pajak / Service Fee (%)</span>
-                <div className="flex items-center gap-1">
+              <div className="flex justify-between items-center">
+                <span className={activeDark ? "text-slate-300" : "text-[#707EAE]"}>
+                  Pajak / Service Fee (%)
+                </span>
+                <div className="flex items-center gap-1.5">
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={taxPercent}
                     onChange={(e) => setTaxPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
-                    className="w-16 px-2 py-1 bg-white/10 border border-white/15 rounded-lg text-right text-white font-mono text-xs outline-hidden focus:border-emerald-400"
+                    className={`w-16 px-2.5 py-1.5 rounded-lg text-right font-mono text-xs font-semibold outline-hidden transition-all ${
+                      activeDark
+                        ? "bg-[#25262B] border border-white/10 text-white focus:border-[#4318FF]"
+                        : "bg-[#F4F7FE] border border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                    }`}
                   />
-                  <span className="text-xs text-slate-400">%</span>
+                  <span className={`text-xs font-bold ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>%</span>
                 </div>
               </div>
 
               {taxAmount > 0 && (
-                <div className="flex justify-between text-xs text-slate-400 pl-4 border-l-2 border-white/20">
-                  <span>Nominal Pajak ({taxPercent}%)</span>
-                  <span>+{formatRupiah(taxAmount)}</span>
+                <div className={`flex justify-between text-xs pl-3.5 py-1 border-l-2 rounded-r-lg ${
+                  activeDark
+                    ? "text-slate-300 border-[#6AD2FF] bg-white/5"
+                    : "text-[#1B2559] border-[#4318FF] bg-[#4318FF]/5"
+                }`}>
+                  <span className={activeDark ? "text-slate-400" : "text-[#707EAE]"}>
+                    Nominal Pajak ({taxPercent}%)
+                  </span>
+                  <span className="font-bold">+{formatRupiah(taxAmount)}</span>
                 </div>
               )}
 
-              <div className="border-t border-white/10 pt-3.5 flex justify-between items-baseline">
-                <div>
-                  <span className="text-sm font-semibold text-slate-300 block">Total Investasi Event</span>
-                  <span className="text-[11px] text-slate-400">Termasuk pajak & penyesuaian</span>
+              {/* Box Total Investasi Signature RUANGTEMU */}
+              <div
+                className={`mt-4 p-4 rounded-xl border transition-all ${
+                  activeDark
+                    ? "bg-gradient-to-r from-[#4318FF]/20 via-[#1A1B20] to-[#6AD2FF]/10 border-white/10 shadow-lg"
+                    : "bg-gradient-to-r from-[#4318FF]/5 via-white to-[#6AD2FF]/10 border-[#4318FF]/20 shadow-[0_4px_20px_rgba(67,24,255,0.06)]"
+                }`}
+              >
+                <div className="flex justify-between items-baseline gap-2">
+                  <div>
+                    <span className={`text-xs uppercase tracking-wider font-extrabold block ${
+                      activeDark ? "text-slate-300" : "text-[#707EAE]"
+                    }`}>
+                      Total Investasi Event
+                    </span>
+                    <span className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                      Termasuk pajak &amp; penyesuaian
+                    </span>
+                  </div>
+                  <span className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                    activeDark ? "text-[#6AD2FF]" : "text-[#4318FF]"
+                  }`}>
+                    {formatRupiah(grandTotal)}
+                  </span>
                 </div>
-                <span className="text-2xl font-black text-emerald-400">{formatRupiah(grandTotal)}</span>
               </div>
             </div>
 
@@ -1045,7 +1188,7 @@ export function AdminInvoice({
               <button
                 type="button"
                 onClick={handleSendToWhatsApp}
-                className="w-full h-12 bg-[#25D366] hover:bg-[#20ba59] active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-emerald-950/40 transition-all flex items-center justify-center gap-2.5 text-sm cursor-pointer"
+                className="w-full h-12 bg-[#25D366] hover:bg-[#20ba59] active:scale-[0.98] text-white font-bold rounded-xl shadow-[0_8px_20px_-4px_rgba(37,211,102,0.4)] transition-all flex items-center justify-center gap-2.5 text-sm cursor-pointer"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 18.26c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.49c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.17 1.73 2.64 4.19 3.7.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z" />
@@ -1057,7 +1200,11 @@ export function AdminInvoice({
               <button
                 type="button"
                 onClick={handleOpenInvoiceModal}
-                className="w-full h-11 bg-white/10 hover:bg-white/15 active:scale-[0.98] text-white font-semibold rounded-xl border border-white/15 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer"
+                className={`w-full h-11 active:scale-[0.98] font-bold rounded-xl border transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer ${
+                  activeDark
+                    ? "bg-white/10 hover:bg-white/15 text-white border-white/15"
+                    : "bg-[#F4F7FE] hover:bg-[#EAEFFD] border-[#E0E5F2] text-[#1B2559] hover:text-[#4318FF]"
+                }`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -1065,23 +1212,27 @@ export function AdminInvoice({
                   <line x1="16" y1="13" x2="8" y2="13" />
                   <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
-                <span>Lihat & Cetak Invoice (PDF)</span>
+                <span>Lihat &amp; Cetak Invoice (PDF)</span>
               </button>
 
               {/* Button 3: Salin Teks WA */}
               <button
                 type="button"
                 onClick={handleCopyWhatsAppText}
-                className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`w-full py-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  activeDark
+                    ? "bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white"
+                    : "bg-white hover:bg-[#F4F7FE] border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF]"
+                }`}
               >
                 <span>📋</span>
                 <span>Salin Teks Format WhatsApp</span>
               </button>
             </div>
 
-            <div className="border-t border-white/10 pt-3 text-center">
-              <p className="text-[11px] text-slate-400">
-                🛡️ Format penawaran otomatis ramah WhatsApp & siap cetak invoice.
+            <div className={`border-t pt-3 text-center ${activeDark ? "border-white/10" : "border-[#E0E5F2]"}`}>
+              <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+                🛡️ Format penawaran otomatis ramah WhatsApp &amp; siap cetak invoice.
               </p>
             </div>
           </div>
@@ -1090,7 +1241,7 @@ export function AdminInvoice({
 
       {/* ─── MODAL PRATINJAU INVOICE / CETAK PRINTABLE ─── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white text-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 relative my-8 border border-slate-200">
             {/* Close Button (Hidden on Print) */}
             <button
@@ -1124,7 +1275,7 @@ export function AdminInvoice({
                 <div className="text-right">
                   <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">RUANGTEMU</h3>
                   <p className="text-[11px] text-slate-500">Jl. Anggrek Blok EE No. 24 Kota Palopo</p>
-                  <p className="text-[11px] text-slate-500">Instant Printing & Event Photo Solution</p>
+                  <p className="text-[11px] text-slate-500">Instant Printing &amp; Event Photo Solution</p>
                 </div>
               </div>
 
@@ -1286,7 +1437,9 @@ export function AdminInvoice({
           className={`fixed bottom-5 right-5 z-[999999] px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-bold transition-all transform animate-bounce ${
             toastType === "warning"
               ? "bg-amber-500 text-white"
-              : "bg-slate-900 text-white border border-white/10"
+              : activeDark
+              ? "bg-[#25262B] text-white border border-white/10"
+              : "bg-slate-900 text-white border border-slate-800"
           }`}
         >
           <span>{toastType === "warning" ? "⚠️" : "ℹ️"}</span>
@@ -1322,4 +1475,18 @@ export function AdminInvoice({
       `}</style>
     </div>
   );
+
+  if (standalone) {
+    return (
+      <div className={`min-h-screen p-4 sm:p-6 lg:p-8 transition-colors duration-200 ${
+        activeDark ? "bg-[#121214] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
+      }`}>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return content;
 }
