@@ -531,32 +531,37 @@ export function AdminInvoice({
       });
 
       const imgData = canvas.toDataURL("image/png");
+      // Format standar A4: 210 x 297 mm
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
 
-      const imgWidth = 210; // Lebar standar A4 (mm)
-      const pageHeight = 297; // Tinggi standar A4 (mm)
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginX = 8; // Margin samping 8mm
+      const marginY = 8; // Margin atas-bawah 8mm
+      const maxPrintWidth = pageWidth - marginX * 2; // 194mm
+      const maxPrintHeight = pageHeight - marginY * 2; // 281mm
 
-      let heightLeft = imgHeight;
-      let position = 0;
+      // Skala proporsional agar 100% selalu muat tepat dalam 1 LEMBAR A4 (Single-page fit)
+      const widthRatio = maxPrintWidth / canvas.width;
+      const heightRatio = maxPrintHeight / canvas.height;
+      const scaleRatio = Math.min(widthRatio, heightRatio);
 
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      const finalWidth = canvas.width * scaleRatio;
+      const finalHeight = canvas.height * scaleRatio;
 
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      // Posisikan horizontal center di tengah kertas
+      const posX = (pageWidth - finalWidth) / 2;
+      const posY = marginY;
+
+      pdf.addImage(imgData, "PNG", posX, posY, finalWidth, finalHeight);
 
       const fileName = `Invoice-RUANGTEMU-${invNumber || "PB"}.pdf`;
       pdf.save(fileName);
-      showToast(`Berhasil mengunduh ${fileName}`);
+      showToast(`Berhasil mengunduh ${fileName} (1 Lembar)`);
     } catch (err) {
       console.error("Gagal generate PDF:", err);
       showToast("Gagal export otomatis, membuka dialog cetak PDF...", "warning");
@@ -1322,12 +1327,12 @@ export function AdminInvoice({
               </button>
             </div>
 
-            {/* Template Invoice Lengkap (Yang di-render ke Canvas / PDF & Print) */}
-            <div id="printableInvoice" className="p-6 sm:p-8 bg-white space-y-6 overflow-y-auto">
+            {/* Template Invoice Lengkap (Yang di-render ke Canvas / PDF & Print) - Dioptimasi Pas 1 Lembar */}
+            <div id="printableInvoice" className="p-5 sm:p-6 bg-white space-y-3.5">
               {/* Header Modal */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 pb-5">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-14 h-14 rounded-2xl bg-[#4318FF] overflow-hidden flex items-center justify-center text-white shadow-xs border border-slate-200 shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#4318FF] overflow-hidden flex items-center justify-center text-white shadow-xs border border-slate-200 shrink-0">
                     {customLogo ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
@@ -1337,26 +1342,26 @@ export function AdminInvoice({
                     )}
                   </div>
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-tight">
+                    <h2 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 leading-tight">
                       INVOICE PHOTOBOOTH
                     </h2>
-                    <span className="inline-block mt-0.5 text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-[#4318FF]/10 text-[#4318FF] border border-[#4318FF]/20">
+                    <span className="inline-block mt-0.5 text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#4318FF]/10 text-[#4318FF] border border-[#4318FF]/20">
                       {invNumber}
                     </span>
                   </div>
                 </div>
 
                 <div className="text-left sm:text-right space-y-0.5">
-                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">RUANGTEMU</h3>
+                  <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">RUANGTEMU</h3>
                   <p className="text-[11px] text-slate-500">Jl. Anggrek Blok EE No. 24 Kota Palopo</p>
                   <p className="text-[11px] text-slate-500">Instant Printing &amp; Event Photo Solution</p>
                 </div>
               </div>
 
               {/* Info Pelanggan & Tanggal (Dua Card Bersih Berdampingan) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {/* Info Klien */}
-                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-1">
+                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
                     Tagihan Kepada (Klien / Event):
                   </span>
@@ -1367,7 +1372,7 @@ export function AdminInvoice({
                 </div>
 
                 {/* Info Jadwal & Pembayaran */}
-                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-1.5 text-right">
+                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-1 text-right">
                   <div className="flex justify-between items-center text-[11px]">
                     <span className="text-slate-500">Tanggal Invoice:</span>
                     <span className="font-medium text-slate-800">
@@ -1407,11 +1412,11 @@ export function AdminInvoice({
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
-                      <th className="py-2.5 px-3 text-center w-10">No</th>
-                      <th className="py-2.5 px-3">Paket / Layanan Photobooth</th>
-                      <th className="py-2.5 px-3 text-center w-24">Durasi/Qty</th>
-                      <th className="py-2.5 px-3 text-right w-28">Harga</th>
-                      <th className="py-2.5 px-3 text-right w-32">Total</th>
+                      <th className="py-2 px-3 text-center w-10">No</th>
+                      <th className="py-2 px-3">Paket / Layanan Photobooth</th>
+                      <th className="py-2 px-3 text-center w-24">Durasi/Qty</th>
+                      <th className="py-2 px-3 text-right w-28">Harga</th>
+                      <th className="py-2 px-3 text-right w-32">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1422,11 +1427,11 @@ export function AdminInvoice({
                           : item.name;
                       return (
                         <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-2.5 px-3 text-center text-slate-500 font-mono">{idx + 1}</td>
-                          <td className="py-2.5 px-3 font-semibold text-slate-900">{displayName}</td>
-                          <td className="py-2.5 px-3 text-center text-slate-600 font-medium">{item.qty}</td>
-                          <td className="py-2.5 px-3 text-right text-slate-600 font-mono">{formatRupiah(item.price)}</td>
-                          <td className="py-2.5 px-3 text-right font-bold text-slate-900 font-mono">
+                          <td className="py-2 px-3 text-center text-slate-500 font-mono">{idx + 1}</td>
+                          <td className="py-2 px-3 font-semibold text-slate-900">{displayName}</td>
+                          <td className="py-2 px-3 text-center text-slate-600 font-medium">{item.qty}</td>
+                          <td className="py-2 px-3 text-right text-slate-600 font-mono">{formatRupiah(item.price)}</td>
+                          <td className="py-2 px-3 text-right font-bold text-slate-900 font-mono">
                             {formatRupiah(item.qty * item.price)}
                           </td>
                         </tr>
@@ -1437,8 +1442,8 @@ export function AdminInvoice({
               </div>
 
               {/* Ringkasan Hitungan Modal */}
-              <div className="flex justify-end pt-1">
-                <div className="w-full sm:w-72 space-y-1.5 text-xs">
+              <div className="flex justify-end pt-0.5">
+                <div className="w-full sm:w-72 space-y-1 text-xs">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal:</span>
                     <span className="font-semibold text-slate-800 font-mono">{formatRupiah(subtotal)}</span>
@@ -1455,15 +1460,15 @@ export function AdminInvoice({
                       <span className="font-semibold text-slate-800 font-mono">+ {formatRupiah(taxAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-baseline text-sm font-extrabold text-slate-900 border-t-2 border-slate-200 pt-2">
+                  <div className="flex justify-between items-baseline text-sm font-extrabold text-slate-900 border-t-2 border-slate-200 pt-1.5">
                     <span>Total Pembayaran:</span>
-                    <span className="text-[#4318FF] text-lg font-black font-mono">{formatRupiah(grandTotal)}</span>
+                    <span className="text-[#4318FF] text-base font-black font-mono">{formatRupiah(grandTotal)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Footer Note */}
-              <div className="border-t border-slate-100 pt-4 text-center text-[11px] text-slate-500 space-y-1">
+              <div className="border-t border-slate-100 pt-2.5 text-center text-[11px] text-slate-500 space-y-0.5">
                 <p className="font-medium text-slate-600">
                   Terima kasih telah mempercayakan momen spesial Anda kepada RUANGTEMU! 📸✨
                 </p>
@@ -1559,6 +1564,8 @@ export function AdminInvoice({
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            height: 100% !important;
+            overflow: hidden !important;
             background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -1578,12 +1585,16 @@ export function AdminInvoice({
             top: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            max-height: 297mm !important;
             background: #ffffff !important;
             color: #0f172a !important;
-            padding: 12mm 15mm !important;
+            padding: 8mm 12mm !important;
             margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .no-print {
             display: none !important;
