@@ -8,6 +8,7 @@ import { detectTransparentRegions } from "@/lib/frame-detect";
 import { LandingUIEditor } from "./landing-ui-editor";
 import { GuestNameUIEditor } from "./guest-name-ui-editor";
 import { AdminCharts } from "./admin-charts";
+import { AdminInvoice } from "./admin-invoice";
 import { DateInputDMY } from "../ui/date-input-dmy";
 import { getDefaultThemeConfigForEvent } from "@/lib/theme-config";
 import {
@@ -23,6 +24,7 @@ interface AdminViewProps {
   initialBookings: Booking[];
   initialPackages: Package[];
   initialEntries: GalleryEntry[];
+  initialTab?: "overview" | "events" | "edit" | "bookings" | "gallery" | "packages" | "invoice";
 }
 
 interface FrameUploadSlot {
@@ -99,6 +101,17 @@ function IconPackage({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" /><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+function IconInvoice({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
     </svg>
   );
 }
@@ -606,6 +619,7 @@ export function AdminView({
   initialBookings,
   initialPackages,
   initialEntries,
+  initialTab,
 }: AdminViewProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [email, setEmail] = useState("");
@@ -638,7 +652,9 @@ export function AdminView({
     });
   };
 
-  const [activeTab, setActiveTab] = useState<"overview" | "events" | "edit" | "bookings" | "gallery" | "packages">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "events" | "edit" | "bookings" | "gallery" | "packages" | "invoice">(
+    initialTab || "overview"
+  );
   const [overviewFilter, setOverviewFilter] = useState<"all" | "active" | "completed">("all");
   const [overviewCategoryFilter, setOverviewCategoryFilter] = useState<"all" | "virtual_photobooth" | "photobooth">("all");
   const [eventsCategoryFilter, setEventsCategoryFilter] = useState<"all" | "virtual_photobooth" | "photobooth">("all");
@@ -2390,6 +2406,7 @@ export function AdminView({
     { id: "bookings" as const, label: "Reservasi", icon: IconBooking, badge: bookings.length },
     { id: "gallery" as const, label: "Galeri Foto", icon: IconImage, badge: entries.length },
     { id: "packages" as const, label: "Paket", icon: IconPackage },
+    { id: "invoice" as const, label: "Kasir & Invoice", icon: IconInvoice },
   ];
 
   const pageTitle = {
@@ -2399,6 +2416,7 @@ export function AdminView({
     bookings: "Reservasi",
     gallery: "Galeri Foto",
     packages: "Paket Layanan",
+    invoice: "Kasir & Invoice WhatsApp",
   }[activeTab];
 
   return (
@@ -2571,6 +2589,30 @@ export function AdminView({
             )}
             <IconPackage size={19} />
             {!sidebarCollapsed && <span className="text-sm">Paket Layanan</span>}
+          </button>
+
+          {/* 7. Kasir & Invoice WhatsApp */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("invoice")}
+            className={`w-full flex items-center gap-3.5 h-11 rounded-xl transition-all text-left relative ${sidebarCollapsed ? "justify-center px-0" : "px-3.5"
+              } ${activeTab === "invoice"
+                ? "bg-[#F4F7FE] text-[#4318FF] font-bold"
+                : "text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] font-medium"
+              }`}
+          >
+            {activeTab === "invoice" && (
+              <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#4318FF] rounded-r-full" />
+            )}
+            <IconInvoice size={19} />
+            {!sidebarCollapsed && (
+              <>
+                <span className="text-sm flex-1">Kasir & Invoice</span>
+                <span className="min-w-[22px] h-[20px] px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold bg-[#E9FAF4] text-[#01B574]">
+                  WA
+                </span>
+              </>
+            )}
           </button>
         </nav>
 
@@ -3064,9 +3106,25 @@ export function AdminView({
                 {pageTitle}
               </h1>
               <p className="text-xs text-[#A3AED0] mt-1">
-                Panel kendali photobooth tamu, layar videotron proyektor, dan moderasi foto real-time
+                {activeTab === "invoice"
+                  ? "Sistem kasir, pembuatan invoice penawaran klien, dan pengiriman otomatis via WhatsApp"
+                  : "Panel kendali photobooth tamu, layar videotron proyektor, dan moderasi foto real-time"}
               </p>
             </div>
+
+            {activeTab === "invoice" && (
+              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                <Link
+                  href="/invoice"
+                  target="_blank"
+                  className="h-10 px-4 rounded-xl text-xs font-bold bg-[#4318FF]/10 hover:bg-[#4318FF]/20 text-[#4318FF] border border-[#4318FF]/20 transition-all inline-flex items-center gap-2 cursor-pointer shadow-xs"
+                  title="Buka generator invoice di URL /invoice (Tab Baru)"
+                >
+                  <IconExternalLink size={14} />
+                  <span>Buka di /invoice (Tab Baru)</span>
+                </Link>
+              </div>
+            )}
 
             {activeTab === "overview" && (
               <div className="flex items-center gap-2.5 flex-wrap shrink-0">
@@ -6981,6 +7039,15 @@ export function AdminView({
               </div>
             );
           })()}
+
+          {/* ═══════ TAB: KASIR & INVOICE WHATSAPP ═══════ */}
+          {activeTab === "invoice" && (
+            <AdminInvoice
+              isDarkMode={isDarkMode}
+              bookings={bookings}
+              events={events}
+            />
+          )}
         </main>
       </div>
 

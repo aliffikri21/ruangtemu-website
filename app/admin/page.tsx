@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   description: "Portal pengelola dan operator RUANGTEMU Photobooth Palopo",
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("rt_admin_session")?.value;
   const isAuthenticated = await verifyAdminToken(sessionToken);
@@ -21,6 +25,9 @@ export default async function AdminPage() {
   if (!isAuthenticated) {
     redirect("/admin/login");
   }
+
+  const resolvedParams = searchParams ? await searchParams : undefined;
+  const initialTab = resolvedParams?.tab as any;
 
   const events = await getEvents();
   const bookings = await getBookings();
@@ -33,6 +40,7 @@ export default async function AdminPage() {
       initialBookings={bookings}
       initialPackages={packages}
       initialEntries={entries}
+      initialTab={initialTab}
     />
   );
 }
