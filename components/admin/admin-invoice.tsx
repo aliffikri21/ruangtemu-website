@@ -647,9 +647,13 @@ export function AdminInvoice({
       })
       .catch((e) => console.warn("Background cloud save error:", e));
 
-    showToast(`Invoice ${currentInvoiceNum} berhasil diterbitkan & tersinkronisasi ke Cloud!`);
+    showToast(`Invoice ${currentInvoiceNum} berhasil disimpan ke Buku Arsip!`);
 
-    // Otomatis siapkan nomor invoice baru untuk klien berikutnya agar tidak bertabrakan
+    // Tutup pop up window pratinjau setelah berhasil diarsipkan
+    setIsModalOpen(false);
+    setSelectedArchiveDetail(null);
+
+    // Otomatis siapkan nomor invoice baru untuk transaksi berikutnya
     setInvNumber("INV-PB" + Math.floor(100000 + Math.random() * 900000));
   };
 
@@ -1789,21 +1793,20 @@ export function AdminInvoice({
 
             {/* Tombol Aksi Utama */}
             <div className="space-y-3 pt-2">
-              {/* Button Utama: Buat & Arsipkan Invoice */}
+              {/* Button 1: Buka Modal Pratinjau Invoice */}
               <button
                 type="button"
-                onClick={handleCreateAndArchiveInvoice}
+                onClick={() => handleOpenInvoiceModal()}
                 className="w-full h-12 bg-[#4318FF] hover:bg-[#3311DB] active:scale-[0.98] text-white font-bold rounded-xl shadow-[0_8px_20px_-4px_rgba(67,24,255,0.4)] transition-all flex items-center justify-center gap-2.5 text-sm cursor-pointer"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17 21 17 13 7 13 7 21" />
-                  <polyline points="7 3 7 8 15 8" />
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
                 </svg>
-                <span>Buat &amp; Arsipkan Invoice (Pembukuan)</span>
+                <span>Pratinjau &amp; Unduh Invoice (PDF)</span>
               </button>
 
-              {/* Button 1: Kirim WA Langsung */}
+              {/* Button 2: Kirim WA Langsung */}
               <button
                 type="button"
                 onClick={() => handleSendToWhatsApp()}
@@ -1813,23 +1816,6 @@ export function AdminInvoice({
                   <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 18.26c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.49c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.17 1.73 2.64 4.19 3.7.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z" />
                 </svg>
                 <span>Kirim Penawaran via WhatsApp</span>
-              </button>
-
-              {/* Button 2: Generate Invoice Modal */}
-              <button
-                type="button"
-                onClick={() => handleOpenInvoiceModal()}
-                className={`w-full h-11 active:scale-[0.98] font-bold rounded-xl border transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer ${activeDark
-                  ? "bg-white/10 hover:bg-white/15 text-white border-white/15"
-                  : "bg-[#F4F7FE] hover:bg-[#EAEFFD] border-[#E0E5F2] text-[#1B2559] hover:text-[#4318FF]"
-                  }`}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <span>Pratinjau &amp; Unduh Invoice (PDF)</span>
               </button>
 
               {/* Button 3: Salin Teks WA */}
@@ -2385,14 +2371,16 @@ export function AdminInvoice({
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/80 flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
-                title="Tutup Modal"
-              >
-                ✕
-              </button>
+              {modalInvoiceData.isArchived && (
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/80 flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
+                  title="Tutup Modal"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Template Invoice Lengkap (Yang di-render ke Canvas / PDF & Print) - Dioptimasi Pas 1 Lembar */}
@@ -2555,10 +2543,14 @@ export function AdminInvoice({
                   <button
                     type="button"
                     onClick={handleCreateAndArchiveInvoice}
-                    className="px-3.5 py-2 text-xs font-bold text-white bg-[#4318FF] hover:bg-[#3311DB] rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-white bg-[#4318FF] hover:bg-[#3311DB] rounded-xl transition-all shadow-md shadow-[#4318FF]/25 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>📁</span>
-                    <span>Simpan ke Buku Arsip</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="21 8 21 21 3 21 3 8" />
+                      <rect width="22" height="5" x="1" y="3" rx="1" />
+                      <line x1="10" y1="12" x2="14" y2="12" />
+                    </svg>
+                    <span>Simpan ke Buku Arsip dan Tutup</span>
                   </button>
                 ) : (
                   modalInvoiceData.archiveId && (
@@ -2579,22 +2571,24 @@ export function AdminInvoice({
               </div>
 
               <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
-                >
-                  Tutup
-                </button>
+                {modalInvoiceData.isArchived && (
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                )}
                 <button
                   type="button"
                   disabled={isDownloadingPDF}
                   onClick={handleDownloadPDF}
-                  className="px-4 sm:px-5 py-2.5 text-xs font-bold text-white bg-[#4318FF] hover:bg-[#3311DB] disabled:opacity-50 rounded-xl transition-all shadow-md shadow-[#4318FF]/20 flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-4 sm:px-5 py-2.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 disabled:opacity-50 rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isDownloadingPDF ? (
                     <>
-                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" />
                       <span>Mengunduh PDF...</span>
                     </>
                   ) : (
