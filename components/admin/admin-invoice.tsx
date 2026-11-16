@@ -1385,7 +1385,11 @@ export function AdminInvoice({
                 <button
                   type="button"
                   onClick={() => setIsBookingPickerOpen(true)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#4318FF] hover:bg-[#3311DB] text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 ${
+                    activeDark
+                      ? "bg-[#4318FF] hover:bg-[#3311DB] text-white"
+                      : "bg-[#4318FF] hover:bg-[#3311DB] text-white"
+                  }`}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h2" />
@@ -1402,7 +1406,9 @@ export function AdminInvoice({
 
                 <label
                   htmlFor="logoUploadHeader"
-                  className="text-xs font-semibold text-[#4318FF] dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1 ml-1"
+                  className={`text-xs font-semibold hover:underline cursor-pointer flex items-center gap-1 ml-1 ${
+                    activeDark ? "text-blue-400" : "text-[#4318FF]"
+                  }`}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -1428,7 +1434,7 @@ export function AdminInvoice({
               className={`p-3 sm:p-3.5 rounded-xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${
                 activeDark
                   ? "bg-[#25262B] border-white/10"
-                  : "bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/30 border-blue-100"
+                  : "bg-[#F4F7FE] border-[#E0E5F2]"
               }`}
             >
               <div className="flex items-center gap-2.5">
@@ -1440,13 +1446,17 @@ export function AdminInvoice({
                   </svg>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                    <span>Ambil Detail Pesanan dari Reservasi Klien</span>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-300">
+                  <h4 className="text-xs font-bold flex items-center gap-1.5">
+                    <span className={activeDark ? "text-white" : "text-[#1B2559]"}>
+                      Ambil Detail Pesanan dari Reservasi Klien
+                    </span>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                      activeDark ? "bg-[#4318FF]/20 text-[#6AD2FF]" : "bg-white text-[#4318FF] border border-[#E0E5F2]"
+                    }`}>
                       {activeBookings.length} Tersedia
                     </span>
                   </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                     Otomatis mengisi nama, nomor WhatsApp, tanggal, venue, paket, &amp; harga pesanan
                   </p>
                 </div>
@@ -2526,13 +2536,27 @@ export function AdminInvoice({
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsBookingPickerOpen(false);
           }}
-          className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+          className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
         >
-          <div className="bg-white dark:bg-[#1A1B20] text-slate-900 dark:text-white rounded-3xl shadow-2xl max-w-3xl w-full my-auto border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]">
+          <div
+            className={`w-full max-w-3xl my-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border transition-colors ${
+              activeDark
+                ? "bg-[#1A1B20] text-white border-white/10"
+                : "bg-white text-[#1B2559] border-[#E0E5F2] shadow-[0_20px_60px_rgba(67,24,255,0.12)]"
+            }`}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10 bg-slate-50/80 dark:bg-[#25262B] shrink-0">
+            <div
+              className={`flex items-center justify-between px-6 py-4.5 border-b shrink-0 ${
+                activeDark ? "bg-[#25262B] border-white/10" : "bg-white border-[#E0E5F2]"
+              }`}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                    activeDark ? "bg-[#4318FF]/20 text-[#6AD2FF]" : "bg-[#F4F7FE] text-[#4318FF]"
+                  }`}
+                >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h2" />
                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
@@ -2540,10 +2564,10 @@ export function AdminInvoice({
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                  <h3 className={`text-base font-extrabold tracking-tight ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
                     Ambil Detail Pesanan dari Reservasi Klien
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className={`text-xs ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                     Pilih pesanan klien dari dashboard untuk mengisi otomatis formulir invoice
                   </p>
                 </div>
@@ -2551,7 +2575,11 @@ export function AdminInvoice({
               <button
                 type="button"
                 onClick={() => setIsBookingPickerOpen(false)}
-                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer text-sm font-bold ${
+                  activeDark
+                    ? "text-slate-400 hover:text-white hover:bg-white/10"
+                    : "text-[#A3AED0] hover:text-[#1B2559] hover:bg-[#F4F7FE]"
+                }`}
                 title="Tutup"
               >
                 ✕
@@ -2559,10 +2587,14 @@ export function AdminInvoice({
             </div>
 
             {/* Filter & Search Bar */}
-            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/10 bg-white dark:bg-[#1A1B20] space-y-3 shrink-0">
+            <div
+              className={`p-4 sm:p-5 border-b space-y-3 shrink-0 ${
+                activeDark ? "bg-[#1A1B20] border-white/10" : "bg-[#FAFCFF] border-[#E0E5F2]"
+              }`}
+            >
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="relative flex-1">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#A3AED0]">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                       <circle cx="11" cy="11" r="8" />
                       <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -2573,13 +2605,17 @@ export function AdminInvoice({
                     value={bookingSearchQuery}
                     onChange={(e) => setBookingSearchQuery(e.target.value)}
                     placeholder="Cari nama klien, nomor HP / WA, venue, atau paket..."
-                    className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#25262B] text-slate-800 dark:text-white placeholder-slate-400 text-xs sm:text-sm outline-hidden focus:border-[#4318FF] transition-all"
+                    className={`w-full pl-10 pr-8 py-2.5 rounded-xl border text-xs sm:text-sm outline-hidden transition-all ${
+                      activeDark
+                        ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:bg-white focus:ring-2 focus:ring-[#4318FF]/10"
+                    }`}
                   />
                   {bookingSearchQuery && (
                     <button
                       type="button"
                       onClick={() => setBookingSearchQuery("")}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-xs"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#A3AED0] hover:text-[#1B2559] text-xs cursor-pointer"
                     >
                       ✕
                     </button>
@@ -2590,7 +2626,11 @@ export function AdminInvoice({
                   type="button"
                   disabled={isLoadingBookings}
                   onClick={fetchBookings}
-                  className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#25262B] hover:bg-slate-100 dark:hover:bg-white/5 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                  className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50 ${
+                    activeDark
+                      ? "bg-[#25262B] border-white/10 text-slate-300 hover:bg-white/10 hover:text-white"
+                      : "bg-white hover:bg-[#F4F7FE] border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF]"
+                  }`}
                   title="Segarkan data dari server"
                 >
                   <svg
@@ -2613,10 +2653,12 @@ export function AdminInvoice({
                 <button
                   type="button"
                   onClick={() => setBookingCategoryFilter("all")}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
                     bookingCategoryFilter === "all"
-                      ? "bg-[#4318FF] text-white shadow-xs"
-                      : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                      ? "bg-[#4318FF] text-white font-bold shadow-md shadow-[#4318FF]/20"
+                      : activeDark
+                      ? "bg-[#25262B] text-slate-400 hover:text-white font-semibold"
+                      : "bg-white hover:bg-[#F4F7FE] border border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF] font-semibold"
                   }`}
                 >
                   Semua ({activeBookings.length})
@@ -2624,10 +2666,12 @@ export function AdminInvoice({
                 <button
                   type="button"
                   onClick={() => setBookingCategoryFilter("photobooth")}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
                     bookingCategoryFilter === "photobooth"
-                      ? "bg-[#4318FF] text-white shadow-xs"
-                      : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                      ? "bg-[#4318FF] text-white font-bold shadow-md shadow-[#4318FF]/20"
+                      : activeDark
+                      ? "bg-[#25262B] text-slate-400 hover:text-white font-semibold"
+                      : "bg-white hover:bg-[#F4F7FE] border border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF] font-semibold"
                   }`}
                 >
                   Photobooth Fisik ({activeBookings.filter((b) => (b.category || b.booking_category) === "photobooth").length})
@@ -2635,10 +2679,12 @@ export function AdminInvoice({
                 <button
                   type="button"
                   onClick={() => setBookingCategoryFilter("virtual_photobooth")}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
                     bookingCategoryFilter === "virtual_photobooth"
-                      ? "bg-[#4318FF] text-white shadow-xs"
-                      : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                      ? "bg-[#4318FF] text-white font-bold shadow-md shadow-[#4318FF]/20"
+                      : activeDark
+                      ? "bg-[#25262B] text-slate-400 hover:text-white font-semibold"
+                      : "bg-white hover:bg-[#F4F7FE] border border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF] font-semibold"
                   }`}
                 >
                   Virtual Photobooth ({activeBookings.filter((b) => (b.category || b.booking_category) !== "photobooth").length})
@@ -2647,24 +2693,35 @@ export function AdminInvoice({
             </div>
 
             {/* List Reservasi (Scrollable) */}
-            <div className="p-4 sm:p-5 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5 space-y-3 flex-1">
+            <div
+              className={`p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 ${
+                activeDark ? "bg-[#1A1B20]" : "bg-white"
+              }`}
+            >
               {filteredBookings.length === 0 ? (
-                <div className="py-12 text-center space-y-2">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                <div className="py-12 text-center space-y-3">
+                  <div
+                    className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
+                      activeDark ? "bg-[#25262B] text-slate-400" : "bg-[#F4F7FE] text-[#4318FF]"
+                    }`}
+                  >
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Tidak Ditemukan Data Reservasi
-                  </h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    {bookingSearchQuery
-                      ? "Tidak ada pesanan yang sesuai dengan kata kunci pencarian Anda."
-                      : "Belum ada calon pelanggan yang melakukan pemesanan paket melalui web."}
-                  </p>
+                  <div className="space-y-1">
+                    <h4 className={`text-sm sm:text-base font-extrabold ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
+                      {bookingSearchQuery ? "Tidak Ditemukan Data Reservasi" : "Belum Ada Data Reservasi Klien"}
+                    </h4>
+                    <p className={`text-xs max-w-sm mx-auto leading-relaxed ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
+                      {bookingSearchQuery
+                        ? `Tidak ada pesanan yang sesuai dengan kata kunci "${bookingSearchQuery}".`
+                        : "Data calon pelanggan dari formulir pemesanan online dashboard akan otomatis tampil di sini."}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 filteredBookings.map((b) => {
@@ -2681,36 +2738,44 @@ export function AdminInvoice({
                   return (
                     <div
                       key={b.id}
-                      className="pt-3 first:pt-0 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent hover:border-slate-200 dark:hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                      className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        activeDark
+                          ? "bg-[#25262B] border-white/10 hover:border-[#4318FF]/40"
+                          : "bg-white hover:bg-[#F8FAFC] border-[#E0E5F2] hover:border-[#4318FF]/40 shadow-xs hover:shadow-md"
+                      }`}
                     >
                       <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                          <span className={`font-extrabold text-sm sm:text-base truncate ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
                             {b.customer_name}
                           </span>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
                               isPhysical
-                                ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
-                                : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
+                                ? activeDark
+                                  ? "bg-purple-950/40 text-purple-300 border-purple-800"
+                                  : "bg-[#F4F7FE] text-[#4318FF] border-[#E0E5F2]"
+                                : activeDark
+                                ? "bg-blue-950/40 text-blue-300 border-blue-800"
+                                : "bg-[#E8F1FF] text-[#2B77FB] border-[#D0E2FF]"
                             }`}
                           >
                             {isPhysical ? "Photobooth Fisik" : "Virtual Photobooth"}
                           </span>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                               b.status === "confirmed"
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                ? "bg-[#E6F9F0] text-[#05CD99]"
                                 : b.status === "cancelled"
-                                ? "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300"
-                                : "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                                ? "bg-[#FEEFEE] text-[#EE5D50]"
+                                : "bg-[#FFF6E9] text-[#FFB547]"
                             }`}
                           >
                             {b.status === "confirmed" ? "Terkonfirmasi" : b.status === "cancelled" ? "Batal" : "Pending"}
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                           {b.customer_phone && (
                             <span className="flex items-center gap-1 font-mono">
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2740,10 +2805,10 @@ export function AdminInvoice({
                         </div>
 
                         <div className="flex items-center gap-2 pt-1">
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          <span className={`text-xs font-semibold ${activeDark ? "text-slate-200" : "text-[#1B2559]"}`}>
                             {b.package_name || "Paket Photobooth Reservasi"}
                           </span>
-                          <span className="text-xs font-black text-[#4318FF] dark:text-blue-400">
+                          <span className={`text-xs font-black ${activeDark ? "text-[#6AD2FF]" : "text-[#4318FF]"}`}>
                             {formatRupiah(b.total_price || 0)}
                           </span>
                         </div>
@@ -2768,14 +2833,22 @@ export function AdminInvoice({
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3.5 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-[#25262B] flex items-center justify-between text-xs shrink-0">
-              <span className="text-slate-500">
-                Menampilkan {filteredBookings.length} dari {activeBookings.length} reservasi
+            <div
+              className={`px-6 py-4 border-t flex items-center justify-between text-xs shrink-0 ${
+                activeDark ? "bg-[#25262B] border-white/10" : "bg-[#FAFCFF] border-[#E0E5F2]"
+              }`}
+            >
+              <span className={activeDark ? "text-slate-400" : "text-[#707EAE]"}>
+                Menampilkan <strong>{filteredBookings.length}</strong> dari {activeBookings.length} reservasi
               </span>
               <button
                 type="button"
                 onClick={() => setIsBookingPickerOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+                className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-colors cursor-pointer ${
+                  activeDark
+                    ? "bg-white/5 hover:bg-white/10 text-slate-300 border-white/10"
+                    : "bg-white hover:bg-[#F4F7FE] text-[#707EAE] hover:text-[#1B2559] border-[#E0E5F2]"
+                }`}
               >
                 Tutup
               </button>
