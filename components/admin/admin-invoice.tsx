@@ -5,19 +5,109 @@ import Link from "next/link";
 import { Booking, EventItem } from "@/types";
 import { formatRupiah } from "@/lib/utils";
 
-// Preset Paket Photobooth sesuai referensi mitra
-export const PHOTOBOOTH_PACKAGES = [
-  { name: "Photobooth Unlimited 2 Jam (Print 4R Fast)", price: 1800000 },
-  { name: "Photobooth Unlimited 3 Jam (Print 4R Fast)", price: 2500000 },
-  { name: "Photobooth Unlimited 4 Jam (Print 4R Fast)", price: 3200000 },
-  { name: "Paket Strip Photo 2 Jam (2 Strip/Session)", price: 1500000 },
-  { name: "Paket 100 Photo Kuota Print (Custom Frame)", price: 1200000 },
-  { name: "Paket 360 Spin Video Booth (2 Jam Unlimited)", price: 3000000 },
-  { name: "Add-On Extra Hour Photobooth (1 Jam)", price: 750000 },
-  { name: "Add-On Custom Backdrop 3D / Flower Wall", price: 650000 },
-  { name: "Add-On Custom Wooden / Acrylic Props", price: 250000 },
-  { name: "Custom Paket Photobooth", price: 0 },
+// Pilihan Paket Resmi RUANGTEMU Photobooth Palopo
+export interface PhotoboothPackageOption {
+  name: string;
+  category: "physical" | "virtual" | "addon" | "custom";
+  price: number;
+}
+
+export const RUANGTEMU_PACKAGES: PhotoboothPackageOption[] = [
+  // ── 1. PHOTOBOOTH FISIK (CETAK INSTAN DI LOKASI ACARA) ──
+  {
+    name: "Paket 2 Jam - Cetak 2R Strip (Unlimited)",
+    category: "physical",
+    price: 2000000,
+  },
+  {
+    name: "Paket 2 Jam - Cetak 4R Postcard (Unlimited)",
+    category: "physical",
+    price: 2500000,
+  },
+  {
+    name: "Paket 3 Jam - Cetak 2R Strip (Unlimited)",
+    category: "physical",
+    price: 2500000,
+  },
+  {
+    name: "Paket 3 Jam - Cetak 4R Postcard (Unlimited)",
+    category: "physical",
+    price: 3000000,
+  },
+  {
+    name: "Paket 4 Jam - Cetak 2R Strip (Unlimited)",
+    category: "physical",
+    price: 3000000,
+  },
+  {
+    name: "Paket 4 Jam - Cetak 4R Postcard (Unlimited)",
+    category: "physical",
+    price: 3500000,
+  },
+  {
+    name: "Paket 5 Jam - Cetak 2R Strip (Unlimited)",
+    category: "physical",
+    price: 3500000,
+  },
+  {
+    name: "Paket 5 Jam - Cetak 4R Postcard (Unlimited)",
+    category: "physical",
+    price: 4000000,
+  },
+
+  // ── 2. VIRTUAL PHOTOBOOTH (DIGITAL WEB & QR CODE) ──
+  {
+    name: "Virtual Photobooth - Paket Bronze (7 Hari, 1 Frame)",
+    category: "virtual",
+    price: 250000,
+  },
+  {
+    name: "Virtual Photobooth - Paket Silver (14 Hari, 2 Frame)",
+    category: "virtual",
+    price: 350000,
+  },
+  {
+    name: "Virtual Photobooth - Paket Gold (30 Hari, 3 Frame)",
+    category: "virtual",
+    price: 450000,
+  },
+
+  // ── 3. ADD-ON & LAYANAN TAMBAHAN ──
+  {
+    name: "Add-On Extra Hour Photobooth (1 Jam)",
+    category: "addon",
+    price: 500000,
+  },
+  {
+    name: "Add-On Custom Template Frame Tambahan",
+    category: "addon",
+    price: 100000,
+  },
+  {
+    name: "Add-On Cetak Kartu QR Fisik (100 Lembar)",
+    category: "addon",
+    price: 150000,
+  },
+  {
+    name: "Add-On Custom Backdrop 3D / Flower Wall",
+    category: "addon",
+    price: 650000,
+  },
+  {
+    name: "Add-On Custom Wooden / Acrylic Props",
+    category: "addon",
+    price: 250000,
+  },
+
+  // ── 4. PAKET KUSTOM ──
+  {
+    name: "Custom Paket Photobooth",
+    category: "custom",
+    price: 0,
+  },
 ];
+
+export const PHOTOBOOTH_PACKAGES = RUANGTEMU_PACKAGES;
 
 export interface InvoiceItemRow {
   id: string;
@@ -49,19 +139,19 @@ export function AdminInvoice({
   const [custInstagram, setCustInstagram] = useState("");
   const [custAddress, setCustAddress] = useState("");
 
-  // ── State Paket & Layanan ──
+  // ── State Paket & Layanan (Default Paket Terpopuler RUANGTEMU) ──
   const [items, setItems] = useState<InvoiceItemRow[]>([
     {
       id: "item-1",
-      name: PHOTOBOOTH_PACKAGES[0].name,
+      name: "Paket 3 Jam - Cetak 2R Strip (Unlimited)",
       qty: 1,
-      price: PHOTOBOOTH_PACKAGES[0].price,
+      price: 2500000,
     },
     {
       id: "item-2",
-      name: PHOTOBOOTH_PACKAGES[6].name,
+      name: "Virtual Photobooth - Paket Silver (14 Hari, 2 Frame)",
       qty: 1,
-      price: PHOTOBOOTH_PACKAGES[6].price,
+      price: 350000,
     },
   ]);
 
@@ -164,9 +254,9 @@ export function AdminInvoice({
   const handleAddItem = () => {
     const newRow: InvoiceItemRow = {
       id: "item-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4),
-      name: PHOTOBOOTH_PACKAGES[0].name,
+      name: RUANGTEMU_PACKAGES[0].name,
       qty: 1,
-      price: PHOTOBOOTH_PACKAGES[0].price,
+      price: RUANGTEMU_PACKAGES[0].price,
     };
     setItems((prev) => [...prev, newRow]);
   };
@@ -187,7 +277,7 @@ export function AdminInvoice({
         if (i.id !== id) return i;
         const updated = { ...i, ...updates };
         if (updates.name && updates.name !== "Custom Paket Photobooth") {
-          const match = PHOTOBOOTH_PACKAGES.find((p) => p.name === updates.name);
+          const match = RUANGTEMU_PACKAGES.find((p) => p.name === updates.name);
           if (match) updated.price = match.price;
         }
         return updated;
@@ -691,11 +781,34 @@ export function AdminInvoice({
                             : "bg-white border-[#E0E5F2] text-[#1B2559]"
                         }`}
                       >
-                        {PHOTOBOOTH_PACKAGES.map((pkg) => (
-                          <option key={pkg.name} value={pkg.name}>
-                            {pkg.name}
-                          </option>
-                        ))}
+                        <optgroup label="📸 Photobooth Fisik (Cetak Instan di Venue)">
+                          {RUANGTEMU_PACKAGES.filter((p) => p.category === "physical").map((pkg) => (
+                            <option key={pkg.name} value={pkg.name}>
+                              {pkg.name} ({formatRupiah(pkg.price)})
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="🌐 Virtual Photobooth (Web & QR Code)">
+                          {RUANGTEMU_PACKAGES.filter((p) => p.category === "virtual").map((pkg) => (
+                            <option key={pkg.name} value={pkg.name}>
+                              {pkg.name} ({formatRupiah(pkg.price)})
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="✨ Add-On & Layanan Tambahan">
+                          {RUANGTEMU_PACKAGES.filter((p) => p.category === "addon").map((pkg) => (
+                            <option key={pkg.name} value={pkg.name}>
+                              {pkg.name} ({formatRupiah(pkg.price)})
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="⚙️ Paket Kustom">
+                          {RUANGTEMU_PACKAGES.filter((p) => p.category === "custom").map((pkg) => (
+                            <option key={pkg.name} value={pkg.name}>
+                              {pkg.name}
+                            </option>
+                          ))}
+                        </optgroup>
                       </select>
 
                       {isCustom && (
