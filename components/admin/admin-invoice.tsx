@@ -462,7 +462,7 @@ export function AdminInvoice({
     showToast("Teks invoice WhatsApp berhasil disalin!");
   };
 
-  // Buka Modal Cetak
+  // Buka Modal Pratinjau / Download Invoice
   const handleOpenInvoiceModal = () => {
     if (!custName.trim()) {
       showToast("Harap isi Nama Klien terlebih dahulu!", "warning");
@@ -471,17 +471,76 @@ export function AdminInvoice({
     setIsModalOpen(true);
   };
 
+  // Unduh Invoice sebagai file PDF asli (A4 format)
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    const invoiceElem = document.getElementById("printableInvoice");
+    if (!invoiceElem) {
+      showToast("Elemen invoice tidak ditemukan", "warning");
+      return;
+    }
+
+    setIsDownloadingPDF(true);
+    showToast("Memproses file invoice PDF...");
+
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const canvas = await html2canvas(invoiceElem, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const imgWidth = 210; // Lebar standar A4 (mm)
+      const pageHeight = 297; // Tinggi standar A4 (mm)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `Invoice-RUANGTEMU-${invNumber || "PB"}.pdf`;
+      pdf.save(fileName);
+      showToast(`Berhasil mengunduh ${fileName}`);
+    } catch (err) {
+      console.error("Gagal generate PDF:", err);
+      showToast("Gagal export otomatis, membuka dialog cetak PDF...", "warning");
+      window.print();
+    } finally {
+      setIsDownloadingPDF(false);
+    }
+  };
+
   // Konten Utama
   const content = (
     <div className={`space-y-6 transition-colors duration-200 ${activeDark ? "text-slate-100" : "text-[#1B2559]"}`}>
       {/* ─── STANDALONE TOP BAR (Jika diakses via /invoice langsung) ─── */}
       {standalone && (
         <header
-          className={`px-4 sm:px-6 py-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors duration-200 ${
-            activeDark
-              ? "bg-[#1A1B20] border-white/10"
-              : "bg-white border-[#E0E5F2] shadow-[0_18px_40px_rgba(112,144,176,0.06)]"
-          }`}
+          className={`px-4 sm:px-6 py-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors duration-200 ${activeDark
+            ? "bg-[#1A1B20] border-white/10"
+            : "bg-white border-[#E0E5F2] shadow-[0_18px_40px_rgba(112,144,176,0.06)]"
+            }`}
         >
           <div className="flex items-center gap-3">
             {/* Logo container */}
@@ -514,9 +573,8 @@ export function AdminInvoice({
           <div className="flex items-center gap-2.5">
             {/* Jam Digital Real-time */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                activeDark ? "bg-[#25262B] border-white/10 text-slate-300" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${activeDark ? "bg-[#25262B] border-white/10 text-slate-300" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+                }`}
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>{currentTime}</span>
@@ -526,11 +584,10 @@ export function AdminInvoice({
             <button
               type="button"
               onClick={toggleStandaloneDark}
-              className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                activeDark
-                  ? "bg-[#25262B] border-white/10 text-amber-400 hover:text-white"
-                  : "bg-[#F4F7FE] border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
-              }`}
+              className={`p-2 rounded-xl border transition-all cursor-pointer ${activeDark
+                ? "bg-[#25262B] border-white/10 text-amber-400 hover:text-white"
+                : "bg-[#F4F7FE] border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
+                }`}
               title={activeDark ? "Beralih ke Mode Terang (Light Mode)" : "Beralih ke Mode Gelap (Dark Mode)"}
             >
               {activeDark ? (
@@ -554,11 +611,10 @@ export function AdminInvoice({
 
             <Link
               href="/admin"
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeDark
-                  ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                  : "bg-[#F4F7FE] border-[#E0E5F2] hover:bg-[#EAEFFD] text-[#1B2559] hover:text-[#4318FF]"
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${activeDark
+                ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                : "bg-[#F4F7FE] border-[#E0E5F2] hover:bg-[#EAEFFD] text-[#1B2559] hover:text-[#4318FF]"
+                }`}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -581,11 +637,10 @@ export function AdminInvoice({
       {/* ─── QUICK AUTOFILL BAR DARI DATA BOOKINGS (JIKA ADA) ─── */}
       {bookings && bookings.length > 0 && (
         <div
-          className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-colors duration-200 ${
-            activeDark
-              ? "bg-[#1A1B20] border-white/10 text-white"
-              : "bg-white border-[#E0E5F2] text-[#1B2559]"
-          }`}
+          className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-colors duration-200 ${activeDark
+            ? "bg-[#1A1B20] border-white/10 text-white"
+            : "bg-white border-[#E0E5F2] text-[#1B2559]"
+            }`}
         >
           <div className="flex items-center gap-2 text-xs font-semibold">
             <span className="text-base">⚡</span>
@@ -596,11 +651,10 @@ export function AdminInvoice({
           <select
             onChange={(e) => handleAutofillBooking(e.target.value)}
             defaultValue=""
-            className={`text-xs font-medium px-3 py-1.5 rounded-xl border outline-hidden cursor-pointer ${
-              activeDark
-                ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-            }`}
+            className={`text-xs font-medium px-3 py-1.5 rounded-xl border outline-hidden cursor-pointer ${activeDark
+              ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+              : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+              }`}
           >
             <option value="" disabled>
               -- Pilih Reservasi / Klien ({bookings.length} data) --
@@ -620,9 +674,8 @@ export function AdminInvoice({
         <div className="lg:col-span-7 space-y-6">
           {/* CARD 1: DATA KLIEN & DETAIL ACARA */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
-            }`}
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              }`}
           >
             <div className="flex items-center justify-between border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
               <div className="flex items-center gap-2.5">
@@ -664,9 +717,8 @@ export function AdminInvoice({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Nama Klien / Penanggung Jawab *
                 </label>
                 <input
@@ -674,18 +726,16 @@ export function AdminInvoice({
                   value={custName}
                   onChange={(e) => setCustName(e.target.value)}
                   placeholder="Contoh: Rina & Budi (Wedding)"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${
-                    activeDark
-                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
-                  }`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${activeDark
+                    ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
+                    : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
+                    }`}
                 />
               </div>
 
               <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Nomor WhatsApp *
                 </label>
                 <div className="relative">
@@ -697,37 +747,33 @@ export function AdminInvoice({
                     value={custPhone}
                     onChange={(e) => setCustPhone(e.target.value)}
                     placeholder="81234567890"
-                    className={`w-full pl-16 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${
-                      activeDark
-                        ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
-                    }`}
+                    className={`w-full pl-16 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${activeDark
+                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
+                      }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Tanggal Acara / Event *
                 </label>
                 <input
                   type="date"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden cursor-pointer ${
-                    activeDark
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                  }`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden cursor-pointer ${activeDark
+                    ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                    : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                    }`}
                 />
               </div>
 
               <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Jam Mulai Photobooth *
                 </label>
                 <div className="grid grid-cols-12 gap-2">
@@ -735,20 +781,18 @@ export function AdminInvoice({
                     type="time"
                     value={eventTime}
                     onChange={(e) => setEventTime(e.target.value)}
-                    className={`col-span-7 px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                      activeDark
-                        ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                    }`}
+                    className={`col-span-7 px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
+                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                      }`}
                   />
                   <select
                     value={timeZone}
                     onChange={(e) => setTimeZone(e.target.value)}
-                    className={`col-span-5 px-2 py-2.5 rounded-xl border text-xs font-bold outline-hidden cursor-pointer ${
-                      activeDark
-                        ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                    }`}
+                    className={`col-span-5 px-2 py-2.5 rounded-xl border text-xs font-bold outline-hidden cursor-pointer ${activeDark
+                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                      }`}
                   >
                     <option value="WITA">WITA</option>
                     <option value="WIB">WIB</option>
@@ -758,9 +802,8 @@ export function AdminInvoice({
               </div>
 
               <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Instagram Klien (Username)
                 </label>
                 <div className="relative">
@@ -772,19 +815,17 @@ export function AdminInvoice({
                     value={custInstagram}
                     onChange={(e) => setCustInstagram(e.target.value.replace(/^@/, ""))}
                     placeholder="rina.wedding"
-                    className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                      activeDark
-                        ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
-                        : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
-                    }`}
+                    className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
+                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
+                      }`}
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Lokasi Venue / Alamat Acara
                 </label>
                 <input
@@ -792,11 +833,10 @@ export function AdminInvoice({
                   value={custAddress}
                   onChange={(e) => setCustAddress(e.target.value)}
                   placeholder="Contoh: Ballroom Hotel Grand Pasundan, Palopo"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                    activeDark
-                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
-                  }`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
+                    ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                    : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
+                    }`}
                 />
               </div>
             </div>
@@ -804,9 +844,8 @@ export function AdminInvoice({
 
           {/* CARD 2: PILIHAN PAKET PHOTOBOOTH & ADD-ON */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
-            }`}
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              }`}
           >
             <div className="flex items-center justify-between border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
               <div className="flex items-center gap-2.5">
@@ -831,9 +870,8 @@ export function AdminInvoice({
             </div>
 
             {/* Header Table */}
-            <div className={`hidden sm:grid grid-cols-12 gap-2 px-2 text-[11px] font-bold uppercase tracking-wider ${
-              activeDark ? "text-slate-400" : "text-[#707EAE]"
-            }`}>
+            <div className={`hidden sm:grid grid-cols-12 gap-2 px-2 text-[11px] font-bold uppercase tracking-wider ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+              }`}>
               <div className="col-span-5">Pilihan Paket / Layanan</div>
               <div className="col-span-2 text-center">Durasi/Qty</div>
               <div className="col-span-3 text-right">Harga Paket</div>
@@ -847,19 +885,17 @@ export function AdminInvoice({
                 return (
                   <div
                     key={row.id}
-                    className={`grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border items-center transition-colors duration-200 ${
-                      activeDark ? "bg-[#25262B]/50 border-white/5" : "bg-[#F4F7FE]/70 border-[#E0E5F2]/80"
-                    }`}
+                    className={`grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border items-center transition-colors duration-200 ${activeDark ? "bg-[#25262B]/50 border-white/5" : "bg-[#F4F7FE]/70 border-[#E0E5F2]/80"
+                      }`}
                   >
                     <div className="sm:col-span-5 space-y-1.5">
                       <select
                         value={row.name}
                         onChange={(e) => handleUpdateItem(row.id, { name: e.target.value })}
-                        className={`w-full px-3 py-2 rounded-lg border text-xs sm:text-sm font-semibold outline-hidden cursor-pointer ${
-                          activeDark
-                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
-                            : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                        }`}
+                        className={`w-full px-3 py-2 rounded-lg border text-xs sm:text-sm font-semibold outline-hidden cursor-pointer ${activeDark
+                          ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                          : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                          }`}
                       >
                         <optgroup label="📸 Photobooth Fisik (Cetak Instan di Venue)">
                           {RUANGTEMU_PACKAGES.filter((p) => p.category === "physical").map((pkg) => (
@@ -897,11 +933,10 @@ export function AdminInvoice({
                           placeholder="Ketik nama paket kustom..."
                           value={row.customName || ""}
                           onChange={(e) => handleUpdateItem(row.id, { customName: e.target.value })}
-                          className={`w-full px-3 py-1.5 rounded-lg border text-xs outline-hidden ${
-                            activeDark
-                              ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
-                              : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                          }`}
+                          className={`w-full px-3 py-1.5 rounded-lg border text-xs outline-hidden ${activeDark
+                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                            : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                            }`}
                         />
                       )}
                     </div>
@@ -913,11 +948,10 @@ export function AdminInvoice({
                         min="1"
                         value={row.qty}
                         onChange={(e) => handleUpdateItem(row.id, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
-                        className={`w-full px-2 py-2 rounded-lg border text-center text-xs sm:text-sm font-bold outline-hidden ${
-                          activeDark
-                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
-                            : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                        }`}
+                        className={`w-full px-2 py-2 rounded-lg border text-center text-xs sm:text-sm font-bold outline-hidden ${activeDark
+                          ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                          : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                          }`}
                       />
                     </div>
 
@@ -929,11 +963,10 @@ export function AdminInvoice({
                         step="50000"
                         value={row.price}
                         onChange={(e) => handleUpdateItem(row.id, { price: Math.max(0, parseInt(e.target.value) || 0) })}
-                        className={`w-full px-3 py-2 rounded-lg border text-right text-xs sm:text-sm font-bold outline-hidden ${
-                          activeDark
-                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
-                            : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                        }`}
+                        className={`w-full px-3 py-2 rounded-lg border text-right text-xs sm:text-sm font-bold outline-hidden ${activeDark
+                          ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                          : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                          }`}
                       />
                     </div>
 
@@ -959,9 +992,8 @@ export function AdminInvoice({
 
           {/* CARD 3: STATUS DP & REKENING PEMBAYARAN */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
-            }`}
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              }`}
           >
             <div className="flex items-center gap-2.5 border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
               <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm font-bold">
@@ -977,19 +1009,17 @@ export function AdminInvoice({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Metode Pembayaran
                 </label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${
-                    activeDark
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                  }`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${activeDark
+                    ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                    : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                    }`}
                 >
                   <option value="Transfer Bank BCA (8800xxxxxx)">Transfer Bank - BCA</option>
                   <option value="Transfer Bank Mandiri (123000xxxxxx)">Transfer Bank - Mandiri</option>
@@ -1000,19 +1030,17 @@ export function AdminInvoice({
               </div>
 
               <div>
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Status Pembayaran
                 </label>
                 <select
                   value={paymentStatus}
                   onChange={(e) => setPaymentStatus(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${
-                    activeDark
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-                  }`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${activeDark
+                    ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                    : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+                    }`}
                 >
                   <option value="Belum Dibayar">Belum Dibayar (Unpaid)</option>
                   <option value="DP (Uang Muka 50%)">DP 50% (Booking Slot)</option>
@@ -1021,9 +1049,8 @@ export function AdminInvoice({
               </div>
 
               <div className="sm:col-span-2">
-                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${
-                  activeDark ? "text-slate-400" : "text-[#707EAE]"
-                }`}>
+                <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
+                  }`}>
                   Link Pembayaran / DP (Opsional)
                 </label>
                 <input
@@ -1031,11 +1058,10 @@ export function AdminInvoice({
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
                   placeholder="https://mayar.link/pay/photobooth-dp atau link DOKU"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${
-                    activeDark
-                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
-                      : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
-                  }`}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
+                    ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                    : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
+                    }`}
                 />
                 <p className={`text-[11px] mt-1 ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                   *Tautan ini akan otomatis disertakan dalam teks WhatsApp dan PDF invoice.
@@ -1048,16 +1074,14 @@ export function AdminInvoice({
         {/* ────── KOLOM KANAN: RINGKASAN BIAYA & AKSI (5/12) ────── */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           <div
-            className={`p-6 rounded-2xl border transition-colors duration-200 space-y-5 ${
-              activeDark
-                ? "bg-[#1A1B20] border-white/10 text-white shadow-xl"
-                : "bg-white border-[#E0E5F2] text-[#1B2559] shadow-[0_18px_40px_rgba(112,144,176,0.08)]"
-            }`}
+            className={`p-6 rounded-2xl border transition-colors duration-200 space-y-5 ${activeDark
+              ? "bg-[#1A1B20] border-white/10 text-white shadow-xl"
+              : "bg-white border-[#E0E5F2] text-[#1B2559] shadow-[0_18px_40px_rgba(112,144,176,0.08)]"
+              }`}
           >
             {/* Header Ringkasan */}
-            <div className={`flex justify-between items-center border-b pb-4 ${
-              activeDark ? "border-white/10" : "border-[#E0E5F2]"
-            }`}>
+            <div className={`flex justify-between items-center border-b pb-4 ${activeDark ? "border-white/10" : "border-[#E0E5F2]"
+              }`}>
               <div>
                 <span className={`text-[11px] uppercase tracking-wider font-extrabold block ${
                   activeDark ? "text-slate-400" : "text-[#707EAE]"
@@ -1200,19 +1224,17 @@ export function AdminInvoice({
               <button
                 type="button"
                 onClick={handleOpenInvoiceModal}
-                className={`w-full h-11 active:scale-[0.98] font-bold rounded-xl border transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer ${
-                  activeDark
-                    ? "bg-white/10 hover:bg-white/15 text-white border-white/15"
-                    : "bg-[#F4F7FE] hover:bg-[#EAEFFD] border-[#E0E5F2] text-[#1B2559] hover:text-[#4318FF]"
-                }`}
+                className={`w-full h-11 active:scale-[0.98] font-bold rounded-xl border transition-all flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer ${activeDark
+                  ? "bg-white/10 hover:bg-white/15 text-white border-white/15"
+                  : "bg-[#F4F7FE] hover:bg-[#EAEFFD] border-[#E0E5F2] text-[#1B2559] hover:text-[#4318FF]"
+                  }`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span>Lihat &amp; Cetak Invoice (PDF)</span>
+                <span>Pratinjau &amp; Unduh Invoice (PDF)</span>
               </button>
 
               {/* Button 3: Salin Teks WA */}
@@ -1232,32 +1254,41 @@ export function AdminInvoice({
 
             <div className={`border-t pt-3 text-center ${activeDark ? "border-white/10" : "border-[#E0E5F2]"}`}>
               <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
-                🛡️ Format penawaran otomatis ramah WhatsApp &amp; siap cetak invoice.
+                🛡️ Format penawaran otomatis ramah WhatsApp &amp; siap download PDF invoice.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ─── MODAL PRATINJAU INVOICE / CETAK PRINTABLE ─── */}
+      {/* ─── MODAL PRATINJAU INVOICE / DOWNLOAD PDF ─── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white text-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 relative my-8 border border-slate-200">
-            {/* Close Button (Hidden on Print) */}
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="no-print absolute top-4 right-4 text-slate-400 hover:text-slate-700 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="bg-white text-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full my-auto border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+            {/* Modal Top Chrome (Non-print) - Berisi Judul & Tombol Close yang Terisolasi, Anti-Overlap */}
+            <div className="no-print flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/90 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#4318FF]" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Pratinjau &amp; Unduh Invoice Resmi
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/80 flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
+                title="Tutup Modal"
+              >
+                ✕
+              </button>
+            </div>
 
-            {/* Template Invoice Lengkap */}
-            <div id="printableInvoice" className="space-y-6 bg-white">
+            {/* Template Invoice Lengkap (Yang di-render ke Canvas / PDF & Print) */}
+            <div id="printableInvoice" className="p-6 sm:p-8 bg-white space-y-6 overflow-y-auto">
               {/* Header Modal */}
-              <div className="flex justify-between items-start border-b border-slate-200 pb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-[#4318FF] overflow-hidden flex items-center justify-center text-white shadow-xs border border-slate-200">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 pb-5">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-14 h-14 rounded-2xl bg-[#4318FF] overflow-hidden flex items-center justify-center text-white shadow-xs border border-slate-200 shrink-0">
                     {customLogo ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
@@ -1267,73 +1298,81 @@ export function AdminInvoice({
                     )}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black tracking-tight text-slate-900">INVOICE PHOTOBOOTH</h2>
-                    <p className="text-xs font-mono font-bold text-[#4318FF]">{invNumber}</p>
+                    <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-tight">
+                      INVOICE PHOTOBOOTH
+                    </h2>
+                    <span className="inline-block mt-0.5 text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-[#4318FF]/10 text-[#4318FF] border border-[#4318FF]/20">
+                      {invNumber}
+                    </span>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">RUANGTEMU</h3>
+                <div className="text-left sm:text-right space-y-0.5">
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">RUANGTEMU</h3>
                   <p className="text-[11px] text-slate-500">Jl. Anggrek Blok EE No. 24 Kota Palopo</p>
                   <p className="text-[11px] text-slate-500">Instant Printing &amp; Event Photo Solution</p>
                 </div>
               </div>
 
-              {/* Info Pelanggan & Tanggal */}
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>
-                  <p className="text-slate-400 uppercase font-bold text-[10px]">Klien / Event:</p>
-                  <p className="font-extrabold text-slate-900 text-sm mt-0.5">{custName || "-"}</p>
-                  {custPhone && <p className="text-slate-600 mt-0.5">WA: {custPhone}</p>}
-                  {custInstagram && <p className="text-slate-600">IG: @{custInstagram}</p>}
-                  {custAddress && <p className="text-slate-600">Venue: {custAddress}</p>}
+              {/* Info Pelanggan & Tanggal (Dua Card Bersih Berdampingan) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {/* Info Klien */}
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                    Tagihan Kepada (Klien / Event):
+                  </span>
+                  <p className="font-extrabold text-slate-900 text-sm leading-snug">{custName || "-"}</p>
+                  {custPhone && <p className="text-slate-600 font-mono text-[11px]">📱 WhatsApp: {custPhone}</p>}
+                  {custInstagram && <p className="text-slate-600 text-[11px]">📷 Instagram: @{custInstagram}</p>}
+                  {custAddress && <p className="text-slate-600 text-[11px]">📍 Venue: {custAddress}</p>}
                 </div>
-                <div className="text-right space-y-1">
-                  <p>
-                    <span className="text-slate-400">Tanggal Invoice:</span>{" "}
+
+                {/* Info Jadwal & Pembayaran */}
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-1.5 text-right">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500">Tanggal Invoice:</span>
                     <span className="font-medium text-slate-800">
                       {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                     </span>
-                  </p>
-                  <p>
-                    <span className="text-slate-400">Tanggal Acara:</span>{" "}
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500">Tanggal Acara:</span>
                     <span className="font-bold text-slate-900">{formattedEventDate}</span>
-                  </p>
-                  <p>
-                    <span className="text-slate-400">Jam Mulai:</span>{" "}
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500">Jam Mulai:</span>
                     <span className="font-bold text-[#4318FF]">{formattedEventTime}</span>
-                  </p>
-                  <p>
-                    <span className="text-slate-400">Metode Bayar:</span>{" "}
-                    <span className="font-medium text-slate-800">{paymentMethod}</span>
-                  </p>
-                  <p>
-                    <span className="text-slate-400">Status:</span>{" "}
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500">Metode Bayar:</span>
+                    <span className="font-medium text-slate-800 truncate max-w-[150px] sm:max-w-none">{paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px] pt-0.5">
+                    <span className="text-slate-500">Status Pembayaran:</span>
                     <span
-                      className={`font-bold uppercase px-2 py-0.5 rounded text-[10px] inline-block ${
-                        paymentStatus.includes("Lunas")
-                          ? "bg-emerald-100 text-emerald-800"
-                          : paymentStatus.includes("DP")
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
+                      className={`font-bold uppercase px-2 py-0.5 rounded text-[10px] inline-block ${paymentStatus.includes("Lunas")
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                        : paymentStatus.includes("DP")
+                          ? "bg-amber-100 text-amber-800 border border-amber-200"
+                          : "bg-rose-100 text-rose-800 border border-rose-200"
+                        }`}
                     >
                       {paymentStatus}
                     </span>
-                  </p>
+                  </div>
                 </div>
               </div>
 
               {/* Table Items */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-300 bg-slate-50 text-slate-600 font-bold">
-                      <th className="py-2.5 px-2">No</th>
-                      <th className="py-2.5 px-2">Paket / Layanan Photobooth</th>
-                      <th className="py-2.5 px-2 text-center">Durasi/Qty</th>
-                      <th className="py-2.5 px-2 text-right">Harga</th>
-                      <th className="py-2.5 px-2 text-right">Total</th>
+                    <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
+                      <th className="py-2.5 px-3 text-center w-10">No</th>
+                      <th className="py-2.5 px-3">Paket / Layanan Photobooth</th>
+                      <th className="py-2.5 px-3 text-center w-24">Durasi/Qty</th>
+                      <th className="py-2.5 px-3 text-right w-28">Harga</th>
+                      <th className="py-2.5 px-3 text-right w-32">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1343,12 +1382,12 @@ export function AdminInvoice({
                           ? item.customName || "Custom Paket Photobooth"
                           : item.name;
                       return (
-                        <tr key={item.id}>
-                          <td className="py-2 px-2 text-slate-500">{idx + 1}</td>
-                          <td className="py-2 px-2 font-medium text-slate-900">{displayName}</td>
-                          <td className="py-2 px-2 text-center text-slate-600">{item.qty}</td>
-                          <td className="py-2 px-2 text-right text-slate-600">{formatRupiah(item.price)}</td>
-                          <td className="py-2 px-2 text-right font-bold text-slate-900">
+                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-2.5 px-3 text-center text-slate-500 font-mono">{idx + 1}</td>
+                          <td className="py-2.5 px-3 font-semibold text-slate-900">{displayName}</td>
+                          <td className="py-2.5 px-3 text-center text-slate-600 font-medium">{item.qty}</td>
+                          <td className="py-2.5 px-3 text-right text-slate-600 font-mono">{formatRupiah(item.price)}</td>
+                          <td className="py-2.5 px-3 text-right font-bold text-slate-900 font-mono">
                             {formatRupiah(item.qty * item.price)}
                           </td>
                         </tr>
@@ -1359,34 +1398,36 @@ export function AdminInvoice({
               </div>
 
               {/* Ringkasan Hitungan Modal */}
-              <div className="flex justify-end pt-2">
-                <div className="w-full sm:w-1/2 space-y-1.5 text-xs">
+              <div className="flex justify-end pt-1">
+                <div className="w-full sm:w-72 space-y-1.5 text-xs">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal:</span>
-                    <span className="font-semibold text-slate-800">{formatRupiah(subtotal)}</span>
+                    <span className="font-semibold text-slate-800 font-mono">{formatRupiah(subtotal)}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-slate-600">
                       <span>Diskon / Potongan:</span>
-                      <span className="font-semibold text-rose-600">- {formatRupiah(discount)}</span>
+                      <span className="font-semibold text-rose-600 font-mono">- {formatRupiah(discount)}</span>
                     </div>
                   )}
                   {taxAmount > 0 && (
                     <div className="flex justify-between text-slate-600">
                       <span>Pajak / Service Fee ({taxPercent}%):</span>
-                      <span className="font-semibold text-slate-800">+ {formatRupiah(taxAmount)}</span>
+                      <span className="font-semibold text-slate-800 font-mono">+ {formatRupiah(taxAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm font-extrabold text-slate-900 border-t border-slate-300 pt-2">
+                  <div className="flex justify-between items-baseline text-sm font-extrabold text-slate-900 border-t-2 border-slate-200 pt-2">
                     <span>Total Pembayaran:</span>
-                    <span className="text-[#4318FF] text-base">{formatRupiah(grandTotal)}</span>
+                    <span className="text-[#4318FF] text-lg font-black font-mono">{formatRupiah(grandTotal)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Footer Note */}
               <div className="border-t border-slate-100 pt-4 text-center text-[11px] text-slate-500 space-y-1">
-                <p>Terima kasih telah mempercayakan momen spesial Anda kepada RUANGTEMU! 📸✨</p>
+                <p className="font-medium text-slate-600">
+                  Terima kasih telah mempercayakan momen spesial Anda kepada RUANGTEMU! 📸✨
+                </p>
                 {paymentLink && (
                   <p className="font-mono text-[10px] text-blue-600 break-all">
                     Link Pembayaran: {paymentLink}
@@ -1396,25 +1437,35 @@ export function AdminInvoice({
             </div>
 
             {/* Modal Action Footer (Hidden on Print) */}
-            <div className="no-print flex flex-col sm:flex-row justify-end gap-2.5 border-t border-slate-100 pt-4">
+            <div className="no-print flex flex-col sm:flex-row justify-end gap-2.5 px-6 py-4 border-t border-slate-100 bg-slate-50/70 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
               >
                 Tutup
               </button>
               <button
                 type="button"
-                onClick={() => window.print()}
-                className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                disabled={isDownloadingPDF}
+                onClick={handleDownloadPDF}
+                className="px-5 py-2.5 text-xs font-bold text-white bg-[#4318FF] hover:bg-[#3311DB] disabled:opacity-50 rounded-xl transition-all shadow-md shadow-[#4318FF]/20 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 6 2 18 2 18 9" />
-                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                  <rect x="6" y="14" width="12" height="8" />
-                </svg>
-                <span>Cetak Invoice</span>
+                {isDownloadingPDF ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Mengunduh PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span>Download Invoice (PDF)</span>
+                  </>
+                )}
               </button>
               <button
                 type="button"
@@ -1422,8 +1473,11 @@ export function AdminInvoice({
                   handleSendToWhatsApp();
                   setIsModalOpen(false);
                 }}
-                className="px-4 py-2 text-xs font-bold text-white bg-[#25D366] hover:bg-[#20ba59] rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-5 py-2.5 text-xs font-bold text-white bg-[#25D366] hover:bg-[#20ba59] rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20"
               >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 18.26c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.49c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.17 1.73 2.64 4.19 3.7.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z" />
+                </svg>
                 <span>Kirim via WhatsApp</span>
               </button>
             </div>
@@ -1434,13 +1488,12 @@ export function AdminInvoice({
       {/* ─── TOAST NOTIFICATION ─── */}
       {toastMessage && (
         <div
-          className={`fixed bottom-5 right-5 z-[999999] px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-bold transition-all transform animate-bounce ${
-            toastType === "warning"
-              ? "bg-amber-500 text-white"
-              : activeDark
+          className={`fixed bottom-5 right-5 z-[999999] px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-bold transition-all transform animate-bounce ${toastType === "warning"
+            ? "bg-amber-500 text-white"
+            : activeDark
               ? "bg-[#25262B] text-white border border-white/10"
               : "bg-slate-900 text-white border border-slate-800"
-          }`}
+            }`}
         >
           <span>{toastType === "warning" ? "⚠️" : "ℹ️"}</span>
           <span>{toastMessage}</span>
@@ -1478,9 +1531,8 @@ export function AdminInvoice({
 
   if (standalone) {
     return (
-      <div className={`min-h-screen p-4 sm:p-6 lg:p-8 transition-colors duration-200 ${
-        activeDark ? "bg-[#121214] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
-      }`}>
+      <div className={`min-h-screen p-4 sm:p-6 lg:p-8 transition-colors duration-200 ${activeDark ? "bg-[#121214] text-[#F8F9FA]" : "bg-[#F4F7FE] text-[#1B2559]"
+        }`}>
         <div className="max-w-7xl mx-auto space-y-6">
           {content}
         </div>
