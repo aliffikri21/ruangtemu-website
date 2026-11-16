@@ -266,86 +266,28 @@ export function AdminInvoice({
 
     try {
       const savedArchives = localStorage.getItem("rt_invoice_archives");
-      if (savedArchives) {
+      if (savedArchives !== null) {
         const parsed = JSON.parse(savedArchives);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setArchives(parsed);
+        if (Array.isArray(parsed)) {
+          // Bersihkan data dummy bawaan (inv-seed-* atau invoiceNumber dummy) jika tersimpan sebelumnya
+          const cleaned = parsed.filter(
+            (item) =>
+              !item.id?.startsWith("inv-seed-") &&
+              item.invoiceNumber !== "INV-PB748446" &&
+              item.invoiceNumber !== "INV-PB819203"
+          );
+          setArchives(cleaned);
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem("rt_invoice_archives", JSON.stringify(cleaned));
+          }
           return;
         }
       }
-      // Sample seed data jika arsip masih kosong agar langsung siap digunakan
-      const initialSeed: InvoiceArchiveItem[] = [
-        {
-          id: "inv-seed-1",
-          invoiceNumber: "INV-PB748446",
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-          customerName: "bombom",
-          customerPhone: "081234567890",
-          customerInstagram: "bombom",
-          customerAddress: "Hotel Palopo",
-          eventDate: new Date().toISOString().split("T")[0],
-          eventTime: "19:00 WITA",
-          items: [
-            {
-              id: "item-1",
-              name: "Paket 3 Jam - Cetak 2R Strip (Unlimited)",
-              qty: 1,
-              price: 2500000,
-            },
-            {
-              id: "item-2",
-              name: "Virtual Photobooth - Paket Silver (14 Hari, 2 Frame)",
-              qty: 1,
-              price: 350000,
-            },
-          ],
-          subtotal: 2850000,
-          discount: 0,
-          taxPercent: 0,
-          taxAmount: 0,
-          grandTotal: 2850000,
-          paymentStatus: "Belum Dibayar",
-          paymentMethod: "Transfer Bank BCA (8800xxxxxx)",
-          paymentLink: "",
-        },
-        {
-          id: "inv-seed-2",
-          invoiceNumber: "INV-PB819203",
-          createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-          customerName: "Rina & Budi (Wedding)",
-          customerPhone: "085299887766",
-          customerInstagram: "rinabudi_wedding",
-          customerAddress: "Gedung Saodenrae Convention Centre Palopo",
-          eventDate: new Date(Date.now() + 86400000 * 7).toISOString().split("T")[0],
-          eventTime: "10:00 WITA",
-          items: [
-            {
-              id: "item-w-1",
-              name: "Paket 4 Jam - Cetak 4R Postcard (Unlimited)",
-              qty: 1,
-              price: 3500000,
-            },
-            {
-              id: "item-w-2",
-              name: "Add-On Custom Backdrop 3D / Flower Wall",
-              qty: 1,
-              price: 650000,
-            },
-          ],
-          subtotal: 4150000,
-          discount: 150000,
-          taxPercent: 0,
-          taxAmount: 0,
-          grandTotal: 4000000,
-          paymentStatus: "DP (Uang Muka)",
-          paymentMethod: "Transfer Bank Mandiri (15200xxxxxx)",
-          paymentLink: "",
-        },
-      ];
-      setArchives(initialSeed);
-      localStorage.setItem("rt_invoice_archives", JSON.stringify(initialSeed));
+      // Inisialisasi awal: arsip kosong bersih tanpa data dummy
+      setArchives([]);
+      localStorage.setItem("rt_invoice_archives", JSON.stringify([]));
     } catch {
-      // ignore
+      setArchives([]);
     }
   }, []);
 
@@ -633,6 +575,19 @@ export function AdminInvoice({
       persistArchives(filtered);
       showToast(`Invoice ${invoiceNum} telah dihapus dari arsip.`);
       if (selectedArchiveDetail?.id === id) {
+        setIsModalOpen(false);
+        setSelectedArchiveDetail(null);
+      }
+    }
+  };
+
+  // Kosongkan seluruh arsip pembukuan
+  const handleClearAllArchives = () => {
+    if (archives.length === 0) return;
+    if (confirm("Yakin ingin mengosongkan semua data arsip pembukuan? Data yang dihapus tidak dapat dikembalikan.")) {
+      persistArchives([]);
+      showToast("Seluruh arsip invoice berhasil dikosongkan.");
+      if (selectedArchiveDetail) {
         setIsModalOpen(false);
         setSelectedArchiveDetail(null);
       }
@@ -1962,6 +1917,23 @@ export function AdminInvoice({
                 <span>📊</span>
                 <span>Export CSV</span>
               </button>
+
+              {/* Kosongkan Arsip (jika ada data) */}
+              {archives.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllArchives}
+                  className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeDark
+                      ? "bg-rose-950/20 hover:bg-rose-900/40 border-rose-900/40 text-rose-300"
+                      : "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600"
+                  }`}
+                  title="Hapus Semua Data Arsip Pembukuan"
+                >
+                  <span>🗑️</span>
+                  <span>Kosongkan Arsip</span>
+                </button>
+              )}
 
               {/* Buat Invoice Baru */}
               <button
