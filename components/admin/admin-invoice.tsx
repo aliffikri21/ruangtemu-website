@@ -256,7 +256,7 @@ export function AdminInvoice({
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(null);
 
-  // Fungsi Sinkronisasi Arsip dengan Cloud Supabase
+  // Fungsi Sinkronisasi Arsip dengan Cloud Supabase (Cloud adalah Single Source of Truth)
   const syncWithCloud = useCallback(async (silent = false) => {
     setIsSyncing(true);
     try {
@@ -272,38 +272,9 @@ export function AdminInvoice({
               item.invoiceNumber !== "INV-PB819203"
           );
 
-          // Cek apakah ada invoice di localStorage yang belum masuk cloud (misal dibuat offline)
-          let currentLocal: InvoiceArchiveItem[] = [];
-          try {
-            const saved = localStorage.getItem("rt_invoice_archives");
-            if (saved) currentLocal = JSON.parse(saved);
-          } catch {}
-
-          const cloudNumbers = new Set(cleanedCloud.map((a) => a.invoiceNumber));
-          const localOnly = currentLocal.filter(
-            (l) =>
-              !cloudNumbers.has(l.invoiceNumber) &&
-              !l.id?.startsWith("inv-seed-") &&
-              l.invoiceNumber !== "INV-PB748446" &&
-              l.invoiceNumber !== "INV-PB819203"
-          );
-
-          if (localOnly.length > 0) {
-            // Push invoice lokal yang belum ada di cloud
-            const merged = [...localOnly, ...cleanedCloud].sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-            setArchives(merged);
-            localStorage.setItem("rt_invoice_archives", JSON.stringify(merged));
-            fetch("/api/invoices", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "sync_batch", archives: merged }),
-            }).catch(() => {});
-          } else {
-            setArchives(cleanedCloud);
-            localStorage.setItem("rt_invoice_archives", JSON.stringify(cleanedCloud));
-          }
+          // Update state & localStorage sesuai kondisi terbaru di Cloud Supabase
+          setArchives(cleanedCloud);
+          localStorage.setItem("rt_invoice_archives", JSON.stringify(cleanedCloud));
 
           setLastSyncedTime(
             new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WITA"
@@ -354,6 +325,25 @@ export function AdminInvoice({
 
     // 2. Sinkronisasi otomatis dengan Cloud Supabase
     syncWithCloud(true);
+  }, [syncWithCloud]);
+
+  // Auto-sinkronisasi saat tab browser aktif kembali (fokus tab atau switch window)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncWithCloud(true);
+      }
+    };
+    const handleFocus = () => {
+      syncWithCloud(true);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [syncWithCloud]);
 
   // Jam Real-time WITA
