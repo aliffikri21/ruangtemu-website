@@ -19,6 +19,7 @@
     "exceljs": "^4.4.0",
     "googleapis": "^188.0.0",
     "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^2.5.0",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
     "lucide-react": "^1.47.0",

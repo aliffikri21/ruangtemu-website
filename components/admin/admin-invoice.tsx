@@ -511,13 +511,12 @@ export function AdminInvoice({
     document.title = " ";
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
 
       const canvas = await html2canvas(invoiceElem, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
         onclone: (clonedDoc) => {
@@ -564,9 +563,7 @@ export function AdminInvoice({
       showToast(`Berhasil mengunduh ${fileName} (1 Lembar)`);
     } catch (err) {
       console.error("Gagal generate PDF:", err);
-      showToast("Gagal export otomatis, membuka dialog cetak PDF...", "warning");
-      document.title = " ";
-      window.print();
+      showToast("Gagal mengunduh file PDF secara langsung. Silakan coba kembali.", "warning");
     } finally {
       setIsDownloadingPDF(false);
       setTimeout(() => {
@@ -1307,8 +1304,8 @@ export function AdminInvoice({
 
       {/* ─── MODAL PRATINJAU INVOICE / DOWNLOAD PDF ─── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-          <div className="bg-white text-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full my-auto border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+        <div id="printableInvoiceModalOverlay" className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div id="printableInvoiceModalCard" className="bg-white text-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full my-auto border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
             {/* Modal Top Chrome (Non-print) - Berisi Judul & Tombol Close yang Terisolasi, Anti-Overlap */}
             <div className="no-print flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/90 shrink-0">
               <div className="flex items-center gap-2">
@@ -1565,6 +1562,7 @@ export function AdminInvoice({
             margin: 0 !important;
             padding: 0 !important;
             height: 100% !important;
+            max-height: 297mm !important;
             overflow: hidden !important;
             background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
@@ -1575,17 +1573,42 @@ export function AdminInvoice({
             visibility: hidden !important;
           }
           /* Hanya tampilkan kertas invoice resmi murni */
-          #printableInvoice,
-          #printableInvoice * {
+          #printableInvoiceModalOverlay,
+          #printableInvoiceModalOverlay * {
             visibility: visible !important;
           }
-          #printableInvoice {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+          #printableInvoiceModalOverlay {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-height: 297mm !important;
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            z-index: 9999999 !important;
+          }
+          #printableInvoiceModalCard {
             width: 100% !important;
             max-width: 100% !important;
+            height: auto !important;
             max-height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            overflow: hidden !important;
+          }
+          #printableInvoice {
+            position: relative !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            max-height: 285mm !important;
             background: #ffffff !important;
             color: #0f172a !important;
             padding: 8mm 12mm !important;
@@ -1595,6 +1618,7 @@ export function AdminInvoice({
             page-break-after: avoid !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            break-after: avoid !important;
           }
           .no-print {
             display: none !important;
