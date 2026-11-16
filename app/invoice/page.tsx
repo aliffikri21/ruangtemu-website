@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Sistem Kasir & Invoice WhatsApp | RUANGTEMU Photobooth",
+  title: "Invoice Photobooth | RUANGTEMU",
   description: "Generator invoice resmi dan penawaran WhatsApp instan RUANGTEMU Photobooth Palopo",
 };
 

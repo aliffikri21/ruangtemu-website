@@ -148,6 +148,28 @@ export function AdminInvoice({
     }
   }, []);
 
+  // ── Sembunyikan Judul Halaman Browser ("Admin Dashboard...") saat Cetak / Ekspor PDF ──
+  useEffect(() => {
+    let originalTitle = "";
+    const handleBeforePrint = () => {
+      originalTitle = document.title;
+      // Gunakan spasi tunggal agar header margin browser tidak memuat teks judul halaman admin
+      document.title = " ";
+    };
+    const handleAfterPrint = () => {
+      if (originalTitle) {
+        document.title = originalTitle;
+      }
+    };
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, []);
+
   const activeDark = isDarkMode !== undefined ? isDarkMode : internalDark;
 
   const toggleStandaloneDark = () => {
@@ -484,6 +506,10 @@ export function AdminInvoice({
     setIsDownloadingPDF(true);
     showToast("Memproses file invoice PDF...");
 
+    const originalTitle = document.title;
+    // Kosongkan judul dokumen sementara agar browser tidak mencetak "Admin Dashboard..." di header
+    document.title = " ";
+
     try {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
@@ -491,8 +517,17 @@ export function AdminInvoice({
       const canvas = await html2canvas(invoiceElem, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          clonedDoc.title = " ";
+          const clonedElem = clonedDoc.getElementById("printableInvoice");
+          if (clonedElem) {
+            clonedElem.style.backgroundColor = "#ffffff";
+            clonedElem.style.color = "#0f172a";
+          }
+        },
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -525,9 +560,13 @@ export function AdminInvoice({
     } catch (err) {
       console.error("Gagal generate PDF:", err);
       showToast("Gagal export otomatis, membuka dialog cetak PDF...", "warning");
+      document.title = " ";
       window.print();
     } finally {
       setIsDownloadingPDF(false);
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 1500);
     }
   };
 
@@ -1500,26 +1539,51 @@ export function AdminInvoice({
         </div>
       )}
 
-      {/* ─── PRINT CSS INJECTION ─── */}
+      {/* ─── PRINT CSS INJECTION (HILANGKAN HEADER/FOOTER BROWSER SEPERTI "ADMIN DASHBOARD...") ─── */}
       <style jsx global>{`
+        @page {
+          size: A4 portrait;
+          margin: 0 !important;
+        }
+        @page :left {
+          margin: 0 !important;
+        }
+        @page :right {
+          margin: 0 !important;
+        }
         @media print {
-          body * {
-            visibility: hidden;
+          @page {
+            size: A4 portrait;
+            margin: 0 !important;
           }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* Sembunyikan seluruh UI latar belakang & elemen navigasi admin */
+          body * {
+            visibility: hidden !important;
+          }
+          /* Hanya tampilkan kertas invoice resmi murni */
           #printableInvoice,
           #printableInvoice * {
-            visibility: visible;
+            visibility: visible !important;
           }
           #printableInvoice {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white !important;
-            color: black !important;
-            padding: 20px !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            padding: 12mm 15mm !important;
             margin: 0 !important;
             box-shadow: none !important;
+            border: none !important;
           }
           .no-print {
             display: none !important;
