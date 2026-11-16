@@ -625,6 +625,7 @@ export function AdminView({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
@@ -1778,6 +1779,10 @@ export function AdminView({
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setLoginError("");
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -1787,13 +1792,15 @@ export function AdminView({
       if (res.ok) {
         setIsAuthenticated(true);
         setLoginError("");
-        window.location.reload();
+        window.location.href = "/admin";
       } else {
         const data = await res.json();
         setLoginError(data.error || "Username atau password tidak valid.");
+        setIsLoggingIn(false);
       }
     } catch {
       setLoginError("Gagal menghubungi server autentikasi.");
+      setIsLoggingIn(false);
     }
   };
 
@@ -2343,9 +2350,13 @@ export function AdminView({
             <button
               id="admin-login-button"
               type="submit"
-              className="w-full h-11 bg-[#4318FF] hover:bg-[#3311DB] text-white font-medium text-sm rounded-lg transition-colors cursor-pointer"
+              disabled={isLoggingIn}
+              className="w-full h-11 bg-[#4318FF] hover:bg-[#3311DB] disabled:opacity-60 text-white font-medium text-sm rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              Masuk
+              {isLoggingIn && (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+              <span>{isLoggingIn ? "Memverifikasi..." : "Masuk"}</span>
             </button>
           </form>
 

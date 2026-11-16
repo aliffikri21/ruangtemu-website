@@ -29,10 +29,13 @@ export default async function AdminPage({
   const resolvedParams = searchParams ? await searchParams : undefined;
   const initialTab = resolvedParams?.tab as any;
 
-  const events = await getEvents();
-  const bookings = await getBookings();
-  const packages = await getPackages();
-  const entries = await getAllEntries();
+  // Jalankan seluruh query database secara paralel (Promise.all) agar load time turun drastis
+  const [events, bookings, packages, entries] = await Promise.all([
+    getEvents(),
+    getBookings(),
+    getPackages(),
+    getAllEntries(),
+  ]);
 
   return (
     <AdminView

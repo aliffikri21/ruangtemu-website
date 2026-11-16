@@ -1,20 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function AdminLoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("Memverifikasi...");
   const [error, setError] = useState("");
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/admin";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Cegah double-submit
+
     setLoading(true);
+    setLoadingText("Memverifikasi...");
     setError("");
 
     try {
@@ -29,11 +32,12 @@ export default function AdminLoginForm() {
         throw new Error(data.error || "Gagal masuk");
       }
 
-      router.push(redirectPath);
-      router.refresh();
+      setLoadingText("Login berhasil! Membuka Dashboard...");
+      // Gunakan window.location.href agar cookie HTTP-only terkirim secara native
+      // dan browser langsung menampilkan visual loading tanpa race condition
+      window.location.href = redirectPath;
     } catch (err: any) {
       setError(err.message || "Username atau password tidak valid");
-    } finally {
       setLoading(false);
     }
   };
@@ -41,7 +45,7 @@ export default function AdminLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center">
+        <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center animate-in fade-in">
           {error}
         </div>
       )}
@@ -53,11 +57,12 @@ export default function AdminLoginForm() {
         <input
           type="text"
           required
+          disabled={loading}
           autoComplete="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="admin / dev"
-          className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/30 outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30 transition-all"
+          className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/30 outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30 transition-all disabled:opacity-60"
         />
       </div>
 
@@ -68,20 +73,24 @@ export default function AdminLoginForm() {
         <input
           type="password"
           required
+          disabled={loading}
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••••••"
-          className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/30 outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30 transition-all"
+          className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/30 outline-none focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30 transition-all disabled:opacity-60"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-[#4318FF] hover:bg-[#3311DB] active:scale-[0.99] text-white font-semibold text-sm rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-[#4318FF]/20 cursor-pointer"
+        className="w-full py-3 bg-[#4318FF] hover:bg-[#3311DB] active:scale-[0.99] text-white font-semibold text-sm rounded-xl transition-all disabled:opacity-60 shadow-lg shadow-[#4318FF]/20 cursor-pointer flex items-center justify-center gap-2"
       >
-        {loading ? "Memverifikasi..." : "Masuk Dashboard"}
+        {loading && (
+          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        )}
+        <span>{loading ? loadingText : "Masuk Dashboard"}</span>
       </button>
     </form>
   );
