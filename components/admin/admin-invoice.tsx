@@ -254,6 +254,38 @@ export function AdminInvoice({
   const [archiveStatusFilter, setArchiveStatusFilter] = useState<"all" | "Lunas" | "DP (Uang Muka)" | "Belum Dibayar">("all");
   const [selectedArchiveDetail, setSelectedArchiveDetail] = useState<InvoiceArchiveItem | null>(null);
 
+  // ── State Integrasi Reservasi Klien ──
+  const [activeBookings, setActiveBookings] = useState<Booking[]>(bookings || []);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+  const [isBookingPickerOpen, setIsBookingPickerOpen] = useState(false);
+  const [bookingSearchQuery, setBookingSearchQuery] = useState("");
+  const [bookingCategoryFilter, setBookingCategoryFilter] = useState<"all" | "photobooth" | "virtual_photobooth">("all");
+
+  const fetchBookings = useCallback(async () => {
+    setIsLoadingBookings(true);
+    try {
+      const res = await fetch("/api/bookings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.bookings)) {
+          setActiveBookings(data.bookings);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch bookings:", err);
+    } finally {
+      setIsLoadingBookings(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (bookings && bookings.length > 0) {
+      setActiveBookings(bookings);
+    } else {
+      fetchBookings();
+    }
+  }, [bookings, fetchBookings]);
+
   // Fungsi Sinkronisasi Real-time dengan Cloud Supabase (SSOT)
   const syncWithCloud = useCallback(async (silent = true) => {
     try {
@@ -488,12 +520,8 @@ export function AdminInvoice({
 
   const formattedEventTime = eventTime ? `${eventTime} ${timeZone}` : "-";
 
-  // Autofill dari Reservasi
-  const handleAutofillBooking = (bookingId: string) => {
-    if (!bookingId) return;
-    const b = bookings.find((item) => item.id === bookingId);
-    if (!b) return;
-
+  // Ambil & Terapkan Data Reservasi Klien ke Formulir Invoice
+  const handleSelectBooking = (b: Booking) => {
     setCustName(b.customer_name || "");
     setCustPhone(b.customer_phone || "");
     if (b.event_date) {
@@ -502,29 +530,74 @@ export function AdminInvoice({
     if (b.event_time) {
       setEventTime(b.event_time);
     }
-    const locationVal = b.location || b.city || "";
+    const locationVal = [b.location, b.city].filter(Boolean).join(", ");
     if (locationVal) {
       setCustAddress(locationVal);
     }
-    if (b.total_price) {
-      setItems([
-        {
-          id: "item-" + Date.now(),
-          name: b.package_name || "Paket Photobooth Reservasi",
-          qty: 1,
-          price: b.total_price,
-        },
-      ]);
+
+    // Tentukan Nama Paket Layanan
+    let targetPackageName = b.package_name || "";
+    if (!targetPackageName && b.package_id) {
+      const p = packages.find((pkg) => pkg.id === b.package_id);
+      if (p) targetPackageName = p.name;
     }
+    if (!targetPackageName) {
+      const isPhys = (b.category || b.booking_category) === "photobooth";
+      targetPackageName = isPhys ? "Paket Photobooth Fisik" : "Virtual Photobooth";
+    }
+
+    setItems([
+      {
+        id: "item-" + Date.now(),
+        name: targetPackageName,
+        qty: 1,
+        price: b.total_price || 0,
+      },
+    ]);
+
     if (b.payment_status === "PAID") {
       setPaymentStatus("Lunas");
+    } else if (b.payment_amount && b.payment_amount > 0) {
+      setPaymentStatus("DP (Uang Muka 50%)");
     } else if (b.status === "confirmed") {
       setPaymentStatus("DP (Uang Muka 50%)");
     } else {
       setPaymentStatus("Belum Dibayar");
     }
-    showToast(`Data klien "${b.customer_name}" berhasil diisi!`);
+
+    if (b.payment_method) {
+      setPaymentMethod(b.payment_method);
+    }
+    if (b.payment_invoice) {
+      setPaymentLink(b.payment_invoice);
+    }
+
+    setIsBookingPickerOpen(false);
+    showToast(`Data reservasi klien "${b.customer_name}" berhasil diambil!`);
   };
+
+  const handleAutofillBooking = (bookingId: string) => {
+    if (!bookingId) return;
+    const b = activeBookings.find((item) => item.id === bookingId);
+    if (b) handleSelectBooking(b);
+  };
+
+  const filteredBookings = activeBookings.filter((b) => {
+    const cat = b.booking_category || b.category || "virtual_photobooth";
+    if (bookingCategoryFilter !== "all" && cat !== bookingCategoryFilter) {
+      return false;
+    }
+
+    if (!bookingSearchQuery.trim()) return true;
+    const q = bookingSearchQuery.toLowerCase();
+    const nameMatch = (b.customer_name || "").toLowerCase().includes(q);
+    const phoneMatch = (b.customer_phone || "").toLowerCase().includes(q);
+    const eventMatch = (b.event_name || "").toLowerCase().includes(q);
+    const pkgMatch = (b.package_name || "").toLowerCase().includes(q);
+    const locMatch = (b.location || b.city || "").toLowerCase().includes(q);
+
+    return nameMatch || phoneMatch || eventMatch || pkgMatch || locMatch;
+  });
 
   // ── Unified Data Invoice untuk Modal & Export (Bisa dari Generator atau Arsip Terpilih) ──
   const modalInvoiceData = selectedArchiveDetail
@@ -1145,39 +1218,71 @@ export function AdminInvoice({
         className="hidden"
       />
 
-      {/* ─── QUICK AUTOFILL BAR DARI DATA BOOKINGS (JIKA ADA) ─── */}
-      {bookings && bookings.length > 0 && (
-        <div
-          className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-colors duration-200 ${activeDark
-            ? "bg-[#1A1B20] border-white/10 text-white"
-            : "bg-white border-[#E0E5F2] text-[#1B2559]"
-            }`}
-        >
-          <div className="flex items-center gap-2 text-xs font-semibold">
-            <span className="text-base">⚡</span>
-            <span className={activeDark ? "text-blue-400 font-bold" : "text-[#4318FF] font-bold"}>
-              Tarik Otomatis dari Reservasi Klien:
-            </span>
+      {/* ─── QUICK AUTOFILL BAR DARI DATA BOOKINGS ─── */}
+      <div
+        className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs transition-colors duration-200 ${
+          activeDark ? "bg-[#1A1B20] border-white/10 text-white" : "bg-white border-[#E0E5F2] text-[#1B2559]"
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              <path d="m9 14 2 2 4-4" />
+            </svg>
           </div>
-          <select
-            onChange={(e) => handleAutofillBooking(e.target.value)}
-            defaultValue=""
-            className={`text-xs font-medium px-3 py-1.5 rounded-xl border outline-hidden cursor-pointer ${activeDark
-              ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
-              : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
-              }`}
-          >
-            <option value="" disabled>
-              -- Pilih Reservasi / Klien ({bookings.length} data) --
-            </option>
-            {bookings.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.customer_name} • {b.event_date ? new Date(b.event_date).toLocaleDateString("id-ID") : "-"} ({formatRupiah(b.total_price || 0)})
-              </option>
-            ))}
-          </select>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-bold ${activeDark ? "text-blue-400" : "text-[#4318FF]"}`}>
+                Reservasi Klien Dashboard
+              </span>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-300">
+                {activeBookings.length} Data
+              </span>
+            </div>
+            <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
+              Tarik otomatis rincian pemesan, venue, paket, dan total biaya ke formulir
+            </p>
+          </div>
         </div>
-      )}
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsBookingPickerOpen(true)}
+            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-[#4318FF] hover:bg-[#3311DB] active:scale-[0.98] rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Ambil Detail Pesanan dari Reservasi Klien</span>
+          </button>
+
+          {activeBookings.length > 0 && (
+            <select
+              onChange={(e) => handleAutofillBooking(e.target.value)}
+              defaultValue=""
+              className={`hidden lg:block text-xs font-medium px-3 py-2 rounded-xl border outline-hidden cursor-pointer max-w-[210px] truncate ${
+                activeDark
+                  ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                  : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
+              }`}
+            >
+              <option value="" disabled>
+                -- Pilih Cepat ({activeBookings.length}) --
+              </option>
+              {activeBookings.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.customer_name} ({formatRupiah(b.total_price || 0)})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
 
       {/* ─── NAVIGATION SUB-TAB: KASIR GENERATOR vs ARSIP PEMBUKUAN ─── */}
       <div
@@ -1262,7 +1367,7 @@ export function AdminInvoice({
             className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
               }`}
           >
-            <div className="flex items-center justify-between border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center text-sm font-bold">
                   👤
@@ -1275,11 +1380,29 @@ export function AdminInvoice({
                 </div>
               </div>
 
-              {/* Logo Action buttons */}
-              <div className="flex items-center gap-2">
+              {/* Action buttons (Ambil dari Reservasi & Logo) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setIsBookingPickerOpen(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#4318FF] hover:bg-[#3311DB] text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                    <path d="m9 14 2 2 4-4" />
+                  </svg>
+                  <span>Ambil dari Reservasi Klien</span>
+                  {activeBookings.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-white/20 text-white">
+                      {activeBookings.length}
+                    </span>
+                  )}
+                </button>
+
                 <label
                   htmlFor="logoUploadHeader"
-                  className="text-xs font-semibold text-[#4318FF] dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
+                  className="text-xs font-semibold text-[#4318FF] dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1 ml-1"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -1298,6 +1421,49 @@ export function AdminInvoice({
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Banner Tombol Aksi: Ambil Detail Pesanan dari Reservasi Klien */}
+            <div
+              className={`p-3 sm:p-3.5 rounded-xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${
+                activeDark
+                  ? "bg-[#25262B] border-white/10"
+                  : "bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-blue-50/30 border-blue-100"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#4318FF] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                    <path d="m9 14 2 2 4-4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                    <span>Ambil Detail Pesanan dari Reservasi Klien</span>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-300">
+                      {activeBookings.length} Tersedia
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Otomatis mengisi nama, nomor WhatsApp, tanggal, venue, paket, &amp; harga pesanan
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsBookingPickerOpen(true)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#4318FF] hover:bg-[#3311DB] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#4318FF]/20 shrink-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Pilih dari Reservasi Klien</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2350,6 +2516,270 @@ export function AdminInvoice({
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL PILIH RESERVASI KLIEN ─── */}
+      {isBookingPickerOpen && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsBookingPickerOpen(false);
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div className="bg-white dark:bg-[#1A1B20] text-slate-900 dark:text-white rounded-3xl shadow-2xl max-w-3xl w-full my-auto border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/10 bg-slate-50/80 dark:bg-[#25262B] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                    <path d="m9 14 2 2 4-4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                    Ambil Detail Pesanan dari Reservasi Klien
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Pilih pesanan klien dari dashboard untuk mengisi otomatis formulir invoice
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBookingPickerOpen(false)}
+                className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
+                title="Tutup"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/10 bg-white dark:bg-[#1A1B20] space-y-3 shrink-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="relative flex-1">
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    value={bookingSearchQuery}
+                    onChange={(e) => setBookingSearchQuery(e.target.value)}
+                    placeholder="Cari nama klien, nomor HP / WA, venue, atau paket..."
+                    className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#25262B] text-slate-800 dark:text-white placeholder-slate-400 text-xs sm:text-sm outline-hidden focus:border-[#4318FF] transition-all"
+                  />
+                  {bookingSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setBookingSearchQuery("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isLoadingBookings}
+                  onClick={fetchBookings}
+                  className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#25262B] hover:bg-slate-100 dark:hover:bg-white/5 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                  title="Segarkan data dari server"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    className={isLoadingBookings ? "animate-spin" : ""}
+                  >
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                  </svg>
+                  <span>Refresh</span>
+                </button>
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setBookingCategoryFilter("all")}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 cursor-pointer ${
+                    bookingCategoryFilter === "all"
+                      ? "bg-[#4318FF] text-white shadow-xs"
+                      : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                  }`}
+                >
+                  Semua ({activeBookings.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingCategoryFilter("photobooth")}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 cursor-pointer ${
+                    bookingCategoryFilter === "photobooth"
+                      ? "bg-[#4318FF] text-white shadow-xs"
+                      : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                  }`}
+                >
+                  Photobooth Fisik ({activeBookings.filter((b) => (b.category || b.booking_category) === "photobooth").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingCategoryFilter("virtual_photobooth")}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 cursor-pointer ${
+                    bookingCategoryFilter === "virtual_photobooth"
+                      ? "bg-[#4318FF] text-white shadow-xs"
+                      : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
+                  }`}
+                >
+                  Virtual Photobooth ({activeBookings.filter((b) => (b.category || b.booking_category) !== "photobooth").length})
+                </button>
+              </div>
+            </div>
+
+            {/* List Reservasi (Scrollable) */}
+            <div className="p-4 sm:p-5 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5 space-y-3 flex-1">
+              {filteredBookings.length === 0 ? (
+                <div className="py-12 text-center space-y-2">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Tidak Ditemukan Data Reservasi
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    {bookingSearchQuery
+                      ? "Tidak ada pesanan yang sesuai dengan kata kunci pencarian Anda."
+                      : "Belum ada calon pelanggan yang melakukan pemesanan paket melalui web."}
+                  </p>
+                </div>
+              ) : (
+                filteredBookings.map((b) => {
+                  const isPhysical = (b.category || b.booking_category) === "photobooth";
+                  const eventDateStr = b.event_date
+                    ? new Date(b.event_date).toLocaleDateString("id-ID", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "-";
+
+                  return (
+                    <div
+                      key={b.id}
+                      className="pt-3 first:pt-0 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent hover:border-slate-200 dark:hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                    >
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                            {b.customer_name}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              isPhysical
+                                ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
+                                : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
+                            }`}
+                          >
+                            {isPhysical ? "Photobooth Fisik" : "Virtual Photobooth"}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              b.status === "confirmed"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                : b.status === "cancelled"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                            }`}
+                          >
+                            {b.status === "confirmed" ? "Terkonfirmasi" : b.status === "cancelled" ? "Batal" : "Pending"}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                          {b.customer_phone && (
+                            <span className="flex items-center gap-1 font-mono">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                              </svg>
+                              {b.customer_phone}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                              <line x1="16" y1="2" x2="16" y2="6" />
+                              <line x1="8" y1="2" x2="8" y2="6" />
+                              <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            {eventDateStr} {b.event_time ? `• ${b.event_time}` : ""}
+                          </span>
+                          {(b.location || b.city) && (
+                            <span className="flex items-center gap-1">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                <circle cx="12" cy="10" r="3" />
+                              </svg>
+                              {[b.location, b.city].filter(Boolean).join(", ")}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {b.package_name || "Paket Photobooth Reservasi"}
+                          </span>
+                          <span className="text-xs font-black text-[#4318FF] dark:text-blue-400">
+                            {formatRupiah(b.total_price || 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 pt-2 sm:pt-0">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectBooking(b)}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#4318FF] hover:bg-[#3311DB] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm shadow-[#4318FF]/25 cursor-pointer"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span>Gunakan Data Ini</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-[#25262B] flex items-center justify-between text-xs shrink-0">
+              <span className="text-slate-500">
+                Menampilkan {filteredBookings.length} dari {activeBookings.length} reservasi
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsBookingPickerOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
