@@ -1144,7 +1144,11 @@ export function AdminInvoice({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-bold tracking-tight">RUANGTEMU PHOTOBOOTH</h1>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 border border-[#4318FF]/20">
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  activeDark
+                    ? "bg-[#4318FF]/20 text-[#6AD2FF] border-[#4318FF]/40"
+                    : "bg-[#F4F7FE] text-[#4318FF] border-[#E0E5F2]"
+                }`}>
                   Sistem Kasir
                 </span>
               </div>
@@ -1225,7 +1229,9 @@ export function AdminInvoice({
         }`}
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center shrink-0">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+            activeDark ? "bg-[#4318FF]/20 text-[#6AD2FF]" : "bg-[#F4F7FE] text-[#4318FF]"
+          }`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2h2" />
               <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
@@ -1234,10 +1240,12 @@ export function AdminInvoice({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold ${activeDark ? "text-blue-400" : "text-[#4318FF]"}`}>
+              <span className={`text-xs font-bold ${activeDark ? "text-[#6AD2FF]" : "text-[#4318FF]"}`}>
                 Reservasi Klien Dashboard
               </span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-300">
+              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                activeDark ? "bg-[#4318FF]/20 text-[#6AD2FF]" : "bg-[#F4F7FE] text-[#4318FF]"
+              }`}>
                 {activeBookings.length} Data
               </span>
             </div>
@@ -1350,8 +1358,8 @@ export function AdminInvoice({
               {archives.length} Surat
             </strong>
           </span>
-          <span className="text-slate-300 dark:text-white/20">•</span>
-          <span className="text-emerald-500 font-bold">
+          <span className={activeDark ? "text-white/20" : "text-[#E0E5F2]"}>•</span>
+          <span className="text-[#05CD99] font-bold">
             Lunas: {archives.filter((a) => a.paymentStatus === "Lunas").length}
           </span>
         </div>
@@ -1364,16 +1372,26 @@ export function AdminInvoice({
         <div className="lg:col-span-7 space-y-6">
           {/* CARD 1: DATA KLIEN & DETAIL ACARA */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
-              }`}
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
+              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+            }`}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 ${
+              activeDark ? "border-white/10" : "border-[#E0E5F2]"
+            }`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center text-sm font-bold">
-                  👤
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
+                  activeDark ? "bg-[#4318FF]/20 text-[#6AD2FF]" : "bg-[#F4F7FE] text-[#4318FF]"
+                }`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Data Klien &amp; Detail Acara</h3>
+                  <h3 className={`text-sm font-bold ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
+                    Data Klien &amp; Detail Acara
+                  </h3>
                   <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                     Informasi identitas pemesan dan lokasi venue photobooth
                   </p>
@@ -1605,16 +1623,26 @@ export function AdminInvoice({
 
           {/* CARD 2: PILIHAN PAKET PHOTOBOOTH & ADD-ON */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
-              }`}
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
+              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+            }`}
           >
-            <div className="flex items-center justify-between border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
+            <div className={`flex items-center justify-between border-b pb-3 ${
+              activeDark ? "border-white/10" : "border-[#E0E5F2]"
+            }`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center text-sm font-bold">
-                  📸
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
+                  activeDark ? "bg-[#4318FF]/20 text-[#6AD2FF]" : "bg-[#F4F7FE] text-[#4318FF]"
+                }`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                    <circle cx="12" cy="13" r="3" />
+                  </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Pilihan Paket Photobooth &amp; Add-on</h3>
+                  <h3 className={`text-sm font-bold ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
+                    Pilihan Paket Photobooth &amp; Add-on
+                  </h3>
                   <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                     Rincian layanan utama, jam operasional, dan add-on event
                   </p>
@@ -1624,7 +1652,11 @@ export function AdminInvoice({
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#4318FF]/10 hover:bg-[#4318FF]/20 text-[#4318FF] dark:bg-blue-500/20 dark:text-blue-400 border border-[#4318FF]/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeDark
+                    ? "bg-[#4318FF]/20 hover:bg-[#4318FF]/30 text-[#6AD2FF] border-[#4318FF]/40"
+                    : "bg-[#F4F7FE] hover:bg-[#E0E5F2] text-[#4318FF] border-[#E0E5F2]"
+                }`}
               >
                 <span>+</span> Tambah Layanan
               </button>
@@ -1753,15 +1785,25 @@ export function AdminInvoice({
 
           {/* CARD 3: STATUS DP & REKENING PEMBAYARAN */}
           <div
-            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
-              }`}
+            className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
+              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+            }`}
           >
-            <div className="flex items-center gap-2.5 border-b pb-3 border-[#E0E5F2]/60 dark:border-white/5">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm font-bold">
-                💳
+            <div className={`flex items-center gap-2.5 border-b pb-3 ${
+              activeDark ? "border-white/10" : "border-[#E0E5F2]"
+            }`}>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
+                activeDark ? "bg-[#FFB547]/20 text-[#FFB547]" : "bg-[#FFF6E9] text-[#FFB547]"
+              }`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="20" height="14" x="2" y="5" rx="2" />
+                  <line x1="2" y1="22" x2="22" y2="10" />
+                </svg>
               </div>
               <div>
-                <h3 className="text-sm font-bold">Status DP &amp; Rekening Pembayaran</h3>
+                <h3 className={`text-sm font-bold ${activeDark ? "text-white" : "text-[#1B2559]"}`}>
+                  Status DP &amp; Rekening Pembayaran
+                </h3>
                 <p className={`text-[11px] ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                   Tujuan transfer rekening dan status pelunasan transaksi
                 </p>
@@ -1865,13 +1907,18 @@ export function AdminInvoice({
                   type="button"
                   onClick={handleRegenerateInv}
                   title="Ganti nomor invoice acak"
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer text-xs ${
+                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer text-xs flex items-center justify-center ${
                     activeDark
-                      ? "text-slate-400 hover:text-white hover:bg-white/10"
-                      : "text-[#707EAE] hover:text-[#4318FF] hover:bg-[#F4F7FE]"
+                      ? "text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
+                      : "text-[#707EAE] hover:text-[#4318FF] bg-[#F4F7FE] hover:bg-[#E0E5F2] border-[#E0E5F2]"
                   }`}
                 >
-                  🔄
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                    <path d="M16 21h5v-5" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -2040,7 +2087,9 @@ export function AdminInvoice({
                 <span className={`text-xs font-semibold uppercase tracking-wider ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                   Total Invoice Terbit
                 </span>
-                <span className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  activeDark ? "bg-[#4318FF]/20 text-[#6AD2FF]" : "bg-[#F4F7FE] text-[#4318FF]"
+                }`}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -2070,7 +2119,9 @@ export function AdminInvoice({
                 <span className={`text-xs font-semibold uppercase tracking-wider ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                   Pembayaran Lunas
                 </span>
-                <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  activeDark ? "bg-emerald-500/20 text-[#05CD99]" : "bg-[#E6F9F0] text-[#05CD99]"
+                }`}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
@@ -2078,7 +2129,7 @@ export function AdminInvoice({
                 </span>
               </div>
               <div className="mt-2 flex items-baseline justify-between">
-                <h3 className="text-xl sm:text-2xl font-black font-mono text-emerald-500">
+                <h3 className="text-xl sm:text-2xl font-black font-mono text-[#05CD99]">
                   {formatRupiah(
                     archives
                       .filter((a) => a.paymentStatus === "Lunas")
@@ -2101,7 +2152,9 @@ export function AdminInvoice({
                 <span className={`text-xs font-semibold uppercase tracking-wider ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
                   Piutang / Belum Lunas
                 </span>
-                <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  activeDark ? "bg-amber-500/20 text-[#FFB547]" : "bg-[#FFF6E9] text-[#FFB547]"
+                }`}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
@@ -2109,7 +2162,7 @@ export function AdminInvoice({
                 </span>
               </div>
               <div className="mt-2 flex items-baseline justify-between">
-                <h3 className="text-xl sm:text-2xl font-black font-mono text-amber-500">
+                <h3 className="text-xl sm:text-2xl font-black font-mono text-[#FFB547]">
                   {formatRupiah(
                     archives
                       .filter((a) => a.paymentStatus !== "Lunas")
@@ -2410,10 +2463,16 @@ export function AdminInvoice({
                               onChange={(e) => handleUpdateArchiveStatus(arch.id, e.target.value as any)}
                               className={`font-bold text-[11px] px-2.5 py-1 rounded-lg border outline-hidden cursor-pointer uppercase tracking-wider ${
                                 arch.paymentStatus.includes("Lunas")
-                                  ? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                                  ? (activeDark
+                                      ? "bg-emerald-950/50 text-[#05CD99] border-emerald-800/60"
+                                      : "bg-[#E6F9F0] text-[#05CD99] border-[#05CD99]/30")
                                   : arch.paymentStatus.includes("DP")
-                                  ? "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800"
-                                  : "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
+                                  ? (activeDark
+                                      ? "bg-amber-950/50 text-[#FFB547] border-amber-800/60"
+                                      : "bg-[#FFF6E9] text-[#FFB547] border-[#FFB547]/30")
+                                  : (activeDark
+                                      ? "bg-rose-950/50 text-[#EE5D50] border-rose-800/60"
+                                      : "bg-[#FEEFEE] text-[#EE5D50] border-[#EE5D50]/30")
                               }`}
                             >
                               <option value="Belum Dibayar">Belum Dibayar</option>
@@ -2429,7 +2488,7 @@ export function AdminInvoice({
                               <button
                                 type="button"
                                 onClick={() => handleOpenInvoiceModal(arch)}
-                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                                   activeDark
                                     ? "bg-white/5 hover:bg-[#4318FF] hover:border-[#4318FF] text-slate-200 hover:text-white border-white/10"
                                     : "bg-[#F4F7FE] hover:bg-[#4318FF] hover:border-[#4318FF] text-[#1B2559] hover:text-white border-[#E0E5F2]"
@@ -2451,10 +2510,10 @@ export function AdminInvoice({
                                   setIsModalOpen(true);
                                   setTimeout(() => handleDownloadPDF(), 350);
                                 }}
-                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                                   activeDark
-                                    ? "bg-blue-950/30 hover:bg-blue-600 text-blue-300 hover:text-white border-blue-900/40 hover:border-blue-600"
-                                    : "bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border-blue-200 hover:border-blue-600"
+                                    ? "bg-[#4318FF]/15 hover:bg-[#4318FF] text-[#6AD2FF] hover:text-white border-[#4318FF]/30 hover:border-[#4318FF]"
+                                    : "bg-[#F4F7FE] hover:bg-[#4318FF] text-[#4318FF] hover:text-white border-[#E0E5F2] hover:border-[#4318FF]"
                                 }`}
                                 title="Download File PDF (1 Lembar A4)"
                               >
@@ -2470,10 +2529,10 @@ export function AdminInvoice({
                               <button
                                 type="button"
                                 onClick={() => handleSendToWhatsApp(arch)}
-                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                                   activeDark
-                                    ? "bg-emerald-950/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border-emerald-900/40 hover:border-emerald-600"
-                                    : "bg-emerald-50 hover:bg-[#25D366] text-emerald-600 hover:text-white border-emerald-200 hover:border-[#25D366]"
+                                    ? "bg-emerald-950/30 hover:bg-[#25D366] text-[#05CD99] hover:text-white border-emerald-800/40 hover:border-[#25D366]"
+                                    : "bg-[#E6F9F0] hover:bg-[#25D366] text-[#05CD99] hover:text-white border-[#05CD99]/20 hover:border-[#25D366]"
                                 }`}
                                 title="Kirim ke WhatsApp Klien"
                               >
@@ -2487,10 +2546,10 @@ export function AdminInvoice({
                               <button
                                 type="button"
                                 onClick={() => handleLoadArchiveToGenerator(arch)}
-                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                                   activeDark
-                                    ? "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-white/10"
-                                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-200"
+                                    ? "bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border-white/10"
+                                    : "bg-white hover:bg-[#F4F7FE] text-[#707EAE] hover:text-[#1B2559] border-[#E0E5F2]"
                                 }`}
                                 title="Muat Data ke Form Kasir (Edit/Duplikat)"
                               >
@@ -2504,10 +2563,10 @@ export function AdminInvoice({
                               <button
                                 type="button"
                                 onClick={() => handleDeleteArchive(arch.id, arch.invoiceNumber)}
-                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                                   activeDark
-                                    ? "bg-rose-950/30 hover:bg-rose-600 text-rose-300 hover:text-white border-rose-900/40 hover:border-rose-600"
-                                    : "bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border-rose-200 hover:border-rose-600"
+                                    ? "bg-rose-950/20 hover:bg-[#EE5D50] text-rose-300 hover:text-white border-rose-900/40 hover:border-[#EE5D50]"
+                                    : "bg-[#FEEFEE] hover:bg-[#EE5D50] text-[#EE5D50] hover:text-white border-[#EE5D50]/20 hover:border-[#EE5D50]"
                                 }`}
                                 title="Hapus dari Buku Arsip"
                               >
@@ -2860,16 +2919,16 @@ export function AdminInvoice({
       {/* ─── MODAL PRATINJAU INVOICE / DOWNLOAD PDF ─── */}
       {isModalOpen && (
         <div id="printableInvoiceModalOverlay" className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-          <div id="printableInvoiceModalCard" className="bg-white text-slate-900 rounded-3xl shadow-2xl max-w-2xl w-full my-auto border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
+          <div id="printableInvoiceModalCard" className="bg-white text-[#1B2559] rounded-3xl shadow-2xl max-w-2xl w-full my-auto border border-[#E0E5F2] overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col">
             {/* Modal Top Chrome (Non-print) - Berisi Judul & Tombol Close yang Terisolasi, Anti-Overlap */}
-            <div className="no-print flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-slate-100 bg-slate-50/90 shrink-0">
+            <div className="no-print flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-[#E0E5F2] bg-[#FAFCFF] shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#4318FF]" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#1B2559]">
                   {modalInvoiceData.isArchived ? "Detail Arsip Invoice Resmi" : "Pratinjau & Unduh Invoice Resmi"}
                 </h4>
                 {modalInvoiceData.isArchived && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E6F9F0] text-[#05CD99] border border-[#05CD99]/30">
                     ✓ Terdaftar di Arsip
                   </span>
                 )}
@@ -2878,7 +2937,7 @@ export function AdminInvoice({
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/80 flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
+                  className="w-8 h-8 rounded-full text-[#707EAE] hover:text-[#1B2559] hover:bg-[#F4F7FE] flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
                   title="Tutup Modal"
                 >
                   ✕
@@ -2889,9 +2948,9 @@ export function AdminInvoice({
             {/* Template Invoice Lengkap (Yang di-render ke Canvas / PDF & Print) - Dioptimasi Pas 1 Lembar */}
             <div id="printableInvoice" className="p-5 sm:p-6 bg-white space-y-3.5">
               {/* Header Modal */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-[#E0E5F2] pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-[#4318FF] overflow-hidden flex items-center justify-center text-white shadow-xs border border-slate-200 shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-[#4318FF] overflow-hidden flex items-center justify-center text-white shadow-xs border border-[#E0E5F2] shrink-0">
                     {customLogo ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
@@ -2901,7 +2960,7 @@ export function AdminInvoice({
                     )}
                   </div>
                   <div>
-                    <h2 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 leading-tight">
+                    <h2 className="text-lg sm:text-xl font-black tracking-tight text-[#1B2559] leading-tight">
                       INVOICE PHOTOBOOTH
                     </h2>
                     <span className="inline-block mt-0.5 text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#4318FF]/10 text-[#4318FF] border border-[#4318FF]/20">
@@ -2911,53 +2970,53 @@ export function AdminInvoice({
                 </div>
 
                 <div className="text-left sm:text-right space-y-0.5">
-                  <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">RUANGTEMU</h3>
-                  <p className="text-[11px] text-slate-500">Jl. Anggrek Blok EE No. 24 Kota Palopo</p>
-                  <p className="text-[11px] text-slate-500">Instant Printing &amp; Event Photo Solution</p>
+                  <h3 className="font-extrabold text-[#1B2559] text-sm tracking-tight">RUANGTEMU</h3>
+                  <p className="text-[11px] text-[#707EAE]">Jl. Anggrek Blok EE No. 24 Kota Palopo</p>
+                  <p className="text-[11px] text-[#707EAE]">Instant Printing &amp; Event Photo Solution</p>
                 </div>
               </div>
 
               {/* Info Pelanggan & Tanggal (Dua Card Bersih Berdampingan) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {/* Info Klien */}
-                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                <div className="p-3 rounded-xl bg-[#FAFCFF] border border-[#E0E5F2] space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3AED0] block mb-0.5">
                     Tagihan Kepada (Klien / Event):
                   </span>
-                  <p className="font-extrabold text-slate-900 text-sm leading-snug">{modalInvoiceData.custName || "-"}</p>
-                  {modalInvoiceData.custPhone && <p className="text-slate-600 font-mono text-[11px]">📱 WhatsApp: {modalInvoiceData.custPhone}</p>}
-                  {modalInvoiceData.custInstagram && <p className="text-slate-600 text-[11px]">📷 Instagram: @{modalInvoiceData.custInstagram.replace(/^@/, "")}</p>}
-                  {modalInvoiceData.custAddress && <p className="text-slate-600 text-[11px]">📍 Venue: {modalInvoiceData.custAddress}</p>}
+                  <p className="font-extrabold text-[#1B2559] text-sm leading-snug">{modalInvoiceData.custName || "-"}</p>
+                  {modalInvoiceData.custPhone && <p className="text-[#707EAE] font-mono text-[11px]">📱 WhatsApp: {modalInvoiceData.custPhone}</p>}
+                  {modalInvoiceData.custInstagram && <p className="text-[#707EAE] text-[11px]">📷 Instagram: @{modalInvoiceData.custInstagram.replace(/^@/, "")}</p>}
+                  {modalInvoiceData.custAddress && <p className="text-[#707EAE] text-[11px]">📍 Venue: {modalInvoiceData.custAddress}</p>}
                 </div>
 
                 {/* Info Jadwal & Pembayaran */}
-                <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 space-y-1 text-right">
+                <div className="p-3 rounded-xl bg-[#FAFCFF] border border-[#E0E5F2] space-y-1 text-right">
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-500">Tanggal Invoice:</span>
-                    <span className="font-medium text-slate-800">
+                    <span className="text-[#707EAE]">Tanggal Invoice:</span>
+                    <span className="font-medium text-[#1B2559]">
                       {new Date(modalInvoiceData.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-500">Tanggal Acara:</span>
-                    <span className="font-bold text-slate-900">{modalInvoiceData.formattedEventDate}</span>
+                    <span className="text-[#707EAE]">Tanggal Acara:</span>
+                    <span className="font-bold text-[#1B2559]">{modalInvoiceData.formattedEventDate}</span>
                   </div>
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-500">Jam Mulai:</span>
+                    <span className="text-[#707EAE]">Jam Mulai:</span>
                     <span className="font-bold text-[#4318FF]">{modalInvoiceData.formattedEventTime}</span>
                   </div>
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-slate-500">Metode Bayar:</span>
-                    <span className="font-medium text-slate-800 truncate max-w-[150px] sm:max-w-none">{modalInvoiceData.paymentMethod}</span>
+                    <span className="text-[#707EAE]">Metode Bayar:</span>
+                    <span className="font-medium text-[#1B2559] truncate max-w-[150px] sm:max-w-none">{modalInvoiceData.paymentMethod}</span>
                   </div>
                   <div className="flex justify-between items-center text-[11px] pt-0.5">
-                    <span className="text-slate-500">Status Pembayaran:</span>
+                    <span className="text-[#707EAE]">Status Pembayaran:</span>
                     <span
                       className={`font-bold uppercase px-2 py-0.5 rounded text-[10px] inline-block ${modalInvoiceData.paymentStatus.includes("Lunas")
-                        ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                        ? "bg-[#E6F9F0] text-[#05CD99] border border-[#05CD99]/30"
                         : modalInvoiceData.paymentStatus.includes("DP")
-                          ? "bg-amber-100 text-amber-800 border border-amber-200"
-                          : "bg-rose-100 text-rose-800 border border-rose-200"
+                          ? "bg-[#FFF6E9] text-[#FFB547] border border-[#FFB547]/30"
+                          : "bg-[#FEEFEE] text-[#EE5D50] border border-[#EE5D50]/30"
                         }`}
                     >
                       {modalInvoiceData.paymentStatus}
@@ -2967,10 +3026,10 @@ export function AdminInvoice({
               </div>
 
               {/* Table Items */}
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <div className="overflow-x-auto rounded-xl border border-[#E0E5F2]">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
+                    <tr className="border-b border-[#E0E5F2] bg-[#F4F7FE] text-[#707EAE] font-extrabold text-[11px] uppercase tracking-wider">
                       <th className="py-2 px-3 text-center w-10">No</th>
                       <th className="py-2 px-3">Paket / Layanan Photobooth</th>
                       <th className="py-2 px-3 text-center w-24">Durasi/Qty</th>
@@ -2978,19 +3037,19 @@ export function AdminInvoice({
                       <th className="py-2 px-3 text-right w-32">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[#E0E5F2]/60">
                     {modalInvoiceData.items.map((item, idx) => {
                       const displayName =
                         item.name === "Custom Paket Photobooth"
                           ? item.customName || "Custom Paket Photobooth"
                           : item.name;
                       return (
-                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="py-2 px-3 text-center text-slate-500 font-mono">{idx + 1}</td>
-                          <td className="py-2 px-3 font-semibold text-slate-900">{displayName}</td>
-                          <td className="py-2 px-3 text-center text-slate-600 font-medium">{item.qty}</td>
-                          <td className="py-2 px-3 text-right text-slate-600 font-mono">{formatRupiah(item.price)}</td>
-                          <td className="py-2 px-3 text-right font-bold text-slate-900 font-mono">
+                        <tr key={item.id} className="hover:bg-[#F4F7FE]/50 transition-colors">
+                          <td className="py-2 px-3 text-center text-[#707EAE] font-mono">{idx + 1}</td>
+                          <td className="py-2 px-3 font-semibold text-[#1B2559]">{displayName}</td>
+                          <td className="py-2 px-3 text-center text-[#707EAE] font-medium">{item.qty}</td>
+                          <td className="py-2 px-3 text-right text-[#707EAE] font-mono">{formatRupiah(item.price)}</td>
+                          <td className="py-2 px-3 text-right font-bold text-[#1B2559] font-mono">
                             {formatRupiah(item.qty * item.price)}
                           </td>
                         </tr>
@@ -3003,23 +3062,23 @@ export function AdminInvoice({
               {/* Ringkasan Hitungan Modal */}
               <div className="flex justify-end pt-0.5">
                 <div className="w-full sm:w-72 space-y-1 text-xs">
-                  <div className="flex justify-between text-slate-600">
+                  <div className="flex justify-between text-[#707EAE]">
                     <span>Subtotal:</span>
-                    <span className="font-semibold text-slate-800 font-mono">{formatRupiah(modalInvoiceData.subtotal)}</span>
+                    <span className="font-semibold text-[#1B2559] font-mono">{formatRupiah(modalInvoiceData.subtotal)}</span>
                   </div>
                   {modalInvoiceData.discount > 0 && (
-                    <div className="flex justify-between text-slate-600">
+                    <div className="flex justify-between text-[#707EAE]">
                       <span>Diskon / Potongan:</span>
-                      <span className="font-semibold text-rose-600 font-mono">- {formatRupiah(modalInvoiceData.discount)}</span>
+                      <span className="font-semibold text-[#EE5D50] font-mono">- {formatRupiah(modalInvoiceData.discount)}</span>
                     </div>
                   )}
                   {modalInvoiceData.taxAmount > 0 && (
-                    <div className="flex justify-between text-slate-600">
+                    <div className="flex justify-between text-[#707EAE]">
                       <span>Pajak / Service Fee ({modalInvoiceData.taxPercent}%):</span>
-                      <span className="font-semibold text-slate-800 font-mono">+ {formatRupiah(modalInvoiceData.taxAmount)}</span>
+                      <span className="font-semibold text-[#1B2559] font-mono">+ {formatRupiah(modalInvoiceData.taxAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-baseline text-sm font-extrabold text-slate-900 border-t-2 border-slate-200 pt-1.5">
+                  <div className="flex justify-between items-baseline text-sm font-extrabold text-[#1B2559] border-t-2 border-[#E0E5F2] pt-1.5">
                     <span>Total Pembayaran:</span>
                     <span className="text-[#4318FF] text-base font-black font-mono">{formatRupiah(modalInvoiceData.grandTotal)}</span>
                   </div>
@@ -3027,12 +3086,12 @@ export function AdminInvoice({
               </div>
 
               {/* Footer Note */}
-              <div className="border-t border-slate-100 pt-2.5 text-center text-[11px] text-slate-500 space-y-0.5">
-                <p className="font-medium text-slate-600">
+              <div className="border-t border-[#E0E5F2] pt-2.5 text-center text-[11px] text-[#707EAE] space-y-0.5">
+                <p className="font-medium text-[#707EAE]">
                   Terima kasih telah mempercayakan momen spesial Anda kepada RUANGTEMU! 📸✨
                 </p>
                 {modalInvoiceData.paymentLink && (
-                  <p className="font-mono text-[10px] text-blue-600 break-all">
+                  <p className="font-mono text-[10px] text-[#4318FF] break-all">
                     Link Pembayaran: {modalInvoiceData.paymentLink}
                   </p>
                 )}
@@ -3040,7 +3099,7 @@ export function AdminInvoice({
             </div>
 
             {/* Modal Action Footer (Hidden on Print) */}
-            <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/70 shrink-0">
+            <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 px-5 sm:px-6 py-4 border-t border-[#E0E5F2] bg-[#FAFCFF] shrink-0">
               <div className="flex items-center gap-2">
                 {!modalInvoiceData.isArchived ? (
                   <button
@@ -3058,11 +3117,11 @@ export function AdminInvoice({
                 ) : (
                   modalInvoiceData.archiveId && (
                     <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-slate-500 font-medium">Status:</span>
+                      <span className="text-[#707EAE] font-medium">Status:</span>
                       <select
                         value={modalInvoiceData.paymentStatus}
                         onChange={(e) => handleUpdateArchiveStatus(modalInvoiceData.archiveId!, e.target.value as any)}
-                        className="text-xs font-bold px-2 py-1 rounded-lg border border-slate-300 bg-white text-slate-800 outline-hidden cursor-pointer"
+                        className="text-xs font-bold px-2 py-1 rounded-lg border border-[#E0E5F2] bg-white text-[#1B2559] outline-hidden cursor-pointer"
                       >
                         <option value="Belum Dibayar">Belum Dibayar</option>
                         <option value="DP (Uang Muka)">DP (Uang Muka)</option>
@@ -3078,7 +3137,7 @@ export function AdminInvoice({
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                    className="px-4 py-2.5 text-xs font-semibold text-[#707EAE] hover:text-[#1B2559] hover:bg-[#F4F7FE] border border-[#E0E5F2] rounded-xl transition-colors cursor-pointer"
                   >
                     Tutup
                   </button>
@@ -3087,11 +3146,11 @@ export function AdminInvoice({
                   type="button"
                   disabled={isDownloadingPDF}
                   onClick={handleDownloadPDF}
-                  className="px-4 sm:px-5 py-2.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 disabled:opacity-50 rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-4 sm:px-5 py-2.5 text-xs font-bold text-[#1B2559] bg-white hover:bg-[#F4F7FE] border border-[#E0E5F2] disabled:opacity-50 rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isDownloadingPDF ? (
                     <>
-                      <span className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" />
+                      <span className="w-3.5 h-3.5 border-2 border-[#A3AED0] border-t-[#4318FF] rounded-full animate-spin" />
                       <span>Mengunduh PDF...</span>
                     </>
                   ) : (
