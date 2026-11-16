@@ -253,18 +253,14 @@ export function AdminInvoice({
   const [archiveSearch, setArchiveSearch] = useState("");
   const [archiveStatusFilter, setArchiveStatusFilter] = useState<"all" | "Lunas" | "DP (Uang Muka)" | "Belum Dibayar">("all");
   const [selectedArchiveDetail, setSelectedArchiveDetail] = useState<InvoiceArchiveItem | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(null);
 
-  // Fungsi Sinkronisasi Arsip dengan Cloud Supabase (Cloud adalah Single Source of Truth)
-  const syncWithCloud = useCallback(async (silent = false) => {
-    setIsSyncing(true);
+  // Fungsi Sinkronisasi Real-time dengan Cloud Supabase (SSOT)
+  const syncWithCloud = useCallback(async (silent = true) => {
     try {
       const res = await fetch("/api/invoices");
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.archives)) {
-          // Bersihkan data dummy dari cloud jika ada
           const cleanedCloud: InvoiceArchiveItem[] = data.archives.filter(
             (item: any) =>
               !item.id?.startsWith("inv-seed-") &&
@@ -272,29 +268,39 @@ export function AdminInvoice({
               item.invoiceNumber !== "INV-PB819203"
           );
 
-          // Update state & localStorage sesuai kondisi terbaru di Cloud Supabase
-          setArchives(cleanedCloud);
-          localStorage.setItem("rt_invoice_archives", JSON.stringify(cleanedCloud));
+          // Cek apakah data benar-benar berubah sebelum memicu re-render
+          setArchives((prev) => {
+            const isDiff =
+              prev.length !== cleanedCloud.length ||
+              prev.some((p, idx) => {
+                const c = cleanedCloud[idx];
+                return (
+                  !c ||
+                  p.id !== c.id ||
+                  p.invoiceNumber !== c.invoiceNumber ||
+                  p.paymentStatus !== c.paymentStatus ||
+                  p.grandTotal !== c.grandTotal
+                );
+              });
 
-          setLastSyncedTime(
-            new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WITA"
-          );
-          if (!silent) {
-            showToast(`Sinkronisasi cloud berhasil (${cleanedCloud.length} invoice).`);
-          }
+            if (isDiff) {
+              try {
+                localStorage.setItem("rt_invoice_archives", JSON.stringify(cleanedCloud));
+              } catch {}
+              return cleanedCloud;
+            }
+            return prev;
+          });
         }
       }
     } catch (err: any) {
-      console.warn("Gagal sinkronisasi cloud:", err?.message);
       if (!silent) {
-        showToast("Gagal sinkronisasi cloud, memuat cache lokal.", "warning");
+        console.warn("Gagal sinkronisasi cloud:", err?.message);
       }
-    } finally {
-      setIsSyncing(false);
     }
   }, []);
 
-  // Inisialisasi Invoice Number, Logo, dan Arsip dari localStorage + Cloud
+  // Inisialisasi Invoice Number, Logo, dan Arsip dari localStorage
   useEffect(() => {
     setInvNumber("INV-PB" + Math.floor(100000 + Math.random() * 900000));
     try {
@@ -323,11 +329,11 @@ export function AdminInvoice({
       // ignore
     }
 
-    // 2. Sinkronisasi otomatis dengan Cloud Supabase
+    // 2. Sinkronisasi pertama kali dengan Cloud Supabase
     syncWithCloud(true);
   }, [syncWithCloud]);
 
-  // Auto-sinkronisasi saat tab browser aktif kembali (fokus tab atau switch window)
+  // Real-time polling & auto-sinkronisasi saat tab browser aktif kembali
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -340,9 +346,18 @@ export function AdminInvoice({
 
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
+
+    // Polling background real-time setiap 3 detik agar sinkron instan antar browser
+    const pollTimer = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        syncWithCloud(true);
+      }
+    }, 3000);
+
     return () => {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(pollTimer);
     };
   }, [syncWithCloud]);
 
@@ -628,9 +643,6 @@ export function AdminInvoice({
         if (data.success && Array.isArray(data.archives)) {
           setArchives(data.archives);
           localStorage.setItem("rt_invoice_archives", JSON.stringify(data.archives));
-          setLastSyncedTime(
-            new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WITA"
-          );
         }
       })
       .catch((e) => console.warn("Background cloud save error:", e));
@@ -1221,44 +1233,16 @@ export function AdminInvoice({
           </button>
         </div>
 
-        {/* Info Cepat Status / Total Terbit & Cloud Sync Indicator */}
-        <div className="flex items-center gap-3 px-3 text-xs overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => syncWithCloud(false)}
-            disabled={isSyncing}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-              activeDark
-                ? "bg-white/5 hover:bg-white/10 text-emerald-400 border-white/10"
-                : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
-            }`}
-            title="Klik untuk sinkronisasi instan dengan Cloud Supabase"
-          >
-            <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isSyncing ? "animate-ping" : "animate-pulse"}`} />
-            <span>{isSyncing ? "Sinkron..." : "Cloud Sync"}</span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={isSyncing ? "animate-spin" : ""}
-            >
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-            </svg>
-          </button>
-          <span className="hidden sm:inline text-slate-300 dark:text-white/20">•</span>
-          <span className={`hidden sm:inline ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
+        {/* Info Cepat Status / Total Terbit */}
+        <div className="hidden sm:flex items-center gap-3 px-3 text-xs">
+          <span className={activeDark ? "text-slate-400" : "text-[#707EAE]"}>
             Total Arsip:{" "}
             <strong className={activeDark ? "text-white" : "text-[#1B2559]"}>
               {archives.length} Surat
             </strong>
           </span>
-          <span className="hidden sm:inline text-slate-300 dark:text-white/20">•</span>
-          <span className="hidden sm:inline text-emerald-500 font-bold">
+          <span className="text-slate-300 dark:text-white/20">•</span>
+          <span className="text-emerald-500 font-bold">
             Lunas: {archives.filter((a) => a.paymentStatus === "Lunas").length}
           </span>
         </div>
@@ -2084,34 +2068,6 @@ export function AdminInvoice({
                   <span>Kosongkan Arsip</span>
                 </button>
               )}
-
-              {/* Tombol Sinkronisasi Cloud */}
-              <button
-                type="button"
-                onClick={() => syncWithCloud(false)}
-                disabled={isSyncing}
-                className={`h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeDark
-                    ? "bg-[#4318FF]/20 hover:bg-[#4318FF]/30 border-[#4318FF]/40 text-[#6AD2FF]"
-                    : "bg-[#4318FF]/10 hover:bg-[#4318FF]/20 border-[#4318FF]/20 text-[#4318FF]"
-                }`}
-                title="Sinkronisasi manual dengan server cloud Supabase"
-              >
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={isSyncing ? "animate-spin" : ""}
-                >
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                </svg>
-                <span>{isSyncing ? "Menyinkronkan..." : "Sync Cloud"}</span>
-              </button>
 
               {/* Buat Invoice Baru */}
               <button
