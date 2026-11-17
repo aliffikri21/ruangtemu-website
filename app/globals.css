@@ -187,6 +187,11 @@ body {
 }
 
 /* Borders and dividers */
+.admin-dark .admin-chart-container,
+.admin-dark .admin-chart-container * {
+  border-color: transparent !important;
+}
+
 .admin-dark .border-\[\#E0E5F2\],
 .admin-dark .border-\[\#e0e5f2\],
 .admin-dark .border-\[\#E0E5F2\]\/60,
