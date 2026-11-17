@@ -2980,7 +2980,6 @@ export function AdminInvoice({
                 <div className="text-left sm:text-right space-y-0.5">
                   <h3 className="font-extrabold text-[#1B2559] text-sm tracking-tight">RUANGTEMU</h3>
                   <p className="text-[11px] text-[#707EAE]">Jl. Anggrek Blok EE No. 24 Kota Palopo</p>
-                  <p className="text-[11px] text-[#707EAE]">Instant Printing &amp; Event Photo Solution</p>
                 </div>
               </div>
 
