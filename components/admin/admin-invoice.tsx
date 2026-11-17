@@ -1168,12 +1168,12 @@ export function AdminInvoice({
 
   // Konten Utama
   const content = (
-    <div className={`space-y-6 transition-colors duration-200 ${activeDark ? "text-slate-100" : "text-[#1B2559]"}`}>
+    <div className={`admin-invoice-container space-y-6 transition-colors duration-200 ${activeDark ? "text-slate-100" : "text-[#1B2559]"}`}>
       {/* ─── STANDALONE TOP BAR (Jika diakses via /invoice langsung) ─── */}
       {standalone && (
         <header
           className={`px-4 sm:px-6 py-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors duration-200 ${activeDark
-            ? "bg-[#1A1B20] border-white/10"
+            ? "bg-[#1A1B1E] border-transparent"
             : "bg-white border-[#E0E5F2] shadow-[0_18px_40px_rgba(112,144,176,0.06)]"
             }`}
         >
@@ -1181,7 +1181,9 @@ export function AdminInvoice({
             {/* Logo container */}
             <div className="relative group cursor-pointer" title="Klik untuk ganti logo">
               <label htmlFor="logoUploadHeader" className="cursor-pointer block">
-                <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#4318FF] flex items-center justify-center text-white shadow-sm border border-white/10">
+                <div className={`w-10 h-10 rounded-xl overflow-hidden bg-[#4318FF] flex items-center justify-center text-white shadow-sm border ${
+                  activeDark ? "border-transparent" : "border-[#4318FF]"
+                }`}>
                   {customLogo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
@@ -1212,7 +1214,7 @@ export function AdminInvoice({
           <div className="flex items-center gap-2.5">
             {/* Jam Digital Real-time */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${activeDark ? "bg-[#25262B] border-white/10 text-slate-300" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${activeDark ? "bg-[#141517] border-transparent text-slate-300" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
                 }`}
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -1224,7 +1226,7 @@ export function AdminInvoice({
               type="button"
               onClick={toggleStandaloneDark}
               className={`p-2 rounded-xl border transition-all cursor-pointer ${activeDark
-                ? "bg-[#25262B] border-white/10 text-amber-400 hover:text-white"
+                ? "bg-[#141517] border-transparent text-amber-400 hover:text-white"
                 : "bg-[#F4F7FE] border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
                 }`}
               title={activeDark ? "Beralih ke Mode Terang (Light Mode)" : "Beralih ke Mode Gelap (Dark Mode)"}
@@ -1251,7 +1253,7 @@ export function AdminInvoice({
             <Link
               href="/admin"
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${activeDark
-                ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                ? "bg-white/5 border-transparent hover:bg-white/10 text-white"
                 : "bg-[#F4F7FE] border-[#E0E5F2] hover:bg-[#EAEFFD] text-[#1B2559] hover:text-[#4318FF]"
                 }`}
             >
@@ -1276,7 +1278,7 @@ export function AdminInvoice({
       {/* ─── QUICK AUTOFILL BAR DARI DATA BOOKINGS ─── */}
       <div
         className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs transition-colors duration-200 ${
-          activeDark ? "bg-[#1A1B20] border-white/10 text-white" : "bg-white border-[#E0E5F2] text-[#1B2559]"
+          activeDark ? "bg-[#1A1B1E] border-transparent text-white" : "bg-white border-[#E0E5F2] text-[#1B2559]"
         }`}
       >
         <div className="flex items-center gap-2.5">
@@ -1326,7 +1328,7 @@ export function AdminInvoice({
               defaultValue=""
               className={`hidden lg:block text-xs font-medium px-3 py-2 rounded-xl border outline-hidden cursor-pointer max-w-[210px] truncate ${
                 activeDark
-                  ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                  ? "bg-[#141517] border-transparent text-white focus:border-[#4318FF]"
                   : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
               }`}
             >
@@ -1346,7 +1348,7 @@ export function AdminInvoice({
       {/* ─── NAVIGATION SUB-TAB: KASIR GENERATOR vs ARSIP PEMBUKUAN ─── */}
       <div
         className={`p-1.5 rounded-2xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs transition-colors duration-200 ${
-          activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+          activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
         }`}
       >
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
@@ -1424,11 +1426,11 @@ export function AdminInvoice({
           {/* CARD 1: DATA KLIEN & DETAIL ACARA */}
           <div
             className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
             }`}
           >
             <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 ${
-              activeDark ? "border-white/10" : "border-[#E0E5F2]"
+              activeDark ? "border-transparent" : "border-[#E0E5F2]"
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
@@ -1502,7 +1504,7 @@ export function AdminInvoice({
             <div
               className={`p-3 sm:p-3.5 rounded-xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${
                 activeDark
-                  ? "bg-[#25262B] border-white/10"
+                  ? "bg-[#141517] border-transparent"
                   : "bg-[#F4F7FE] border-[#E0E5F2]"
               }`}
             >
@@ -1557,7 +1559,7 @@ export function AdminInvoice({
                   onChange={(e) => setCustName(e.target.value)}
                   placeholder="Contoh: Rina & Budi (Wedding)"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${activeDark
-                    ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
+                    ? "bg-[#141517] border-transparent text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
                     }`}
                 />
@@ -1578,7 +1580,7 @@ export function AdminInvoice({
                     onChange={(e) => setCustPhone(e.target.value)}
                     placeholder="81234567890"
                     className={`w-full pl-16 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden transition-all ${activeDark
-                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
+                      ? "bg-[#141517] border-transparent text-white placeholder-slate-500 focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/30"
                       : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:ring-1 focus:ring-[#4318FF]/20"
                       }`}
                   />
@@ -1595,7 +1597,7 @@ export function AdminInvoice({
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden cursor-pointer ${activeDark
-                    ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                    ? "bg-[#141517] border-transparent text-white focus:border-[#4318FF]"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                     }`}
                 />
@@ -1612,7 +1614,7 @@ export function AdminInvoice({
                     value={eventTime}
                     onChange={(e) => setEventTime(e.target.value)}
                     className={`col-span-7 px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                      ? "bg-[#141517] border-transparent text-white focus:border-[#4318FF]"
                       : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                       }`}
                   />
@@ -1620,7 +1622,7 @@ export function AdminInvoice({
                     value={timeZone}
                     onChange={(e) => setTimeZone(e.target.value)}
                     className={`col-span-5 px-2 py-2.5 rounded-xl border text-xs font-bold outline-hidden cursor-pointer ${activeDark
-                      ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                      ? "bg-[#141517] border-transparent text-white focus:border-[#4318FF]"
                       : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                       }`}
                   >
@@ -1646,7 +1648,7 @@ export function AdminInvoice({
                     onChange={(e) => setCustInstagram(e.target.value.replace(/^@/, ""))}
                     placeholder="rina.wedding"
                     className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
-                      ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                      ? "bg-[#141517] border-transparent text-white placeholder-slate-500 focus:border-[#4318FF]"
                       : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
                       }`}
                   />
@@ -1664,7 +1666,7 @@ export function AdminInvoice({
                   onChange={(e) => setCustAddress(e.target.value)}
                   placeholder="Contoh: Ballroom Hotel Grand Pasundan, Palopo"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
-                    ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                    ? "bg-[#141517] border-transparent text-white placeholder-slate-500 focus:border-[#4318FF]"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
                     }`}
                 />
@@ -1675,11 +1677,11 @@ export function AdminInvoice({
           {/* CARD 2: PILIHAN PAKET PHOTOBOOTH & ADD-ON */}
           <div
             className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
             }`}
           >
             <div className={`flex items-center justify-between border-b pb-3 ${
-              activeDark ? "border-white/10" : "border-[#E0E5F2]"
+              activeDark ? "border-transparent" : "border-[#E0E5F2]"
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
@@ -1729,7 +1731,7 @@ export function AdminInvoice({
                 return (
                   <div
                     key={row.id}
-                    className={`grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border items-center transition-colors duration-200 ${activeDark ? "bg-[#25262B]/50 border-white/5" : "bg-[#F4F7FE]/70 border-[#E0E5F2]/80"
+                    className={`grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl border items-center transition-colors duration-200 ${activeDark ? "bg-[#141517] border-transparent" : "bg-[#F4F7FE]/70 border-[#E0E5F2]/80"
                       }`}
                   >
                     <div className="sm:col-span-5 space-y-1.5">
@@ -1737,7 +1739,7 @@ export function AdminInvoice({
                         value={row.name}
                         onChange={(e) => handleUpdateItem(row.id, { name: e.target.value })}
                         className={`w-full px-3 py-2 rounded-lg border text-xs sm:text-sm font-semibold outline-hidden cursor-pointer ${activeDark
-                          ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                          ? "bg-[#1A1B1E] border-transparent text-white focus:border-[#4318FF]"
                           : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                           }`}
                       >
@@ -1778,7 +1780,7 @@ export function AdminInvoice({
                           value={row.customName || ""}
                           onChange={(e) => handleUpdateItem(row.id, { customName: e.target.value })}
                           className={`w-full px-3 py-1.5 rounded-lg border text-xs outline-hidden ${activeDark
-                            ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                            ? "bg-[#1A1B1E] border-transparent text-white focus:border-[#4318FF]"
                             : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                             }`}
                         />
@@ -1793,7 +1795,7 @@ export function AdminInvoice({
                         value={row.qty}
                         onChange={(e) => handleUpdateItem(row.id, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
                         className={`w-full px-2 py-2 rounded-lg border text-center text-xs sm:text-sm font-bold outline-hidden ${activeDark
-                          ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                          ? "bg-[#1A1B1E] border-transparent text-white focus:border-[#4318FF]"
                           : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                           }`}
                       />
@@ -1808,7 +1810,7 @@ export function AdminInvoice({
                         value={row.price}
                         onChange={(e) => handleUpdateItem(row.id, { price: Math.max(0, parseInt(e.target.value) || 0) })}
                         className={`w-full px-3 py-2 rounded-lg border text-right text-xs sm:text-sm font-bold outline-hidden ${activeDark
-                          ? "bg-[#1A1B20] border-white/10 text-white focus:border-[#4318FF]"
+                          ? "bg-[#1A1B1E] border-transparent text-white focus:border-[#4318FF]"
                           : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                           }`}
                       />
@@ -1837,11 +1839,11 @@ export function AdminInvoice({
           {/* CARD 3: STATUS DP & REKENING PEMBAYARAN */}
           <div
             className={`p-5 sm:p-6 rounded-2xl border shadow-xs space-y-4 transition-colors duration-200 ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
             }`}
           >
             <div className={`flex items-center gap-2.5 border-b pb-3 ${
-              activeDark ? "border-white/10" : "border-[#E0E5F2]"
+              activeDark ? "border-transparent" : "border-[#E0E5F2]"
             }`}>
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
                 activeDark ? "bg-[#FFB547]/20 text-[#FFB547]" : "bg-[#FFF6E9] text-[#FFB547]"
@@ -1871,7 +1873,7 @@ export function AdminInvoice({
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${activeDark
-                    ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                    ? "bg-[#141517] border-transparent text-white focus:border-[#4318FF]"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                     }`}
                 >
@@ -1900,7 +1902,7 @@ export function AdminInvoice({
                     }
                   }}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${activeDark
-                    ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
+                    ? "bg-[#141517] border-transparent text-white focus:border-[#4318FF]"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                     }`}
                 >
@@ -1915,7 +1917,7 @@ export function AdminInvoice({
                 <div
                   className={`sm:col-span-2 p-4 rounded-xl border space-y-2.5 transition-all animate-in fade-in slide-in-from-top-1 duration-200 ${
                     activeDark
-                      ? "bg-[#FFB547]/10 border-[#FFB547]/30 text-white"
+                      ? "bg-[#FFB547]/10 border-transparent text-white"
                       : "bg-[#FFF6E9] border-[#FFB547]/40 text-[#1B2559]"
                   }`}
                 >
@@ -1945,7 +1947,7 @@ export function AdminInvoice({
                       placeholder="Contoh: 1000000"
                       className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm font-bold font-mono outline-hidden transition-all ${
                         activeDark
-                          ? "bg-[#25262B] border-white/10 text-white focus:border-[#FFB547]"
+                          ? "bg-[#141517] border-transparent text-white focus:border-[#FFB547]"
                           : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#FFB547]"
                       }`}
                     />
@@ -1959,7 +1961,7 @@ export function AdminInvoice({
                       onClick={() => setDpAmount(Math.round(grandTotal * 0.3))}
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                         activeDark
-                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                          ? "bg-white/5 border-transparent hover:bg-white/10 text-slate-300"
                           : "bg-white border-[#E0E5F2] hover:bg-slate-100 text-[#1B2559]"
                       }`}
                     >
@@ -1970,7 +1972,7 @@ export function AdminInvoice({
                       onClick={() => setDpAmount(Math.round(grandTotal * 0.5))}
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                         activeDark
-                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                          ? "bg-white/5 border-transparent hover:bg-white/10 text-slate-300"
                           : "bg-white border-[#E0E5F2] hover:bg-slate-100 text-[#1B2559]"
                       }`}
                     >
@@ -1981,7 +1983,7 @@ export function AdminInvoice({
                       onClick={() => setDpAmount(grandTotal)}
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                         activeDark
-                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                          ? "bg-white/5 border-transparent hover:bg-white/10 text-slate-300"
                           : "bg-white border-[#E0E5F2] hover:bg-slate-100 text-[#1B2559]"
                       }`}
                     >
@@ -2002,7 +2004,7 @@ export function AdminInvoice({
                   onChange={(e) => setPaymentLink(e.target.value)}
                   placeholder="https://mayar.link/pay/photobooth-dp atau link DOKU"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-hidden ${activeDark
-                    ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                    ? "bg-[#141517] border-transparent text-white placeholder-slate-500 focus:border-[#4318FF]"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
                     }`}
                 />
@@ -2018,12 +2020,12 @@ export function AdminInvoice({
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
           <div
             className={`p-6 rounded-2xl border transition-colors duration-200 space-y-5 ${activeDark
-              ? "bg-[#1A1B20] border-white/10 text-white shadow-xl"
+              ? "bg-[#1A1B1E] border-transparent text-white shadow-xl"
               : "bg-white border-[#E0E5F2] text-[#1B2559] shadow-[0_18px_40px_rgba(112,144,176,0.08)]"
               }`}
           >
             {/* Header Ringkasan */}
-            <div className={`flex justify-between items-center border-b pb-4 ${activeDark ? "border-white/10" : "border-[#E0E5F2]"
+            <div className={`flex justify-between items-center border-b pb-4 ${activeDark ? "border-transparent" : "border-[#E0E5F2]"
               }`}>
               <div>
                 <span className={`text-[11px] uppercase tracking-wider font-extrabold block ${
@@ -2049,7 +2051,7 @@ export function AdminInvoice({
                   title="Ganti nomor invoice acak"
                   className={`p-1.5 rounded-lg border transition-colors cursor-pointer text-xs flex items-center justify-center ${
                     activeDark
-                      ? "text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border-white/10"
+                      ? "text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border-transparent"
                       : "text-[#707EAE] hover:text-[#4318FF] bg-[#F4F7FE] hover:bg-[#E0E5F2] border-[#E0E5F2]"
                   }`}
                 >
@@ -2086,7 +2088,7 @@ export function AdminInvoice({
                   onChange={(e) => setDiscount(Math.max(0, parseInt(e.target.value) || 0))}
                   className={`w-32 px-3 py-1.5 rounded-lg text-right font-mono text-xs font-semibold outline-hidden transition-all ${
                     activeDark
-                      ? "bg-[#25262B] border border-white/10 text-white focus:border-[#4318FF]"
+                      ? "bg-[#141517] border border-transparent text-white focus:border-[#4318FF]"
                       : "bg-[#F4F7FE] border border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                   }`}
                 />
@@ -2105,7 +2107,7 @@ export function AdminInvoice({
                     onChange={(e) => setTaxPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
                     className={`w-16 px-2.5 py-1.5 rounded-lg text-right font-mono text-xs font-semibold outline-hidden transition-all ${
                       activeDark
-                        ? "bg-[#25262B] border border-white/10 text-white focus:border-[#4318FF]"
+                        ? "bg-[#141517] border border-transparent text-white focus:border-[#4318FF]"
                         : "bg-[#F4F7FE] border border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                     }`}
                   />
@@ -2130,7 +2132,7 @@ export function AdminInvoice({
               <div
                 className={`mt-4 p-4 rounded-xl border transition-all ${
                   activeDark
-                    ? "bg-gradient-to-r from-[#4318FF]/20 via-[#1A1B20] to-[#6AD2FF]/10 border-white/10 shadow-lg"
+                    ? "bg-gradient-to-r from-[#4318FF]/20 via-[#141517] to-[#6AD2FF]/10 border-transparent shadow-lg"
                     : "bg-gradient-to-r from-[#4318FF]/5 via-white to-[#6AD2FF]/10 border-[#4318FF]/20 shadow-[0_4px_20px_rgba(67,24,255,0.06)]"
                 }`}
               >
@@ -2154,7 +2156,7 @@ export function AdminInvoice({
 
                 {paymentStatus.includes("DP") && dpAmount > 0 && (
                   <div className={`mt-3 pt-3 border-t border-dashed space-y-1.5 text-xs ${
-                    activeDark ? "border-white/10" : "border-[#E0E5F2]"
+                    activeDark ? "border-transparent" : "border-[#E0E5F2]"
                   }`}>
                     <div className="flex justify-between items-center text-[#05CD99]">
                       <span className="font-semibold">Uang Muka (DP Dibayar):</span>
@@ -2202,7 +2204,7 @@ export function AdminInvoice({
                 onClick={handleCopyWhatsAppText}
                 className={`w-full py-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   activeDark
-                    ? "bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white"
+                    ? "bg-white/5 hover:bg-white/10 border-transparent text-slate-300 hover:text-white"
                     : "bg-white hover:bg-[#F4F7FE] border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF]"
                 }`}
               >
@@ -2214,7 +2216,7 @@ export function AdminInvoice({
               </button>
             </div>
 
-            <div className={`border-t pt-3 text-center ${activeDark ? "border-white/10" : "border-[#E0E5F2]"}`}>
+            <div className={`border-t pt-3 text-center ${activeDark ? "border-transparent" : "border-[#E0E5F2]"}`}>
               <p className={`text-[11px] inline-flex items-center justify-center gap-1.5 ${activeDark ? "text-slate-400" : "text-[#8F9BBA]"}`}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#4318FF] shrink-0">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -2235,7 +2237,7 @@ export function AdminInvoice({
             {/* Card Total Diterbitkan */}
             <div
               className={`p-4 sm:p-5 rounded-2xl border transition-colors shadow-xs ${
-                activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+                activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -2267,7 +2269,7 @@ export function AdminInvoice({
             {/* Card Pembayaran Lunas */}
             <div
               className={`p-4 sm:p-5 rounded-2xl border transition-colors shadow-xs ${
-                activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+                activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -2300,7 +2302,7 @@ export function AdminInvoice({
             {/* Card Piutang / Pending */}
             <div
               className={`p-4 sm:p-5 rounded-2xl border transition-colors shadow-xs ${
-                activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+                activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -2334,7 +2336,7 @@ export function AdminInvoice({
           {/* ── 2. Toolbar Pencarian & Filter Status ── */}
           <div
             className={`p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
             }`}
           >
             {/* Search Box */}
@@ -2352,7 +2354,7 @@ export function AdminInvoice({
                 placeholder="Cari nomor invoice, nama klien, atau WhatsApp..."
                 className={`w-full pl-9 pr-8 py-2 rounded-xl border text-xs outline-hidden transition-all ${
                   activeDark
-                    ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                    ? "bg-[#141517] border-transparent text-white placeholder-slate-500 focus:border-[#4318FF]"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF]"
                 }`}
               />
@@ -2372,7 +2374,7 @@ export function AdminInvoice({
               {/* Filter Pills */}
               <div
                 className={`p-1 rounded-xl border flex items-center gap-1 ${
-                  activeDark ? "bg-[#25262B] border-white/10" : "bg-[#F4F7FE] border-[#E0E5F2]"
+                  activeDark ? "bg-[#141517] border-transparent" : "bg-[#F4F7FE] border-[#E0E5F2]"
                 }`}
               >
                 {(
@@ -2412,7 +2414,7 @@ export function AdminInvoice({
                 onClick={handleExportCSV}
                 className={`h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeDark
-                    ? "bg-white/5 hover:bg-white/10 border-white/10 text-slate-200"
+                    ? "bg-white/5 hover:bg-white/10 border-transparent text-slate-200"
                     : "bg-white hover:bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559]"
                 }`}
                 title="Ekspor Rekap Pembukuan ke File CSV (Excel)"
@@ -2463,7 +2465,7 @@ export function AdminInvoice({
           {/* ── 3. Tabel Daftar Arsip Invoice ── */}
           <div
             className={`rounded-2xl border shadow-xs overflow-hidden transition-colors ${
-              activeDark ? "bg-[#1A1B20] border-white/10" : "bg-white border-[#E0E5F2]"
+              activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-white border-[#E0E5F2]"
             }`}
           >
             {(() => {
@@ -2524,7 +2526,7 @@ export function AdminInvoice({
                       <tr
                         className={`border-b text-[11px] font-extrabold uppercase tracking-wider ${
                           activeDark
-                            ? "bg-white/5 border-white/10 text-slate-300"
+                            ? "bg-[#121214] border-transparent text-slate-300"
                             : "bg-[#F4F7FE]/70 border-[#E0E5F2] text-[#707EAE]"
                         }`}
                       >
@@ -2663,7 +2665,7 @@ export function AdminInvoice({
                                 onClick={() => handleOpenInvoiceModal(arch)}
                                 className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                                   activeDark
-                                    ? "bg-white/5 hover:bg-[#4318FF] hover:border-[#4318FF] text-slate-200 hover:text-white border-white/10"
+                                    ? "bg-white/5 hover:bg-[#4318FF] hover:border-[#4318FF] text-slate-200 hover:text-white border-transparent"
                                     : "bg-[#F4F7FE] hover:bg-[#4318FF] hover:border-[#4318FF] text-[#1B2559] hover:text-white border-[#E0E5F2]"
                                 }`}
                                 title="Lihat Detail & Pratinjau Invoice Resmi"
@@ -2721,7 +2723,7 @@ export function AdminInvoice({
                                 onClick={() => handleLoadArchiveToGenerator(arch)}
                                 className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                                   activeDark
-                                    ? "bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border-white/10"
+                                    ? "bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border-transparent"
                                     : "bg-white hover:bg-[#F4F7FE] text-[#707EAE] hover:text-[#1B2559] border-[#E0E5F2]"
                                 }`}
                                 title="Muat Data ke Form Kasir (Edit/Duplikat)"
@@ -2773,14 +2775,14 @@ export function AdminInvoice({
           <div
             className={`w-full max-w-3xl my-auto rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border transition-colors ${
               activeDark
-                ? "bg-[#1A1B20] text-white border-white/10"
+                ? "bg-[#1A1B1E] text-white border-transparent"
                 : "bg-white text-[#1B2559] border-[#E0E5F2] shadow-[0_20px_60px_rgba(67,24,255,0.12)]"
             }`}
           >
             {/* Modal Header */}
             <div
               className={`flex items-center justify-between px-6 py-4.5 border-b shrink-0 ${
-                activeDark ? "bg-[#25262B] border-white/10" : "bg-white border-[#E0E5F2]"
+                activeDark ? "bg-[#141517] border-transparent" : "bg-white border-[#E0E5F2]"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -2821,7 +2823,7 @@ export function AdminInvoice({
             {/* Filter & Search Bar */}
             <div
               className={`p-4 sm:p-5 border-b space-y-3 shrink-0 ${
-                activeDark ? "bg-[#1A1B20] border-white/10" : "bg-[#FAFCFF] border-[#E0E5F2]"
+                activeDark ? "bg-[#1A1B1E] border-transparent" : "bg-[#FAFCFF] border-[#E0E5F2]"
               }`}
             >
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -2839,7 +2841,7 @@ export function AdminInvoice({
                     placeholder="Cari nama klien, nomor HP / WA, venue, atau paket..."
                     className={`w-full pl-10 pr-8 py-2.5 rounded-xl border text-xs sm:text-sm outline-hidden transition-all ${
                       activeDark
-                        ? "bg-[#25262B] border-white/10 text-white placeholder-slate-500 focus:border-[#4318FF]"
+                        ? "bg-[#141517] border-transparent text-white placeholder-slate-500 focus:border-[#4318FF]"
                         : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] placeholder-[#A3AED0] focus:border-[#4318FF] focus:bg-white focus:ring-2 focus:ring-[#4318FF]/10"
                     }`}
                   />
@@ -2860,7 +2862,7 @@ export function AdminInvoice({
                   onClick={fetchBookings}
                   className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50 ${
                     activeDark
-                      ? "bg-[#25262B] border-white/10 text-slate-300 hover:bg-white/10 hover:text-white"
+                      ? "bg-[#141517] border-transparent text-slate-300 hover:bg-white/10 hover:text-white"
                       : "bg-white hover:bg-[#F4F7FE] border-[#E0E5F2] text-[#707EAE] hover:text-[#4318FF]"
                   }`}
                   title="Segarkan data dari server"
@@ -2927,14 +2929,14 @@ export function AdminInvoice({
             {/* List Reservasi (Scrollable) */}
             <div
               className={`p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 ${
-                activeDark ? "bg-[#1A1B20]" : "bg-white"
+                activeDark ? "bg-[#1A1B1E]" : "bg-white"
               }`}
             >
               {filteredBookings.length === 0 ? (
                 <div className="py-12 text-center space-y-3">
                   <div
                     className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
-                      activeDark ? "bg-[#25262B] text-slate-400" : "bg-[#F4F7FE] text-[#4318FF]"
+                      activeDark ? "bg-[#141517] text-slate-400" : "bg-[#F4F7FE] text-[#4318FF]"
                     }`}
                   >
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2972,7 +2974,7 @@ export function AdminInvoice({
                       key={b.id}
                       className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         activeDark
-                          ? "bg-[#25262B] border-white/10 hover:border-[#4318FF]/40"
+                          ? "bg-[#141517] border-transparent hover:border-[#4318FF]/40"
                           : "bg-white hover:bg-[#F8FAFC] border-[#E0E5F2] hover:border-[#4318FF]/40 shadow-xs hover:shadow-md"
                       }`}
                     >
@@ -3067,7 +3069,7 @@ export function AdminInvoice({
             {/* Modal Footer */}
             <div
               className={`px-6 py-4 border-t flex items-center justify-between text-xs shrink-0 ${
-                activeDark ? "bg-[#25262B] border-white/10" : "bg-[#FAFCFF] border-[#E0E5F2]"
+                activeDark ? "bg-[#141517] border-transparent" : "bg-[#FAFCFF] border-[#E0E5F2]"
               }`}
             >
               <span className={activeDark ? "text-slate-400" : "text-[#707EAE]"}>
@@ -3078,7 +3080,7 @@ export function AdminInvoice({
                 onClick={() => setIsBookingPickerOpen(false)}
                 className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-colors cursor-pointer ${
                   activeDark
-                    ? "bg-white/5 hover:bg-white/10 text-slate-300 border-white/10"
+                    ? "bg-white/5 hover:bg-white/10 text-slate-300 border-transparent"
                     : "bg-white hover:bg-[#F4F7FE] text-[#707EAE] hover:text-[#1B2559] border-[#E0E5F2]"
                 }`}
               >
@@ -3377,7 +3379,7 @@ export function AdminInvoice({
           className={`fixed bottom-5 right-5 z-[999999] px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-bold transition-all transform animate-bounce ${toastType === "warning"
             ? "bg-amber-500 text-white"
             : activeDark
-              ? "bg-[#25262B] text-white border border-white/10"
+              ? "bg-[#1A1B1E] text-white border border-transparent"
               : "bg-slate-900 text-white border border-slate-800"
             }`}
         >

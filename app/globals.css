@@ -192,6 +192,13 @@ body {
   border-color: transparent !important;
 }
 
+.admin-dark .admin-invoice-container .border-white\/10,
+.admin-dark .admin-invoice-container .border-white\/5,
+.admin-dark .admin-invoice-container .border-white\/20,
+.admin-dark .admin-invoice-container .border-transparent {
+  border-color: transparent !important;
+}
+
 .admin-dark .border-\[\#E0E5F2\],
 .admin-dark .border-\[\#e0e5f2\],
 .admin-dark .border-\[\#E0E5F2\]\/60,
