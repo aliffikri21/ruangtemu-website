@@ -109,6 +109,16 @@ export const RUANGTEMU_PACKAGES: PhotoboothPackageOption[] = [
 
 export const PHOTOBOOTH_PACKAGES = RUANGTEMU_PACKAGES;
 
+// Bersihkan nomor rekening dalam kurung dari metode pembayaran untuk tampilan rapi
+export function cleanPaymentMethod(method?: string): string {
+  if (!method) return "-";
+  return method
+    .replace(/\s*\([^)]*\d+[^)]*\)/g, "")
+    .replace(/\s*\(8800x+\)/gi, "")
+    .replace(/\s*\(123000x+\)/gi, "")
+    .trim();
+}
+
 export interface InvoiceItemRow {
   id: string;
   name: string;
@@ -234,7 +244,7 @@ export function AdminInvoice({
   ]);
 
   // ── State Pembayaran & Finansial ──
-  const [paymentMethod, setPaymentMethod] = useState("Transfer Bank BCA (8800xxxxxx)");
+  const [paymentMethod, setPaymentMethod] = useState("Transfer Bank BCA");
   const [paymentStatus, setPaymentStatus] = useState("Belum Dibayar");
   const [dpAmount, setDpAmount] = useState<number>(0);
   const [paymentLink, setPaymentLink] = useState("");
@@ -572,7 +582,7 @@ export function AdminInvoice({
     }
 
     if (b.payment_method) {
-      setPaymentMethod(b.payment_method);
+      setPaymentMethod(cleanPaymentMethod(b.payment_method));
     }
     if (b.payment_invoice) {
       setPaymentLink(b.payment_invoice);
@@ -833,7 +843,7 @@ export function AdminInvoice({
     setItems(arch.items.map((it) => ({ ...it })));
     setDiscount(arch.discount || 0);
     setTaxPercent(arch.taxPercent || 0);
-    setPaymentMethod(arch.paymentMethod);
+    setPaymentMethod(cleanPaymentMethod(arch.paymentMethod));
     setPaymentStatus(arch.paymentStatus);
     setDpAmount(arch.dpAmount || 0);
     setPaymentLink(arch.paymentLink || "");
@@ -1004,7 +1014,7 @@ export function AdminInvoice({
     text += `*TOTAL INVESTASI:* *${formatRupiah(targetData.grandTotal)}*\n`;
     text += `--------------------------------------------------\n\n`;
 
-    text += `*Metode Pembayaran:* ${targetData.paymentMethod}\n`;
+    text += `*Metode Pembayaran:* ${cleanPaymentMethod(targetData.paymentMethod)}\n`;
     text += `*Status Pembayaran:* *${targetData.paymentStatus}*\n`;
     if (targetData.paymentStatus.includes("DP") && targetData.dpAmount && targetData.dpAmount > 0) {
       text += `*Uang Muka (DP Dibayar):* *${formatRupiah(targetData.dpAmount)}*\n`;
@@ -1049,7 +1059,7 @@ export function AdminInvoice({
     if (paymentStatus.includes("DP") && dpAmount > 0) {
       text += `*Uang Muka (DP):* *${formatRupiah(dpAmount)}*\n*Sisa Pelunasan:* *${formatRupiah(Math.max(0, grandTotal - dpAmount))}*\n`;
     }
-    text += `*Metode:* ${paymentMethod}\n`;
+    text += `*Metode:* ${cleanPaymentMethod(paymentMethod)}\n`;
     if (paymentLink) text += `💳 Link: ${paymentLink}\n`;
 
     navigator.clipboard.writeText(text);
@@ -1865,11 +1875,13 @@ export function AdminInvoice({
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
                     }`}
                 >
-                  <option value="Transfer Bank BCA (8800xxxxxx)">Transfer Bank - BCA</option>
-                  <option value="Transfer Bank Mandiri (123000xxxxxx)">Transfer Bank - Mandiri</option>
+                  <option value="Transfer Bank BCA">Transfer Bank BCA</option>
+                  <option value="Transfer Bank Mandiri">Transfer Bank Mandiri</option>
+                  <option value="Transfer Bank BNI">Transfer Bank BNI</option>
+                  <option value="Transfer Bank BRI">Transfer Bank BRI</option>
                   <option value="QRIS All Payment / E-Wallet">QRIS All Payment</option>
                   <option value="Tunai / Cash On Location">Tunai di Lokasi (Cash)</option>
-                  <option value="Link Pembayaran Online">Link Pembayaran Card/Invoice</option>
+                  <option value="Link Pembayaran Online">Link Pembayaran Online</option>
                 </select>
               </div>
 
@@ -3139,7 +3151,7 @@ export function AdminInvoice({
               {/* Info Pelanggan & Tanggal (Dua Card Bersih Berdampingan) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {/* Info Klien */}
-                <div className="p-3 rounded-xl bg-[#FAFCFF] border border-[#E0E5F2] space-y-1">
+                <div className="p-3.5 rounded-xl bg-[#FAFCFF] border border-[#E0E5F2] space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3AED0] block mb-0.5">
                     Tagihan Kepada (Klien / Event):
                   </span>
@@ -3150,7 +3162,7 @@ export function AdminInvoice({
                 </div>
 
                 {/* Info Jadwal & Pembayaran */}
-                <div className="p-3 rounded-xl bg-[#FAFCFF] border border-[#E0E5F2] space-y-1 text-right">
+                <div className="p-3.5 rounded-xl bg-[#FAFCFF] border border-[#E0E5F2] space-y-1.5 text-right">
                   <div className="flex justify-between items-center text-[11px]">
                     <span className="text-[#707EAE]">Tanggal Invoice:</span>
                     <span className="font-medium text-[#1B2559]">
@@ -3166,22 +3178,22 @@ export function AdminInvoice({
                     <span className="font-bold text-[#4318FF]">{modalInvoiceData.formattedEventTime}</span>
                   </div>
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-[#707EAE]">Metode Bayar:</span>
-                    <span className="font-medium text-[#1B2559] truncate max-w-[150px] sm:max-w-none">{modalInvoiceData.paymentMethod}</span>
+                    <span className="text-[#707EAE] shrink-0">Metode Bayar:</span>
+                    <span className="font-semibold text-[#1B2559] truncate max-w-[170px] sm:max-w-none">
+                      {cleanPaymentMethod(modalInvoiceData.paymentMethod)}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center text-[11px] pt-0.5">
-                    <span className="text-[#707EAE]">Status Pembayaran:</span>
+                  <div className="flex justify-between items-center text-[11px] pt-2 border-t border-[#E0E5F2]/60 mt-1.5">
+                    <span className="text-[#707EAE] font-semibold whitespace-nowrap shrink-0">Status Pembayaran:</span>
                     <span
-                      className={`font-bold uppercase px-2 py-0.5 rounded text-[10px] inline-block ${modalInvoiceData.paymentStatus.includes("Lunas")
-                        ? "bg-[#E6F9F0] text-[#05CD99] border border-[#05CD99]/30"
+                      className={`font-bold uppercase px-3 py-1 rounded-lg text-[10px] tracking-wider inline-block text-center shadow-2xs ${modalInvoiceData.paymentStatus.includes("Lunas")
+                        ? "bg-[#E6F9F0] text-[#05CD99] border border-[#05CD99]/40"
                         : modalInvoiceData.paymentStatus.includes("DP")
-                          ? "bg-[#FFF6E9] text-[#FFB547] border border-[#FFB547]/30"
-                          : "bg-[#FEEFEE] text-[#EE5D50] border border-[#EE5D50]/30"
+                          ? "bg-[#FFF6E9] text-[#B95000] border border-[#FFB547]/40"
+                          : "bg-[#FEEFEE] text-[#EE5D50] border border-[#EE5D50]/40"
                         }`}
                     >
-                      {modalInvoiceData.paymentStatus.includes("DP") && (modalInvoiceData.dpAmount || 0) > 0
-                        ? `${modalInvoiceData.paymentStatus} (${formatRupiah(modalInvoiceData.dpAmount!)})`
-                        : modalInvoiceData.paymentStatus}
+                      {modalInvoiceData.paymentStatus}
                     </span>
                   </div>
                 </div>
