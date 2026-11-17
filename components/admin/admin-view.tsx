@@ -417,8 +417,8 @@ function AdminMobileGuard({ isDarkMode }: { isDarkMode?: boolean } = {}) {
       const saved = localStorage.getItem("ruangtemu_admin_dark");
       if (saved === "true") {
         setInternalDark(true);
-      } else if (saved === null && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        setInternalDark(true);
+      } else {
+        setInternalDark(false);
       }
     } catch {
       // ignore
@@ -633,8 +633,8 @@ export function AdminView({
       const saved = localStorage.getItem("ruangtemu_admin_dark");
       if (saved === "true") {
         setIsDarkMode(true);
-      } else if (saved === null && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        setIsDarkMode(true);
+      } else {
+        setIsDarkMode(false);
       }
     } catch {
       // ignore

@@ -134,7 +134,7 @@ export interface InvoiceArchiveItem {
   taxPercent: number;
   taxAmount: number;
   grandTotal: number;
-  paymentStatus: "Belum Dibayar" | "DP (Uang Muka)" | "Lunas";
+  paymentStatus: "Belum Dibayar" | "DP (Booking Slot)" | "DP (Uang Muka)" | "Lunas";
   paymentMethod: string;
   paymentLink?: string;
   notes?: string;
@@ -155,7 +155,7 @@ export function AdminInvoice({
   packages = [],
   standalone = false,
 }: AdminInvoiceProps) {
-  // ── State Dark Mode (Sync dengan localStorage dan Parent) ──
+  // ── State Dark Mode (Sync dengan localStorage dan Parent - Default Selalu Mode Terang) ──
   const [internalDark, setInternalDark] = useState(false);
 
   useEffect(() => {
@@ -163,8 +163,8 @@ export function AdminInvoice({
       const saved = localStorage.getItem("ruangtemu_admin_dark");
       if (saved === "true") {
         setInternalDark(true);
-      } else if (saved === null && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        setInternalDark(true);
+      } else {
+        setInternalDark(false);
       }
     } catch {
       // ignore
@@ -251,7 +251,7 @@ export function AdminInvoice({
   const [activeInvoiceTab, setActiveInvoiceTab] = useState<"generator" | "archive">("generator");
   const [archives, setArchives] = useState<InvoiceArchiveItem[]>([]);
   const [archiveSearch, setArchiveSearch] = useState("");
-  const [archiveStatusFilter, setArchiveStatusFilter] = useState<"all" | "Lunas" | "DP (Uang Muka)" | "Belum Dibayar">("all");
+  const [archiveStatusFilter, setArchiveStatusFilter] = useState<"all" | "Lunas" | "DP" | "DP (Booking Slot)" | "DP (Uang Muka)" | "Belum Dibayar">("all");
   const [selectedArchiveDetail, setSelectedArchiveDetail] = useState<InvoiceArchiveItem | null>(null);
 
   // ── State Integrasi Reservasi Klien ──
@@ -558,9 +558,9 @@ export function AdminInvoice({
     if (b.payment_status === "PAID") {
       setPaymentStatus("Lunas");
     } else if (b.payment_amount && b.payment_amount > 0) {
-      setPaymentStatus("DP (Uang Muka 50%)");
+      setPaymentStatus("DP (Booking Slot)");
     } else if (b.status === "confirmed") {
-      setPaymentStatus("DP (Uang Muka 50%)");
+      setPaymentStatus("DP (Booking Slot)");
     } else {
       setPaymentStatus("Belum Dibayar");
     }
@@ -773,7 +773,7 @@ export function AdminInvoice({
   // Ubah status pembayaran arsip invoice (Lunas / DP / Belum Dibayar)
   const handleUpdateArchiveStatus = (
     id: string,
-    newStatus: "Belum Dibayar" | "DP (Uang Muka)" | "Lunas"
+    newStatus: "Belum Dibayar" | "DP (Booking Slot)" | "DP (Uang Muka)" | "Lunas"
   ) => {
     const updated = archives.map((a) => (a.id === id ? { ...a, paymentStatus: newStatus } : a));
     persistArchives(updated);
@@ -1838,7 +1838,7 @@ export function AdminInvoice({
                   Status Pembayaran
                 </label>
                 <select
-                  value={paymentStatus}
+                  value={paymentStatus.includes("DP") ? "DP (Booking Slot)" : paymentStatus}
                   onChange={(e) => setPaymentStatus(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${activeDark
                     ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
@@ -1846,7 +1846,7 @@ export function AdminInvoice({
                     }`}
                 >
                   <option value="Belum Dibayar">Belum Dibayar (Unpaid)</option>
-                  <option value="DP (Uang Muka 50%)">DP 50% (Booking Slot)</option>
+                  <option value="DP (Booking Slot)">DP (Booking Slot)</option>
                   <option value="Lunas">Lunas (Paid in Full)</option>
                 </select>
               </div>
@@ -2224,25 +2224,31 @@ export function AdminInvoice({
                   [
                     { id: "all", label: "Semua" },
                     { id: "Lunas", label: "Lunas" },
-                    { id: "DP (Uang Muka)", label: "DP" },
+                    { id: "DP", label: "DP" },
                     { id: "Belum Dibayar", label: "Belum Bayar" },
                   ] as const
-                ).map((st) => (
-                  <button
-                    key={st.id}
-                    type="button"
-                    onClick={() => setArchiveStatusFilter(st.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      archiveStatusFilter === st.id
-                        ? "bg-[#4318FF] text-white shadow-xs"
-                        : activeDark
-                        ? "text-slate-400 hover:text-white"
-                        : "text-[#707EAE] hover:text-[#1B2559]"
-                    }`}
-                  >
-                    {st.label}
-                  </button>
-                ))}
+                ).map((st) => {
+                  const isSelected =
+                    st.id === "DP"
+                      ? archiveStatusFilter === "DP" || archiveStatusFilter.includes("DP")
+                      : archiveStatusFilter === st.id;
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setArchiveStatusFilter(st.id as any)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#4318FF] text-white shadow-xs"
+                          : activeDark
+                          ? "text-slate-400 hover:text-white"
+                          : "text-[#707EAE] hover:text-[#1B2559]"
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Export Rekap CSV */}
@@ -2307,7 +2313,9 @@ export function AdminInvoice({
           >
             {(() => {
               const filteredArchives = archives.filter((a) => {
-                if (archiveStatusFilter !== "all" && a.paymentStatus !== archiveStatusFilter) {
+                if (archiveStatusFilter === "DP") {
+                  if (!a.paymentStatus.includes("DP")) return false;
+                } else if (archiveStatusFilter !== "all" && a.paymentStatus !== archiveStatusFilter) {
                   return false;
                 }
                 if (archiveSearch.trim()) {
@@ -2459,7 +2467,7 @@ export function AdminInvoice({
                           {/* Status Pembayaran (Interaktif) */}
                           <td className="py-3.5 px-4 text-center">
                             <select
-                              value={arch.paymentStatus}
+                              value={arch.paymentStatus.includes("DP") ? "DP (Booking Slot)" : arch.paymentStatus}
                               onChange={(e) => handleUpdateArchiveStatus(arch.id, e.target.value as any)}
                               className={`font-bold text-[11px] px-2.5 py-1 rounded-lg border outline-hidden cursor-pointer uppercase tracking-wider ${
                                 arch.paymentStatus.includes("Lunas")
@@ -2476,7 +2484,7 @@ export function AdminInvoice({
                               }`}
                             >
                               <option value="Belum Dibayar">Belum Dibayar</option>
-                              <option value="DP (Uang Muka)">DP (Uang Muka)</option>
+                              <option value="DP (Booking Slot)">DP (Booking Slot)</option>
                               <option value="Lunas">Lunas</option>
                             </select>
                           </td>
@@ -3119,12 +3127,12 @@ export function AdminInvoice({
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="text-[#707EAE] font-medium">Status:</span>
                       <select
-                        value={modalInvoiceData.paymentStatus}
+                        value={modalInvoiceData.paymentStatus.includes("DP") ? "DP (Booking Slot)" : modalInvoiceData.paymentStatus}
                         onChange={(e) => handleUpdateArchiveStatus(modalInvoiceData.archiveId!, e.target.value as any)}
                         className="text-xs font-bold px-2 py-1 rounded-lg border border-[#E0E5F2] bg-white text-[#1B2559] outline-hidden cursor-pointer"
                       >
                         <option value="Belum Dibayar">Belum Dibayar</option>
-                        <option value="DP (Uang Muka)">DP (Uang Muka)</option>
+                        <option value="DP (Booking Slot)">DP (Booking Slot)</option>
                         <option value="Lunas">Lunas</option>
                       </select>
                     </div>
