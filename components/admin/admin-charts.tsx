@@ -198,12 +198,14 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
     <div
       className={`rounded-2xl transition-all border ${
         isDarkMode
-          ? "bg-[#1A1B20] border-white/10 text-slate-100"
+          ? "bg-[#1A1B20] border-transparent text-slate-100 shadow-xl"
           : "bg-white border-[#E0E5F2] text-[#1B2559] shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]"
       }`}
     >
       {/* ─── HEADER BAR WITH CONTROLS ─── */}
-      <div className="p-5 sm:p-6 border-b border-[#E0E5F2]/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className={`p-5 sm:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+        isDarkMode ? "border-transparent" : "border-[#E0E5F2]/50"
+      }`}>
         <div>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#4318FF] to-[#6AD2FF] flex items-center justify-center text-white shadow-xs">
@@ -236,7 +238,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
               onChange={(e) => setSelectedEventId(e.target.value)}
               className={`text-xs font-semibold px-3 py-2 pr-8 rounded-xl border outline-hidden transition-all cursor-pointer ${
                 isDarkMode
-                  ? "bg-[#25262B] border-white/10 text-white hover:border-white/20"
+                  ? "bg-[#25262B] border-transparent text-white hover:bg-[#2C2E33]"
                   : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] hover:border-[#4318FF]/40"
               }`}
             >
@@ -250,7 +252,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
           </div>
 
           {/* Time Filter Pills */}
-          <div className={`p-1 rounded-xl flex items-center gap-1 border ${isDarkMode ? "bg-[#25262B] border-white/10" : "bg-[#F4F7FE] border-[#E0E5F2]"}`}>
+          <div className={`p-1 rounded-xl flex items-center gap-1 border ${isDarkMode ? "bg-[#25262B] border-transparent" : "bg-[#F4F7FE] border-[#E0E5F2]"}`}>
             <button
               type="button"
               onClick={() => setTimeRange("all")}
@@ -291,7 +293,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl border transition-all cursor-pointer ${
-              isDarkMode ? "bg-[#25262B] border-white/10 text-slate-300 hover:text-white" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
+              isDarkMode ? "bg-[#25262B] border-transparent text-slate-300 hover:text-white" : "bg-[#F4F7FE] border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
             }`}
             title={isExpanded ? "Sembunyikan Grafik" : "Tampilkan Grafik"}
           >
@@ -317,24 +319,24 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
         <div className="p-5 sm:p-6 space-y-6">
           {/* TOP SUMMARY MINI-PILLS */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B]/60 border-white/5" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
+            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B] border-transparent" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
               <div className={`text-[11px] font-medium ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>Foto Dianalisis</div>
               <div className="text-lg font-extrabold mt-0.5">{filteredEntries.length} <span className="text-xs font-normal opacity-70">foto</span></div>
             </div>
-            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B]/60 border-white/5" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
+            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B] border-transparent" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
               <div className={`text-[11px] font-medium ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>Jam Puncak (WITA)</div>
               <div className="text-lg font-extrabold text-[#4318FF] dark:text-blue-400 mt-0.5">
                 {hourlyAnalysis.peakCount > 0 ? `${String(hourlyAnalysis.peakHour).padStart(2, "0")}:00 WITA` : "-"}
                 <span className="text-xs font-normal opacity-70 ml-1">({hourlyAnalysis.peakCount} foto)</span>
               </div>
             </div>
-            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B]/60 border-white/5" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
+            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B] border-transparent" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
               <div className={`text-[11px] font-medium ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>Tingkat Pesan Ucapan</div>
               <div className="text-lg font-extrabold text-[#05CD99] mt-0.5">
                 {participationStats.textPercent}% <span className="text-xs font-normal opacity-70">({participationStats.textCount})</span>
               </div>
             </div>
-            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B]/60 border-white/5" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
+            <div className={`p-3.5 rounded-xl border ${isDarkMode ? "bg-[#25262B] border-transparent" : "bg-[#F4F7FE] border-[#E0E5F2]/60"}`}>
               <div className={`text-[11px] font-medium ${isDarkMode ? "text-slate-400" : "text-[#8F9BBA]"}`}>Pesan Suara (Voice)</div>
               <div className="text-lg font-extrabold text-amber-500 mt-0.5">
                 {participationStats.voiceCount} <span className="text-xs font-normal opacity-70">rekaman</span>
@@ -346,7 +348,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* ───── LEFT: HOURLY PHOTO ACTIVITY BAR CHART (7 of 12) ───── */}
-            <div className={`lg:col-span-7 p-5 rounded-2xl border flex flex-col justify-between ${isDarkMode ? "bg-[#25262B]/40 border-white/5" : "bg-slate-50/70 border-[#E0E5F2]"}`}>
+            <div className={`lg:col-span-7 p-5 rounded-2xl border flex flex-col justify-between ${isDarkMode ? "bg-[#25262B]/60 border-transparent" : "bg-slate-50/70 border-[#E0E5F2]"}`}>
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div>
@@ -377,7 +379,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                       <p className="text-xs text-slate-400">Belum ada foto pada filter rentang waktu ini</p>
                     </div>
                   ) : (
-                    <div className="w-full overflow-x-auto pb-1 scrollbar-thin">
+                    <div className="w-full overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       <div className="min-w-[520px] sm:min-w-0">
                         {/* Chart grid: Main Plot (h-52 sm:h-60) + X-axis labels */}
                         <div className="flex flex-col h-56 sm:h-64">
@@ -394,9 +396,9 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                             <div className="flex-1 relative min-h-0">
                               {/* 3 Guideline lines */}
                               <div className="absolute inset-x-0 inset-y-0.5 flex flex-col justify-between pointer-events-none opacity-25">
-                                <div className="border-b border-dashed border-slate-400 dark:border-slate-500 w-full" />
-                                <div className="border-b border-dashed border-slate-400 dark:border-slate-500 w-full" />
-                                <div className="border-b border-slate-300 dark:border-white/10 w-full" />
+                                <div className="border-b border-dashed border-slate-400 dark:border-transparent w-full" />
+                                <div className="border-b border-dashed border-slate-400 dark:border-transparent w-full" />
+                                <div className="border-b border-slate-300 dark:border-transparent w-full" />
                               </div>
 
                               {/* Bar Columns Container */}
@@ -414,7 +416,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                                     >
                                       {/* Hover Floating Tooltip */}
                                       <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-30 transform -translate-y-1 group-hover:translate-y-0 duration-150">
-                                        <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap border border-white/10 flex items-center gap-1.5">
+                                        <div className="bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg whitespace-nowrap border border-transparent flex items-center gap-1.5">
                                           <span className={`w-1.5 h-1.5 rounded-full ${isPeak ? "bg-amber-400" : "bg-blue-400"}`} />
                                           <span>{slot.count} Foto • {slot.label}</span>
                                         </div>
@@ -482,7 +484,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
               </div>
 
               {/* Footer hint */}
-              <div className={`mt-4 pt-3 border-t text-[11px] flex items-center justify-between ${isDarkMode ? "border-white/5 text-slate-400" : "border-[#E0E5F2] text-[#8F9BBA]"}`}>
+              <div className={`mt-4 pt-3 border-t text-[11px] flex items-center justify-between ${isDarkMode ? "border-transparent text-slate-400" : "border-[#E0E5F2] text-[#8F9BBA]"}`}>
                 <span>Total pemotretan: <strong className={isDarkMode ? "text-white" : "text-[#1B2559]"}>{filteredEntries.length} kali</strong></span>
                 <span className="flex items-center gap-3">
                   <span className="inline-flex items-center gap-1">
@@ -499,7 +501,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
             <div className="lg:col-span-5 space-y-6">
               
               {/* CARD: FILTER POPULARITY */}
-              <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-[#25262B]/40 border-white/5" : "bg-slate-50/70 border-[#E0E5F2]"}`}>
+              <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-[#25262B]/60 border-transparent" : "bg-slate-50/70 border-[#E0E5F2]"}`}>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-bold">Filter Kamera Terfavorit</h4>
                   <span className="text-[11px] font-semibold text-[#8F9BBA]">
@@ -523,7 +525,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                           </span>
                         </div>
                         {/* Horizontal Progress Bar */}
-                        <div className={`w-full h-2 rounded-full overflow-hidden ${isDarkMode ? "bg-white/10" : "bg-slate-200"}`}>
+                        <div className={`w-full h-2 rounded-full overflow-hidden ${isDarkMode ? "bg-[#1E1F25]" : "bg-slate-200"}`}>
                           <div
                             style={{ width: `${item.percent}%` }}
                             className={`h-full rounded-full bg-gradient-to-r ${item.color} transition-all duration-500`}
@@ -536,7 +538,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
               </div>
 
               {/* CARD: PARTICIPATION BREAKDOWN */}
-              <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-[#25262B]/40 border-white/5" : "bg-slate-50/70 border-[#E0E5F2]"}`}>
+              <div className={`p-5 rounded-2xl border ${isDarkMode ? "bg-[#25262B]/60 border-transparent" : "bg-slate-50/70 border-[#E0E5F2]"}`}>
                 <h4 className="text-sm font-bold mb-3">Rasio Partisipasi Tamu</h4>
                 
                 <div className="space-y-3.5">
@@ -590,7 +592,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                 </div>
 
                 {/* Stacked Visual Bar */}
-                <div className="w-full h-2.5 rounded-full overflow-hidden flex mt-4 bg-slate-200 dark:bg-white/10">
+                <div className={`w-full h-2.5 rounded-full overflow-hidden flex mt-4 ${isDarkMode ? "bg-[#1E1F25]" : "bg-slate-200"}`}>
                   <div style={{ width: `${participationStats.textPercent}%` }} className="h-full bg-emerald-500" title="Teks Ucapan" />
                   <div style={{ width: `${participationStats.voicePercent}%` }} className="h-full bg-amber-500" title="Voice Note" />
                   <div style={{ width: `${participationStats.photoOnlyPercent}%` }} className="h-full bg-indigo-500" title="Foto Saja" />

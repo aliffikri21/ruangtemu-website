@@ -2706,7 +2706,7 @@ export function AdminView({
                 className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer border ${isNotifOpen
                   ? "bg-[#4318FF] text-white border-[#4318FF] shadow-md shadow-[#4318FF]/25"
                   : isDarkMode
-                    ? "bg-[#25262B] text-slate-200 border-white/10 hover:bg-[#2C2E33]"
+                    ? "bg-[#25262B] text-slate-200 border-transparent hover:bg-[#2C2E33]"
                     : "bg-[#F4F7FE] text-[#1B2559] border-[#E0E5F2] hover:bg-[#EAEFFC] hover:text-[#4318FF]"
                   }`}
                 title="Notifikasi Event & Pesanan Klien Masuk"
@@ -2724,12 +2724,12 @@ export function AdminView({
               {isNotifOpen && (
                 <div
                   className={`absolute left-0 sm:left-auto sm:right-0 mt-2.5 w-[330px] sm:w-[410px] rounded-2xl shadow-2xl border z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150 ${isDarkMode
-                    ? "bg-[#1E1F25] border-white/10 text-white"
+                    ? "bg-[#1E1F25] border-transparent text-white"
                     : "bg-white border-[#E0E5F2] text-[#1B2559]"
                     }`}
                 >
                   {/* Dropdown Header */}
-                  <div className={`p-4 pb-3 border-b flex items-center justify-between ${isDarkMode ? "border-white/10 bg-[#1A1B20]" : "border-[#E0E5F2] bg-white"
+                  <div className={`p-4 pb-3 border-b flex items-center justify-between ${isDarkMode ? "border-transparent bg-[#1A1B20]" : "border-[#E0E5F2] bg-white"
                     }`}>
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-xl bg-[#4318FF]/10 text-[#4318FF] flex items-center justify-center">
@@ -2752,7 +2752,7 @@ export function AdminView({
                   </div>
 
                   {/* Tabs Filter & Action */}
-                  <div className={`px-3 py-2 border-b flex items-center justify-between gap-1 ${isDarkMode ? "bg-[#141519] border-white/10" : "bg-[#F4F7FE] border-[#E0E5F2]"
+                  <div className={`px-3 py-2 border-b flex items-center justify-between gap-1 ${isDarkMode ? "bg-[#141519] border-transparent" : "bg-[#F4F7FE] border-[#E0E5F2]"
                     }`}>
                     <div className="flex items-center gap-1">
                       <button
