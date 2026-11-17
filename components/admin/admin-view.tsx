@@ -3255,7 +3255,7 @@ export function AdminView({
                 {/* ───── LEFT COLUMN (8 of 12) ───── */}
                 <div className="xl:col-span-8 space-y-6">
                   {/* CARD: DAFTAR EVENT UTAMA & LINK AKSES CEPAT */}
-                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-[#E0E5F2]">
                       <div>
                         <h3 className="text-base font-bold text-[#1B2559]">
@@ -3478,7 +3478,7 @@ export function AdminView({
                   </div>
 
                   {/* KARTU PANDUAN CEPAT OPERATOR VENUE */}
-                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
                     <h3 className="text-base font-bold text-[#1B2559] mb-1">
                       Panduan Operasional Hari-H di Gedung Acara
                     </h3>
@@ -3523,7 +3523,7 @@ export function AdminView({
                 {/* ───── RIGHT COLUMN (4 of 12) ───── */}
                 <div className="xl:col-span-4 space-y-6">
                   {/* CARD 1: LIVE STREAM FOTO TAMU TERBARU */}
-                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
                     <div className="flex items-center justify-between pb-3 border-b border-[#E0E5F2] mb-3">
                       <div>
                         <h3 className="text-base font-bold text-[#1B2559]">Foto Tamu Terbaru</h3>
@@ -3598,7 +3598,7 @@ export function AdminView({
                   </div>
 
                   {/* CARD 2: RINGKASAN PAKET PHOTOBOOTH PALOPO */}
-                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <div className="bg-white rounded-2xl p-6 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
                     <div className="flex items-center justify-between pb-3 border-b border-[#E0E5F2] mb-3">
                       <div>
                         <h3 className="text-base font-bold text-[#1B2559]">Katalog Paket Layanan</h3>
@@ -6017,7 +6017,7 @@ export function AdminView({
                 </div>
 
                 {bookings.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
                     <div className="w-12 h-12 rounded-full bg-[#FFF6E9] flex items-center justify-center text-[#FFB547] mx-auto">
                       <IconBooking size={22} />
                     </div>
@@ -6029,7 +6029,7 @@ export function AdminView({
                     </p>
                   </div>
                 ) : displayedBookings.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                  <div className="bg-white rounded-2xl p-12 text-center space-y-3 shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
                     <div className="w-12 h-12 rounded-full bg-[#F4F7FE] flex items-center justify-center text-[#A3AED0] mx-auto">
                       <IconBooking size={22} />
                     </div>
@@ -6041,7 +6041,7 @@ export function AdminView({
                     </p>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent overflow-x-auto">
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-[820px]">
                       <thead className="border-b border-[#e0e5f2] bg-[#F4F7FE]">
                         <tr>
@@ -6733,7 +6733,7 @@ export function AdminView({
                     {displayedEntries.map((ent) => {
                       const evt = getEventForEntry(ent);
                       return (
-                        <div key={ent.id} className="bg-white rounded-2xl overflow-hidden flex flex-col shadow-[0_18px_40px_0_rgba(112,144,176,0.06)] border border-transparent">
+                        <div key={ent.id} className="bg-white rounded-2xl overflow-hidden flex flex-col shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]">
                           <div className="p-3 bg-[#F4F7FE] flex justify-center relative group min-h-[200px] items-center">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={ent.photo_url} alt={ent.guest_name} className="max-h-56 object-contain rounded-lg" />

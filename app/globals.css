@@ -27,8 +27,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-* {
-  border-color: var(--border);
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 body {
@@ -47,10 +49,8 @@ body {
 /* ─────────────────────────────────────────────────────────────
    RUANGTEMU ADMIN DARK MODE (Charcoal & Sleek Dark Palette)
    ───────────────────────────────────────────────────────────── */
-/* ─────────────────────────────────────────────────────────────
-   RUANGTEMU ADMIN DARK MODE (Charcoal & Sleek Dark Palette)
-   ───────────────────────────────────────────────────────────── */
 .admin-dark {
+  --border: transparent !important;
   color-scheme: dark;
   background-color: #121214 !important;
   color: #F8F9FA !important;
@@ -195,7 +195,8 @@ body {
 .admin-dark .admin-invoice-container .border-white\/10,
 .admin-dark .admin-invoice-container .border-white\/5,
 .admin-dark .admin-invoice-container .border-white\/20,
-.admin-dark .admin-invoice-container .border-transparent {
+.admin-dark .admin-invoice-container .border-transparent,
+.admin-dark .border-transparent {
   border-color: transparent !important;
 }
 

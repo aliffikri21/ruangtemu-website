@@ -3379,7 +3379,7 @@ export function AdminInvoice({
           className={`fixed bottom-5 right-5 z-[999999] px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-bold transition-all transform animate-bounce ${toastType === "warning"
             ? "bg-amber-500 text-white"
             : activeDark
-              ? "bg-[#1A1B1E] text-white border border-transparent"
+              ? "bg-[#1A1B1E] text-white border-0"
               : "bg-slate-900 text-white border border-slate-800"
             }`}
         >
