@@ -41,6 +41,7 @@ async function loadInvoicesFromCloud(): Promise<InvoiceArchiveItem[]> {
         taxAmount: Number(row.tax_amount || row.taxAmount || 0),
         grandTotal: Number(row.grand_total || row.grandTotal || 0),
         paymentStatus: row.payment_status || row.paymentStatus || "Belum Dibayar",
+        dpAmount: Number(row.dp_amount || row.dpAmount || 0),
         paymentMethod: row.payment_method || row.paymentMethod || "",
         paymentLink: row.payment_link || row.paymentLink || "",
         notes: row.notes || "",
@@ -116,6 +117,7 @@ async function saveInvoicesToCloud(archives: InvoiceArchiveItem[]): Promise<bool
       tax_amount: a.taxAmount,
       grand_total: a.grandTotal,
       payment_status: a.paymentStatus,
+      dp_amount: a.dpAmount || null,
       payment_method: a.paymentMethod,
       payment_link: a.paymentLink || null,
       notes: a.notes || null,
@@ -169,9 +171,15 @@ export async function POST(req: NextRequest) {
         ...currentArchives.filter((a) => a.id !== newArchive.id && a.invoiceNumber !== newArchive.invoiceNumber),
       ];
     } else if (action === "update_status") {
-      const { id, paymentStatus } = body;
+      const { id, paymentStatus, dpAmount } = body;
       currentArchives = currentArchives.map((a) =>
-        a.id === id ? { ...a, paymentStatus } : a
+        a.id === id
+          ? {
+              ...a,
+              paymentStatus,
+              dpAmount: dpAmount !== undefined ? dpAmount : a.dpAmount,
+            }
+          : a
       );
     } else if (action === "delete") {
       const { id, invoiceNumber } = body;

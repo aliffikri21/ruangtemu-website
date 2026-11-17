@@ -135,6 +135,7 @@ export interface InvoiceArchiveItem {
   taxAmount: number;
   grandTotal: number;
   paymentStatus: "Belum Dibayar" | "DP (Booking Slot)" | "DP (Uang Muka)" | "Lunas";
+  dpAmount?: number;
   paymentMethod: string;
   paymentLink?: string;
   notes?: string;
@@ -235,6 +236,7 @@ export function AdminInvoice({
   // ── State Pembayaran & Finansial ──
   const [paymentMethod, setPaymentMethod] = useState("Transfer Bank BCA (8800xxxxxx)");
   const [paymentStatus, setPaymentStatus] = useState("Belum Dibayar");
+  const [dpAmount, setDpAmount] = useState<number>(0);
   const [paymentLink, setPaymentLink] = useState("");
   const [discount, setDiscount] = useState<number>(0);
   const [taxPercent, setTaxPercent] = useState<number>(0);
@@ -557,12 +559,16 @@ export function AdminInvoice({
 
     if (b.payment_status === "PAID") {
       setPaymentStatus("Lunas");
+      setDpAmount(0);
     } else if (b.payment_amount && b.payment_amount > 0) {
       setPaymentStatus("DP (Booking Slot)");
+      setDpAmount(b.payment_amount);
     } else if (b.status === "confirmed") {
       setPaymentStatus("DP (Booking Slot)");
+      setDpAmount(b.payment_amount || Math.round((b.total_price || 0) * 0.5));
     } else {
       setPaymentStatus("Belum Dibayar");
+      setDpAmount(0);
     }
 
     if (b.payment_method) {
@@ -628,6 +634,7 @@ export function AdminInvoice({
         taxAmount: selectedArchiveDetail.taxAmount,
         grandTotal: selectedArchiveDetail.grandTotal,
         paymentStatus: selectedArchiveDetail.paymentStatus,
+        dpAmount: selectedArchiveDetail.dpAmount || 0,
         paymentMethod: selectedArchiveDetail.paymentMethod,
         paymentLink: selectedArchiveDetail.paymentLink || "",
         createdAt: selectedArchiveDetail.createdAt,
@@ -651,6 +658,7 @@ export function AdminInvoice({
         taxAmount,
         grandTotal,
         paymentStatus,
+        dpAmount: paymentStatus.includes("DP") ? (dpAmount || 0) : 0,
         paymentMethod,
         paymentLink,
         createdAt: new Date().toISOString(),
@@ -698,6 +706,7 @@ export function AdminInvoice({
       taxAmount,
       grandTotal,
       paymentStatus: paymentStatus as any,
+      dpAmount: paymentStatus.includes("DP") ? (dpAmount || 0) : 0,
       paymentMethod,
       paymentLink,
     };
@@ -773,20 +782,41 @@ export function AdminInvoice({
   // Ubah status pembayaran arsip invoice (Lunas / DP / Belum Dibayar)
   const handleUpdateArchiveStatus = (
     id: string,
-    newStatus: "Belum Dibayar" | "DP (Booking Slot)" | "DP (Uang Muka)" | "Lunas"
+    newStatus: "Belum Dibayar" | "DP (Booking Slot)" | "DP (Uang Muka)" | "Lunas",
+    newDpAmount?: number
   ) => {
-    const updated = archives.map((a) => (a.id === id ? { ...a, paymentStatus: newStatus } : a));
+    const updated = archives.map((a) => {
+      if (a.id === id) {
+        const resolvedDp =
+          newDpAmount !== undefined
+            ? newDpAmount
+            : newStatus.includes("DP")
+            ? a.dpAmount || Math.round((a.grandTotal || 0) * 0.5)
+            : 0;
+        return { ...a, paymentStatus: newStatus, dpAmount: resolvedDp };
+      }
+      return a;
+    });
     persistArchives(updated);
     showToast(`Status invoice diubah menjadi: ${newStatus}`);
     if (selectedArchiveDetail?.id === id) {
-      setSelectedArchiveDetail((prev) => (prev ? { ...prev, paymentStatus: newStatus } : null));
+      setSelectedArchiveDetail((prev) => {
+        if (!prev) return null;
+        const resolvedDp =
+          newDpAmount !== undefined
+            ? newDpAmount
+            : newStatus.includes("DP")
+            ? prev.dpAmount || Math.round((prev.grandTotal || 0) * 0.5)
+            : 0;
+        return { ...prev, paymentStatus: newStatus, dpAmount: resolvedDp };
+      });
     }
 
     // Sync status ke Cloud Supabase
     fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "update_status", id, paymentStatus: newStatus }),
+      body: JSON.stringify({ action: "update_status", id, paymentStatus: newStatus, dpAmount: newDpAmount }),
     }).catch((e) => console.warn("Background cloud status error:", e));
   };
 
@@ -805,6 +835,7 @@ export function AdminInvoice({
     setTaxPercent(arch.taxPercent || 0);
     setPaymentMethod(arch.paymentMethod);
     setPaymentStatus(arch.paymentStatus);
+    setDpAmount(arch.dpAmount || 0);
     setPaymentLink(arch.paymentLink || "");
     setInvNumber(arch.invoiceNumber);
 
@@ -914,6 +945,7 @@ export function AdminInvoice({
           grandTotal: selectedArchiveDetail.grandTotal,
           paymentMethod: selectedArchiveDetail.paymentMethod,
           paymentStatus: selectedArchiveDetail.paymentStatus,
+          dpAmount: selectedArchiveDetail.dpAmount || 0,
           paymentLink: selectedArchiveDetail.paymentLink || "",
         }
       : {
@@ -932,6 +964,7 @@ export function AdminInvoice({
           grandTotal,
           paymentMethod,
           paymentStatus,
+          dpAmount: paymentStatus.includes("DP") ? (dpAmount || 0) : 0,
           paymentLink,
         };
 
@@ -973,6 +1006,10 @@ export function AdminInvoice({
 
     text += `*Metode Pembayaran:* ${targetData.paymentMethod}\n`;
     text += `*Status Pembayaran:* *${targetData.paymentStatus}*\n`;
+    if (targetData.paymentStatus.includes("DP") && targetData.dpAmount && targetData.dpAmount > 0) {
+      text += `*Uang Muka (DP Dibayar):* *${formatRupiah(targetData.dpAmount)}*\n`;
+      text += `*Sisa Tagihan / Pelunasan:* *${formatRupiah(Math.max(0, targetData.grandTotal - targetData.dpAmount))}*\n`;
+    }
 
     if (targetData.paymentLink.trim()) {
       text += `\n💳 *Link Pembayaran DP/Lunas:* ${targetData.paymentLink.trim()}\n`;
@@ -1008,7 +1045,11 @@ export function AdminInvoice({
           : item.name;
       text += `${index + 1}. *${displayName}* (${item.qty}x @ ${formatRupiah(item.price)}) = ${formatRupiah(item.qty * item.price)}\n`;
     });
-    text += `\n*TOTAL:* *${formatRupiah(grandTotal)}*\n*Status:* *${paymentStatus}*\n*Metode:* ${paymentMethod}\n`;
+    text += `\n*TOTAL:* *${formatRupiah(grandTotal)}*\n*Status:* *${paymentStatus}*\n`;
+    if (paymentStatus.includes("DP") && dpAmount > 0) {
+      text += `*Uang Muka (DP):* *${formatRupiah(dpAmount)}*\n*Sisa Pelunasan:* *${formatRupiah(Math.max(0, grandTotal - dpAmount))}*\n`;
+    }
+    text += `*Metode:* ${paymentMethod}\n`;
     if (paymentLink) text += `💳 Link: ${paymentLink}\n`;
 
     navigator.clipboard.writeText(text);
@@ -1839,7 +1880,13 @@ export function AdminInvoice({
                 </label>
                 <select
                   value={paymentStatus.includes("DP") ? "DP (Booking Slot)" : paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPaymentStatus(val);
+                    if (val.includes("DP") && dpAmount === 0) {
+                      setDpAmount(Math.round(grandTotal * 0.5));
+                    }
+                  }}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-hidden cursor-pointer ${activeDark
                     ? "bg-[#25262B] border-white/10 text-white focus:border-[#4318FF]"
                     : "bg-[#F4F7FE] border-[#E0E5F2] text-[#1B2559] focus:border-[#4318FF]"
@@ -1850,6 +1897,87 @@ export function AdminInvoice({
                   <option value="Lunas">Lunas (Paid in Full)</option>
                 </select>
               </div>
+
+              {/* Form Input Nominal DP (Muncul Dinamis Saat Status DP Dipilih) */}
+              {paymentStatus.includes("DP") && (
+                <div
+                  className={`sm:col-span-2 p-4 rounded-xl border space-y-2.5 transition-all animate-in fade-in slide-in-from-top-1 duration-200 ${
+                    activeDark
+                      ? "bg-[#FFB547]/10 border-[#FFB547]/30 text-white"
+                      : "bg-[#FFF6E9] border-[#FFB547]/40 text-[#1B2559]"
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <label className={`block text-[11px] font-bold uppercase tracking-wider ${
+                      activeDark ? "text-[#FFB547]" : "text-amber-800"
+                    }`}>
+                      Jumlah Nominal DP / Uang Muka *
+                    </label>
+                    <span className={`text-[11px] font-semibold ${activeDark ? "text-slate-300" : "text-[#707EAE]"}`}>
+                      Sisa Pelunasan:{" "}
+                      <strong className={activeDark ? "text-amber-300" : "text-amber-700"}>
+                        {formatRupiah(Math.max(0, grandTotal - (dpAmount || 0)))}
+                      </strong>
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-xs font-bold text-slate-400">
+                      Rp
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50000"
+                      value={dpAmount || ""}
+                      onChange={(e) => setDpAmount(Math.max(0, parseInt(e.target.value) || 0))}
+                      placeholder="Contoh: 1000000"
+                      className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border text-sm font-bold font-mono outline-hidden transition-all ${
+                        activeDark
+                          ? "bg-[#25262B] border-white/10 text-white focus:border-[#FFB547]"
+                          : "bg-white border-[#E0E5F2] text-[#1B2559] focus:border-[#FFB547]"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                    <span className={`text-[10px] font-medium ${activeDark ? "text-slate-400" : "text-[#707EAE]"}`}>
+                      Preset Cepat:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDpAmount(Math.round(grandTotal * 0.3))}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                        activeDark
+                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                          : "bg-white border-[#E0E5F2] hover:bg-slate-100 text-[#1B2559]"
+                      }`}
+                    >
+                      30% ({formatRupiah(Math.round(grandTotal * 0.3))})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDpAmount(Math.round(grandTotal * 0.5))}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                        activeDark
+                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                          : "bg-white border-[#E0E5F2] hover:bg-slate-100 text-[#1B2559]"
+                      }`}
+                    >
+                      50% ({formatRupiah(Math.round(grandTotal * 0.5))})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDpAmount(grandTotal)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                        activeDark
+                          ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                          : "bg-white border-[#E0E5F2] hover:bg-slate-100 text-[#1B2559]"
+                      }`}
+                    >
+                      100% (Lunas)
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="sm:col-span-2">
                 <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${activeDark ? "text-slate-400" : "text-[#707EAE]"
@@ -2011,6 +2139,21 @@ export function AdminInvoice({
                     {formatRupiah(grandTotal)}
                   </span>
                 </div>
+
+                {paymentStatus.includes("DP") && dpAmount > 0 && (
+                  <div className={`mt-3 pt-3 border-t border-dashed space-y-1.5 text-xs ${
+                    activeDark ? "border-white/10" : "border-[#E0E5F2]"
+                  }`}>
+                    <div className="flex justify-between items-center text-[#05CD99]">
+                      <span className="font-semibold">Uang Muka (DP Dibayar):</span>
+                      <span className="font-mono font-bold">- {formatRupiah(dpAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[#FFB547]">
+                      <span className="font-semibold">Sisa Pelunasan:</span>
+                      <span className="font-mono font-black">{formatRupiah(Math.max(0, grandTotal - dpAmount))}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2166,7 +2309,7 @@ export function AdminInvoice({
                   {formatRupiah(
                     archives
                       .filter((a) => a.paymentStatus !== "Lunas")
-                      .reduce((acc, a) => acc + (a.grandTotal || 0), 0)
+                      .reduce((acc, a) => acc + Math.max(0, (a.grandTotal || 0) - (a.paymentStatus.includes("DP") ? (a.dpAmount || 0) : 0)), 0)
                   )}
                 </h3>
               </div>
@@ -2462,6 +2605,16 @@ export function AdminInvoice({
                             <span className={`font-mono font-black text-sm ${activeDark ? "text-white" : "text-slate-900"}`}>
                               {formatRupiah(arch.grandTotal)}
                             </span>
+                            {arch.paymentStatus.includes("DP") && (arch.dpAmount || 0) > 0 && (
+                              <div className="text-[10px] space-y-0.5 mt-0.5 font-mono">
+                                <span className="text-[#05CD99] font-bold block">
+                                  DP: {formatRupiah(arch.dpAmount!)}
+                                </span>
+                                <span className="text-[#FFB547] font-semibold block">
+                                  Sisa: {formatRupiah(Math.max(0, arch.grandTotal - arch.dpAmount!))}
+                                </span>
+                              </div>
+                            )}
                           </td>
 
                           {/* Status Pembayaran (Interaktif) */}
@@ -3026,7 +3179,9 @@ export function AdminInvoice({
                           : "bg-[#FEEFEE] text-[#EE5D50] border border-[#EE5D50]/30"
                         }`}
                     >
-                      {modalInvoiceData.paymentStatus}
+                      {modalInvoiceData.paymentStatus.includes("DP") && (modalInvoiceData.dpAmount || 0) > 0
+                        ? `${modalInvoiceData.paymentStatus} (${formatRupiah(modalInvoiceData.dpAmount!)})`
+                        : modalInvoiceData.paymentStatus}
                     </span>
                   </div>
                 </div>
@@ -3089,6 +3244,21 @@ export function AdminInvoice({
                     <span>Total Pembayaran:</span>
                     <span className="text-[#4318FF] text-base font-black font-mono">{formatRupiah(modalInvoiceData.grandTotal)}</span>
                   </div>
+
+                  {modalInvoiceData.paymentStatus.includes("DP") && (modalInvoiceData.dpAmount || 0) > 0 && (
+                    <div className="mt-2 pt-2 border-t border-dashed border-[#E0E5F2] space-y-1">
+                      <div className="flex justify-between items-center text-[#05CD99] font-semibold">
+                        <span>Uang Muka (DP Dibayar):</span>
+                        <span className="font-mono font-bold">- {formatRupiah(modalInvoiceData.dpAmount!)}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-[#FFF6E9] text-[#B95000] border border-[#FFB547]/40 px-2.5 py-1.5 rounded-lg font-bold">
+                        <span>Sisa Pelunasan:</span>
+                        <span className="font-mono font-black text-sm text-[#B95000]">
+                          {formatRupiah(Math.max(0, modalInvoiceData.grandTotal - modalInvoiceData.dpAmount!))}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
