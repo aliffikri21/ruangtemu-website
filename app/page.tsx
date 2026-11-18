@@ -18,7 +18,7 @@ interface ClientReviewItem {
 }
 
 const EVENT_SPECIFIC_QUOTES: Record<string, string> = {
-  "wedding-aifaat": "Tampilan live videotron di panggung membuat pesta pernikahan kami semakin meriah. Tamu langsung heboh saat fotonya muncul di layar utama!",
+  "wedding-aifaat": "Pengalaman photobooth digital lewat HP tamu sangat seru dan praktis. Tamu undangan kami langsung antusias memindai QR Code di meja resepsionis!",
   "festamsa2026": "Siswa dan guru sangat antusias! Virtual photobooth lewat browser HP tanpa perlu instal aplikasi membuat antrean festival berjalan tertib.",
   "ariniodila-wedding": "Template frame bernuansa navy-gold sangat cocok dengan tema dekorasi pernikahan kami di Balai Rasdiana Center. Hasil fotonya jernih sekali.",
   "wedding-tarifaz": "Sistem QR Code di meja resepsionis sangat praktis. Tamu VIP tetap bisa berfoto santai tanpa harus berdesakan ke panggung booth.",
@@ -34,7 +34,7 @@ const INITIAL_CLIENT_REVIEWS: ClientReviewItem[] = [
     clientName: "Ai & Faat",
     venue: "Merdeka Convention Hall, Palopo",
     eventType: "PERNIKAHAN",
-    quote: "Tampilan live videotron di panggung membuat pesta pernikahan kami semakin meriah. Tamu langsung heboh saat fotonya muncul di layar utama!",
+    quote: "Pengalaman photobooth digital lewat HP tamu sangat seru dan praktis. Tamu undangan kami langsung antusias memindai QR Code di meja resepsionis!",
   },
   {
     clientName: "FESTAMSA",
@@ -87,7 +87,7 @@ const INITIAL_CLIENT_REVIEWS: ClientReviewItem[] = [
 ];
 
 const DUMMY_QUOTES_POOL = [
-  "Tampilan live videotron di panggung membuat pesta pernikahan kami semakin meriah. Tamu langsung heboh saat fotonya muncul di layar utama!",
+  "Pengalaman photobooth digital lewat HP tamu sangat seru dan praktis. Tamu undangan kami langsung antusias memindai QR Code di meja resepsionis!",
   "Siswa dan guru sangat antusias! Virtual photobooth lewat browser HP tanpa perlu instal aplikasi membuat antrean festival berjalan tertib.",
   "Template frame bernuansa elegan sangat cocok dengan tema dekorasi pernikahan kami. Hasil fotonya jernih dan berkesan.",
   "Sistem QR Code di meja resepsionis sangat praktis. Tamu VIP tetap bisa berfoto santai tanpa harus berdesakan ke panggung booth.",
@@ -99,7 +99,7 @@ const DUMMY_QUOTES_POOL = [
   "Penyediaan QR standee di tiap meja resepsi membuat tamu yang datang langsung mandiri mencoba tanpa perlu instruksi rumit.",
   "Keluarga besar dari luar kota sangat senang karena bisa langsung unduh foto resolusi tinggi dari galeri web malam itu juga.",
   "Desain antarmuka di layar HP tamu terlihat sangat modern dan bersih, serasa memakai aplikasi photobooth luar negeri.",
-  "Sangat puas dengan ketepatan waktu tim RUANGTEMU mulai dari persiapan instalasi videotron hingga sesi akhir acara.",
+  "Sangat puas dengan ketepatan waktu dan keramahan tim RUANGTEMU mulai dari persiapan cetak foto hingga sesi akhir acara.",
   "Pesan suara dari teman-teman yang lucu dan haru menjadi kenangan paling berharga yang tidak kami dapatkan di photobooth biasa.",
   "Kualitas warna cetakan sangat presisi dengan file aslinya, tidak pudar dan kertas fotonya kokoh tahan lama.",
   "Fitur album terpusat memudahkan fotografer kami mendokumentasikan keceriaan tamu dari sudut pandang selfie mereka sendiri.",

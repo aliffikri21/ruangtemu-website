@@ -89,7 +89,7 @@ export default function ProjectionModePage({ params }: Props) {
       <div className="fixed inset-0 bg-[#0f0f11] text-stone-100 flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-xl font-bold mb-2">Layar Panggung Tidak Tersedia</h1>
         <p className="text-sm text-stone-400 max-w-md">
-          Acara ini merupakan layanan Photobooth Fisik. Fitur layar tayang videotron live hanya digunakan untuk Virtual Photobooth.
+          Acara ini merupakan layanan Photobooth Fisik. Fitur layar tayang live proyektor hanya digunakan untuk Virtual Photobooth.
         </p>
       </div>
     );
@@ -111,7 +111,7 @@ export default function ProjectionModePage({ params }: Props) {
           </Link>
           <div className="flex items-center gap-3">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#c47a5a]">
-              [ Videotron Projection ]
+              [ Live Display Projection ]
             </span>
             <span className="font-mono text-xs text-stone-400">
               {entries.length > 0 ? currentIndex + 1 : 0} / {entries.length}

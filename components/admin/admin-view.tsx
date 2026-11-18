@@ -3180,7 +3180,7 @@ export function AdminView({
               <p className="text-xs text-[#A3AED0] mt-1">
                 {activeTab === "invoice"
                   ? "Sistem kasir, pembuatan invoice penawaran klien, dan pengiriman otomatis via WhatsApp"
-                  : "Panel kendali photobooth tamu, layar videotron proyektor, dan moderasi foto real-time"}
+                  : "Panel kendali photobooth tamu, display slideshow proyektor, dan moderasi foto real-time"}
               </p>
             </div>
 
@@ -3323,7 +3323,7 @@ export function AdminView({
                           Daftar Operasional Event Photobooth
                         </h3>
                         <p className="text-xs text-[#A3AED0] mt-0.5">
-                          Tautan instan photobooth HP tamu, cetak fisik, videotron panggung, galeri, dan QR standee.
+                          Tautan instan photobooth HP tamu, cetak fisik, slideshow proyektor, galeri, dan QR standee.
                         </p>
                       </div>
 
@@ -3474,7 +3474,7 @@ export function AdminView({
                                       href={`/event/${evt.slug}/projection`}
                                       target="_blank"
                                       className="h-8 px-2.5 rounded-lg bg-[#F4F7FE] hover:bg-[#1B2559] hover:text-white text-xs font-semibold text-[#2B3674] inline-flex items-center gap-1.5 transition-colors"
-                                      title="Tampilan layar panggung videotron"
+                                      title="Tampilan layar slideshow / proyektor"
                                     >
                                       <IconMonitor size={13} />
                                       <span>Layar</span>
@@ -3521,7 +3521,7 @@ export function AdminView({
                           </div>
                           <div className="text-sm font-semibold text-[#1B2559]">Belum ada event terdaftar</div>
                           <p className="text-xs text-[#A3AED0] max-w-sm mx-auto">
-                            Buat event pertama Anda untuk mendapatkan link photobooth smartphone, layar videotron, dan QR Code.
+                            Buat event pertama Anda untuk mendapatkan link photobooth smartphone, slideshow layar proyektor, dan QR Code.
                           </p>
                           <button
                             type="button"
@@ -3562,9 +3562,9 @@ export function AdminView({
                         <div className="w-7 h-7 rounded-lg bg-[#01B574] text-white flex items-center justify-center text-xs font-bold">
                           2
                         </div>
-                        <h4 className="text-sm font-bold text-[#1B2559]">Buka Layar Videotron</h4>
+                        <h4 className="text-sm font-bold text-[#1B2559]">Buka Layar Proyektor</h4>
                         <p className="text-xs text-[#8F9BBA] leading-relaxed">
-                          Buka tautan <strong>Layar Proyektor</strong> di laptop operator, sambungkan kabel HDMI ke proyektor/LED, dan aktifkan fullscreen (F11).
+                          Buka tautan <strong>Layar Proyektor</strong> di laptop operator, sambungkan kabel HDMI ke proyektor/layar, dan aktifkan fullscreen (F11).
                         </p>
                       </div>
 
@@ -3574,7 +3574,7 @@ export function AdminView({
                         </div>
                         <h4 className="text-sm font-bold text-[#1B2559]">Tamu Ambil Foto</h4>
                         <p className="text-xs text-[#8F9BBA] leading-relaxed">
-                          Tamu berfoto dengan frame khusus acara. Foto langsung muncul secara otomatis di layar videotron panggung secara real-time!
+                          Tamu berfoto dengan frame khusus acara. Foto langsung tersimpan dan otomatis tampil di galeri digital secara real-time!
                         </p>
                       </div>
                     </div>
@@ -4329,7 +4329,7 @@ export function AdminView({
                               <span className="text-[#4318FF] mt-0.5"><IconImage size={15} /></span>
                               <div>
                                 <div className="font-bold">Album foto online</div>
-                                <p className="text-[11px] text-[#8F9BBA] leading-tight">Klien melihat, unduh foto semua sesi &amp; live videotron panggung</p>
+                                <p className="text-[11px] text-[#8F9BBA] leading-tight">Klien melihat, unduh foto semua sesi &amp; slideshow galeri online</p>
                               </div>
                             </div>
                           </div>
