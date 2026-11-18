@@ -17,48 +17,94 @@ interface ClientReviewItem {
   quote: string;
 }
 
+const EVENT_SPECIFIC_QUOTES: Record<string, string> = {
+  "wedding-aifaat": "Tampilan live videotron di panggung membuat pesta pernikahan kami semakin meriah. Tamu langsung heboh saat fotonya muncul di layar utama!",
+  "festamsa2026": "Siswa dan guru sangat antusias! Virtual photobooth lewat browser HP tanpa perlu instal aplikasi membuat antrean festival berjalan tertib.",
+  "ariniodila-wedding": "Template frame bernuansa navy-gold sangat cocok dengan tema dekorasi pernikahan kami di Balai Rasdiana Center. Hasil fotonya jernih sekali.",
+  "wedding-tarifaz": "Sistem QR Code di meja resepsionis sangat praktis. Tamu VIP tetap bisa berfoto santai tanpa harus berdesakan ke panggung booth.",
+  "wedding-widyaldy": "Fitur Voice Note Guestbook sangat menyentuh hati. Kami bisa mendengarkan kembali rekaman ucapan tulus dan tawa para sahabat pasca-acara.",
+  "dheansar-wedding": "Proses pemotretan cepat dengan countdown yang jelas di HP tamu. Kru RUANGTEMU sangat sigap mendampingi kelancaran di Gedung BRC Perumnas.",
+  "jayarika-wedding": "Pilihan filter kameranya lengkap dan flattering untuk selfie. Suasana intimate gathering kami di D'Twins Cafe jadi semakin hangat.",
+  "ilvaricky-wedding": "Pelayanan sangat ramah dan profesional. Kualitas cetak fisik tajam dan galeri digital langsung siap dibagikan ke keluarga malam itu juga.",
+  "iqranurul-wedding": "Format cetak strip 2R fisiknya tebal dan premium, ditambah unduhan digital tanpa batas yang memudahkan tamu share ke media sosial.",
+};
+
 const INITIAL_CLIENT_REVIEWS: ClientReviewItem[] = [
   {
-    clientName: "Ilva & Ricky",
-    venue: "Gedung Opu Daeng Risadju, Palopo",
+    clientName: "Ai & Faat",
+    venue: "Merdeka Convention Hall, Palopo",
     eventType: "PERNIKAHAN",
-    quote: "Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.",
+    quote: "Tampilan live videotron di panggung membuat pesta pernikahan kami semakin meriah. Tamu langsung heboh saat fotonya muncul di layar utama!",
+  },
+  {
+    clientName: "FESTAMSA",
+    venue: "SMA 12 Luwu, Kab. Luwu",
+    eventType: "GATHERING",
+    quote: "Siswa dan guru sangat antusias! Virtual photobooth lewat browser HP tanpa perlu instal aplikasi membuat antrean festival berjalan tertib.",
+  },
+  {
+    clientName: "Arini & Odila",
+    venue: "Balai Rasdiana Center, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Template frame bernuansa navy-gold sangat cocok dengan tema dekorasi pernikahan kami di Balai Rasdiana Center. Hasil fotonya jernih sekali.",
+  },
+  {
+    clientName: "Tari & Faiz",
+    venue: "Merdeka Convention Hall, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Sistem QR Code di meja resepsionis sangat praktis. Tamu VIP tetap bisa berfoto santai tanpa harus berdesakan ke panggung booth.",
+  },
+  {
+    clientName: "Widya & Aldy",
+    venue: "Merdeka Convention Hall, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Fitur Voice Note Guestbook sangat menyentuh hati. Kami bisa mendengarkan kembali rekaman ucapan tulus dan tawa para sahabat pasca-acara.",
+  },
+  {
+    clientName: "Dhea & Ansar",
+    venue: "Gedung BRC Perumnas, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Proses pemotretan cepat dengan countdown yang jelas di HP tamu. Kru RUANGTEMU sangat sigap mendampingi kelancaran di Gedung BRC Perumnas.",
   },
   {
     clientName: "Jaya & Rika",
     venue: "D'Twins Cafe, Palopo",
     eventType: "PERNIKAHAN",
-    quote: "Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.",
+    quote: "Pilihan filter kameranya lengkap dan flattering untuk selfie. Suasana intimate gathering kami di D'Twins Cafe jadi semakin hangat.",
+  },
+  {
+    clientName: "Ilva & Ricky",
+    venue: "Gedung Opu Daeng Risadju, Palopo",
+    eventType: "PERNIKAHAN",
+    quote: "Pelayanan sangat ramah dan profesional. Kualitas cetak fisik tajam dan galeri digital langsung siap dibagikan ke keluarga malam itu juga.",
   },
   {
     clientName: "Nurul & Iqra",
     venue: "Gedung Merdeka Convention Centre, Palopo",
     eventType: "PERNIKAHAN",
-    quote: "Menilai layanan rapi, tepat waktu, dan interaktif dengan hasil cetak instan berkualitas di lokasi.",
-  },
-  {
-    clientName: "Andi Pratama & Sarah Wijaya",
-    venue: "Banua Subur Convention Hall, Palopo",
-    eventType: "PERNIKAHAN",
-    quote: "Kualitas cetakan foto tajam, warna akurat, dan prosesnya cepat sehingga tidak ada antrean panjang.",
-  },
-  {
-    clientName: "Komunitas Kreatif Palopo",
-    venue: "Gedung Kesenian Palopo",
-    eventType: "GATHERING",
-    quote: "Tamu undangan sangat antusias mencoba virtual photobooth langsung lewat smartphone masing-masing.",
+    quote: "Format cetak strip 2R fisiknya tebal dan premium, ditambah unduhan digital tanpa batas yang memudahkan tamu share ke media sosial.",
   },
 ];
 
 const DUMMY_QUOTES_POOL = [
-  "Memuji kualitas cetak dan keramahan kru yang mendampingi sepanjang acara.",
-  "Menyukai fitur Voice Note Guestbook yang membuat pesan tamu terasa lebih personal.",
-  "Menilai layanan rapi, tepat waktu, dan interaktif dengan hasil cetak instan berkualitas di lokasi.",
-  "Kualitas cetakan foto tajam, warna akurat, dan prosesnya cepat sehingga tidak ada antrean panjang.",
-  "Tamu undangan sangat antusias mencoba virtual photobooth langsung lewat smartphone masing-masing.",
-  "Pelayanan sangat ramah dan responsif dari awal konsultasi sampai hari H. Tamu-tamu kami sangat puas!",
-  "Desain frame custom sangat elegan dan cocok dengan tema acara kami. Hasilnya jadi kenangan berharga.",
-  "Fitur galeri digital memudahkan keluarga besar mengunduh foto kapan saja dengan resolusi tinggi.",
+  "Tampilan live videotron di panggung membuat pesta pernikahan kami semakin meriah. Tamu langsung heboh saat fotonya muncul di layar utama!",
+  "Siswa dan guru sangat antusias! Virtual photobooth lewat browser HP tanpa perlu instal aplikasi membuat antrean festival berjalan tertib.",
+  "Template frame bernuansa elegan sangat cocok dengan tema dekorasi pernikahan kami. Hasil fotonya jernih dan berkesan.",
+  "Sistem QR Code di meja resepsionis sangat praktis. Tamu VIP tetap bisa berfoto santai tanpa harus berdesakan ke panggung booth.",
+  "Fitur Voice Note Guestbook sangat menyentuh hati. Kami bisa mendengarkan kembali rekaman ucapan tulus para sahabat pasca-acara.",
+  "Proses pemotretan cepat dengan countdown yang jelas di HP tamu. Kru RUANGTEMU sangat sigap mendampingi kelancaran acara.",
+  "Pilihan filter kameranya lengkap dan flattering untuk selfie maupun foto bersama. Suasana acara jadi semakin hangat dan berkesan.",
+  "Pelayanan sangat ramah dan responsif. Kualitas cetak fisik tajam dan galeri digital langsung siap dibagikan ke keluarga.",
+  "Format cetak strip 2R fisiknya tebal dan premium, ditambah unduhan digital tanpa batas yang memudahkan tamu membagikan ke medsos.",
+  "Penyediaan QR standee di tiap meja resepsi membuat tamu yang datang langsung mandiri mencoba tanpa perlu instruksi rumit.",
+  "Keluarga besar dari luar kota sangat senang karena bisa langsung unduh foto resolusi tinggi dari galeri web malam itu juga.",
+  "Desain antarmuka di layar HP tamu terlihat sangat modern dan bersih, serasa memakai aplikasi photobooth luar negeri.",
+  "Sangat puas dengan ketepatan waktu tim RUANGTEMU mulai dari persiapan instalasi videotron hingga sesi akhir acara.",
+  "Pesan suara dari teman-teman yang lucu dan haru menjadi kenangan paling berharga yang tidak kami dapatkan di photobooth biasa.",
+  "Kualitas warna cetakan sangat presisi dengan file aslinya, tidak pudar dan kertas fotonya kokoh tahan lama.",
+  "Fitur album terpusat memudahkan fotografer kami mendokumentasikan keceriaan tamu dari sudut pandang selfie mereka sendiri.",
+  "Harga paket layanan sangat bersahabat dibanding nilai hiburan dan kecanggihan teknologi interaktif yang didapatkan tamu.",
+  "Kru operator sangat ramah dan sabar memandu para tamu lansia yang ingin berfoto bersama cucu di standee photobooth.",
 ];
 
 const DEFAULT_LANDING_PACKAGES: Package[] = [
@@ -238,6 +284,7 @@ export default function HomePage() {
         );
 
         if (realEvents.length > 0) {
+          const usedQuotes = new Set<string>();
           const mapped: ClientReviewItem[] = realEvents.map((evt: any, idx: number) => {
             let name = evt.client_name || evt.host_name || evt.title || "Klien RUANGTEMU";
             name = name.replace(/^The Wedding of\s+/i, "").trim();
@@ -254,9 +301,19 @@ export default function HomePage() {
               else if (t.includes("gathering")) eventType = "GATHERING";
               else if (t.includes("corporate")) eventType = "CORPORATE";
               else eventType = String(evt.event_type).toUpperCase();
+            } else if (evt.category === "photobooth") {
+              eventType = "PHOTOBOOTH FISIK";
+            } else if (String(evt.title).toLowerCase().includes("festamsa") || String(evt.category).toLowerCase().includes("gathering")) {
+              eventType = "GATHERING";
             }
 
-            const quote = DUMMY_QUOTES_POOL[idx % DUMMY_QUOTES_POOL.length];
+            // Assign unique tailored quote by event slug, or next unused quote from pool
+            let quote = EVENT_SPECIFIC_QUOTES[evt.slug];
+            if (!quote || usedQuotes.has(quote)) {
+              const available = DUMMY_QUOTES_POOL.find((q) => !usedQuotes.has(q));
+              quote = available || DUMMY_QUOTES_POOL[idx % DUMMY_QUOTES_POOL.length];
+            }
+            usedQuotes.add(quote);
 
             return {
               clientName: name,
@@ -290,11 +347,23 @@ export default function HomePage() {
 
   const marqueeReviews = useMemo(() => {
     if (clientReviews.length === 0) return [];
-    let baseList = [...clientReviews];
-    while (baseList.length < 6) {
-      baseList = [...baseList, ...clientReviews];
+    // Deduplikasi ketat agar tidak ada kartu ulasan kembar dalam satu siklus track
+    const seenNames = new Set<string>();
+    const seenQuotes = new Set<string>();
+    const uniqueBaseList: ClientReviewItem[] = [];
+
+    for (const item of clientReviews) {
+      const cleanName = item.clientName.toLowerCase().trim();
+      const cleanQuote = item.quote.toLowerCase().trim();
+      if (!seenNames.has(cleanName) && !seenQuotes.has(cleanQuote)) {
+        seenNames.add(cleanName);
+        seenQuotes.add(cleanQuote);
+        uniqueBaseList.push(item);
+      }
     }
-    return [...baseList, ...baseList];
+
+    // Hanya duplikasi track 1x untuk animasi infinite loop CSS marquee (-50% translation)
+    return [...uniqueBaseList, ...uniqueBaseList];
   }, [clientReviews]);
 
   useEffect(() => {
