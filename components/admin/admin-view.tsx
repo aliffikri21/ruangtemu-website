@@ -189,10 +189,32 @@ function IconMoon({ size = 18 }: { size?: number }) {
   );
 }
 
-function IconSidebarToggle({ size = 18 }: { size?: number }) {
+function IconChevronLeft({ size = 16, className = "" }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function IconChevronRight({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+function IconPanelLeft({ size = 18, collapsed = false }: { size?: number; collapsed?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M9 3v18" />
+      {collapsed ? (
+        <path d="m14 9 3 3-3 3" />
+      ) : (
+        <path d="m16 15-3-3 3-3" />
+      )}
     </svg>
   );
 }
@@ -2442,34 +2464,73 @@ export function AdminView({
           } bg-white border-r border-[#E0E5F2] flex flex-col fixed inset-y-0 left-0 z-40 transition-all duration-200 select-none`}
       >
         {/* Brand */}
-        <div className="h-[76px] flex items-center justify-between px-5 border-b border-[#E0E5F2] shrink-0">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo-ruangtemu.jpg"
-              alt="RUANGTEMU"
-              className="w-9 h-9 rounded-xl object-cover shadow-sm shrink-0"
-            />
-            {!sidebarCollapsed && (
-              <div>
-                <span className="text-base font-bold text-[#1B2559] tracking-tight block leading-tight">
-                  RUANGTEMU
-                </span>
-                <span className="text-[10px] text-[#A3AED0] font-medium tracking-wide block">
-                  Virtual Photobooth Palopo
-                </span>
+        <div
+          className={`h-[76px] flex items-center border-b border-[#E0E5F2] shrink-0 transition-all ${
+            sidebarCollapsed ? "justify-center px-2" : "justify-between px-5"
+          }`}
+        >
+          {sidebarCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+              className="w-11 h-11 rounded-xl flex items-center justify-center hover:bg-[#F4F7FE] dark:hover:bg-white/5 transition-all cursor-pointer group"
+              title="Perlebar sidebar"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-ruangtemu.jpg"
+                alt="RUANGTEMU"
+                className="w-9 h-9 rounded-xl object-cover shadow-sm transition-transform group-hover:scale-105"
+              />
+            </button>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 min-w-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo-ruangtemu.jpg"
+                  alt="RUANGTEMU"
+                  className="w-9 h-9 rounded-xl object-cover shadow-sm shrink-0"
+                />
+                <div className="min-w-0">
+                  <span className="text-base font-bold text-[#1B2559] tracking-tight block leading-tight truncate">
+                    RUANGTEMU
+                  </span>
+                  <span className="text-[10px] text-[#A3AED0] font-medium tracking-wide block truncate">
+                    Virtual Photobooth Palopo
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#1B2559] transition-colors"
-            title={sidebarCollapsed ? "Perlebar sidebar" : "Ciutkan sidebar"}
-          >
-            <IconSidebarToggle size={18} />
-          </button>
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed(true)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8F9BBA] hover:bg-[#F4F7FE] hover:text-[#4318FF] transition-colors shrink-0 cursor-pointer"
+                title="Ciutkan sidebar"
+              >
+                <IconPanelLeft size={18} collapsed={false} />
+              </button>
+            </>
+          )}
         </div>
+
+        {/* Floating Collapse / Expand Toggle Button on Sidebar Border */}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`hidden md:flex absolute -right-3 top-6 z-50 w-6 h-6 rounded-full border shadow-[0_2px_8px_rgba(0,0,0,0.10)] items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 ${
+            isDarkMode
+              ? "bg-[#1A1B1E] border-white/10 text-slate-300 hover:text-white hover:border-[#7551FF]"
+              : "bg-white border-[#E0E5F2] text-[#8F9BBA] hover:text-[#4318FF] hover:border-[#4318FF]"
+          }`}
+          title={sidebarCollapsed ? "Perlebar sidebar (Expand)" : "Ciutkan sidebar (Collapse)"}
+          aria-label={sidebarCollapsed ? "Perlebar sidebar" : "Ciutkan sidebar"}
+        >
+          {sidebarCollapsed ? (
+            <IconChevronRight size={13} />
+          ) : (
+            <IconChevronLeft size={13} />
+          )}
+        </button>
 
         {/* Navigation list */}
         <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
