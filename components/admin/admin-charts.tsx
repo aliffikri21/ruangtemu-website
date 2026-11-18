@@ -196,16 +196,14 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
 
   return (
     <div
-      className={`admin-chart-container rounded-2xl transition-all overflow-hidden ${
-        isDarkMode
+      className={`admin-chart-container rounded-2xl transition-all overflow-hidden ${isDarkMode
           ? "bg-[#1A1B1E] text-slate-100 shadow-xl"
           : "bg-white border border-[#E0E5F2] text-[#1B2559] shadow-[0_18px_40px_0_rgba(112,144,176,0.06)]"
-      }`}
+        }`}
     >
       {/* ─── HEADER BAR WITH CONTROLS ─── */}
-      <div className={`p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-        isDarkMode ? "bg-[#141517]" : "border-b border-[#E0E5F2]/50"
-      }`}>
+      <div className={`p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDarkMode ? "bg-[#141517]" : "border-b border-[#E0E5F2]/50"
+        }`}>
         <div>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#4318FF] to-[#6AD2FF] flex items-center justify-center text-white shadow-xs">
@@ -236,11 +234,10 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
             <select
               value={selectedEventId}
               onChange={(e) => setSelectedEventId(e.target.value)}
-              className={`text-xs font-semibold px-3 py-2 pr-8 rounded-xl outline-hidden transition-all cursor-pointer ${
-                isDarkMode
+              className={`text-xs font-semibold px-3 py-2 pr-8 rounded-xl outline-hidden transition-all cursor-pointer ${isDarkMode
                   ? "bg-[#25262B] text-white hover:bg-[#2C2E33]"
                   : "bg-[#F4F7FE] border border-[#E0E5F2] text-[#1B2559] hover:border-[#4318FF]/40"
-              }`}
+                }`}
             >
               <option value="all">📊 Semua Event ({events.length})</option>
               {events.map((evt) => (
@@ -256,33 +253,30 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
             <button
               type="button"
               onClick={() => setTimeRange("all")}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${
-                timeRange === "all"
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${timeRange === "all"
                   ? isDarkMode ? "bg-[#1A1B20] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
                   : isDarkMode ? "text-slate-400 hover:text-white" : "text-[#8F9BBA] hover:text-[#1B2559]"
-              }`}
+                }`}
             >
               Semua
             </button>
             <button
               type="button"
               onClick={() => setTimeRange("7d")}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${
-                timeRange === "7d"
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${timeRange === "7d"
                   ? isDarkMode ? "bg-[#1A1B20] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
                   : isDarkMode ? "text-slate-400 hover:text-white" : "text-[#8F9BBA] hover:text-[#1B2559]"
-              }`}
+                }`}
             >
               7 Hari
             </button>
             <button
               type="button"
               onClick={() => setTimeRange("today")}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${
-                timeRange === "today"
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${timeRange === "today"
                   ? isDarkMode ? "bg-[#1A1B20] text-white shadow-xs" : "bg-white text-[#4318FF] shadow-xs"
                   : isDarkMode ? "text-slate-400 hover:text-white" : "text-[#8F9BBA] hover:text-[#1B2559]"
-              }`}
+                }`}
             >
               Hari Ini
             </button>
@@ -292,9 +286,8 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className={`p-2 rounded-xl transition-all cursor-pointer ${
-              isDarkMode ? "bg-[#25262B] text-slate-300 hover:text-white" : "bg-[#F4F7FE] border border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
-            }`}
+            className={`p-2 rounded-xl transition-all cursor-pointer ${isDarkMode ? "bg-[#25262B] text-slate-300 hover:text-white" : "bg-[#F4F7FE] border border-[#E0E5F2] text-[#8F9BBA] hover:text-[#1B2559]"
+              }`}
             title={isExpanded ? "Sembunyikan Grafik" : "Tampilkan Grafik"}
           >
             <svg
@@ -346,7 +339,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
 
           {/* TWO MAIN COLUMNS: 1. TRAFFIC BAR CHART & 2. FILTER + PARTICIPATION */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+
             {/* ───── LEFT: HOURLY PHOTO ACTIVITY BAR CHART (7 of 12) ───── */}
             <div className={`lg:col-span-7 p-5 rounded-2xl flex flex-col justify-between ${isDarkMode ? "bg-[#141517]" : "bg-slate-50/70 border border-[#E0E5F2]"}`}>
               <div>
@@ -374,7 +367,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                   {filteredEntries.length === 0 ? (
                     <div className="h-56 sm:h-64 flex flex-col items-center justify-center text-center">
                       <div className="w-10 h-10 rounded-full bg-slate-200/50 dark:bg-white/5 flex items-center justify-center text-slate-400 mb-2">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="12" x2="16" y2="14"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="6" x2="12" y2="12" /><line x1="12" y1="12" x2="16" y2="14" /></svg>
                       </div>
                       <p className="text-xs text-slate-400">Belum ada foto pada filter rentang waktu ini</p>
                     </div>
@@ -425,14 +418,12 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                                       </div>
 
                                       {/* Bar Track & Fill */}
-                                      <div className={`w-full max-w-[28px] sm:max-w-[34px] h-full rounded-t-lg flex flex-col justify-end p-0.5 transition-colors relative ${
-                                        isDarkMode ? "bg-white/[0.03] group-hover:bg-white/[0.07]" : "bg-slate-100/90 group-hover:bg-slate-200/70"
-                                      }`}>
+                                      <div className={`w-full max-w-[28px] sm:max-w-[34px] h-full rounded-t-lg flex flex-col justify-end p-0.5 transition-colors relative ${isDarkMode ? "bg-white/[0.03] group-hover:bg-white/[0.07]" : "bg-slate-100/90 group-hover:bg-slate-200/70"
+                                        }`}>
                                         {/* Count badge floating inside or above bar */}
                                         {slot.count > 0 && (
-                                          <span className={`absolute -top-4 inset-x-0 text-center text-[10px] font-bold transition-transform ${
-                                            isPeak ? "text-amber-500 font-extrabold scale-110" : "text-slate-500 dark:text-slate-400 group-hover:text-blue-500"
-                                          }`}>
+                                          <span className={`absolute -top-4 inset-x-0 text-center text-[10px] font-bold transition-transform ${isPeak ? "text-amber-500 font-extrabold scale-110" : "text-slate-500 dark:text-slate-400 group-hover:text-blue-500"
+                                            }`}>
                                             {slot.count}
                                           </span>
                                         )}
@@ -440,13 +431,12 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                                         {/* Animated Fill */}
                                         <div
                                           style={{ height: `${heightPercent}%` }}
-                                          className={`w-full rounded-t-md transition-all duration-300 ${
-                                            slot.count === 0
+                                          className={`w-full rounded-t-md transition-all duration-300 ${slot.count === 0
                                               ? "h-0"
                                               : isPeak
-                                              ? "bg-gradient-to-t from-amber-600 via-amber-500 to-amber-300 shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
-                                              : "bg-gradient-to-t from-[#4318FF] via-indigo-500 to-[#6AD2FF] shadow-[0_2px_10px_rgba(67,24,255,0.25)]"
-                                          }`}
+                                                ? "bg-gradient-to-t from-amber-600 via-amber-500 to-amber-300 shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
+                                                : "bg-gradient-to-t from-[#4318FF] via-indigo-500 to-[#6AD2FF] shadow-[0_2px_10px_rgba(67,24,255,0.25)]"
+                                            }`}
                                         />
                                       </div>
                                     </div>
@@ -464,13 +454,12 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
                                 const isPeak = slot.hour === hourlyAnalysis.peakHour && slot.count > 0;
                                 return (
                                   <div key={slot.hour} className="flex-1 text-center">
-                                    <span className={`text-[10px] font-mono whitespace-nowrap block transition-colors ${
-                                      isPeak
+                                    <span className={`text-[10px] font-mono whitespace-nowrap block transition-colors ${isPeak
                                         ? "text-amber-500 font-bold"
                                         : slot.count > 0
-                                        ? isDarkMode ? "text-slate-300 font-semibold" : "text-slate-700 font-semibold"
-                                        : isDarkMode ? "text-slate-500" : "text-slate-400"
-                                    }`}>
+                                          ? isDarkMode ? "text-slate-300 font-semibold" : "text-slate-700 font-semibold"
+                                          : isDarkMode ? "text-slate-500" : "text-slate-400"
+                                      }`}>
                                       {String(slot.hour).padStart(2, "0")}:00
                                     </span>
                                   </div>
@@ -501,7 +490,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
 
             {/* ───── RIGHT: FILTER DISTRIBUTION & PARTICIPATION (5 of 12) ───── */}
             <div className="lg:col-span-5 space-y-6">
-              
+
               {/* CARD: FILTER POPULARITY */}
               <div className={`p-5 rounded-2xl ${isDarkMode ? "bg-[#141517]" : "bg-slate-50/70 border border-[#E0E5F2]"}`}>
                 <div className="flex items-center justify-between mb-3">
@@ -542,7 +531,7 @@ export function AdminCharts({ entries, events, bookings, isDarkMode = false }: A
               {/* CARD: PARTICIPATION BREAKDOWN */}
               <div className={`p-5 rounded-2xl ${isDarkMode ? "bg-[#141517]" : "bg-slate-50/70 border border-[#E0E5F2]"}`}>
                 <h4 className="text-sm font-bold mb-3">Rasio Partisipasi Tamu</h4>
-                
+
                 <div className="space-y-3.5">
                   {/* Foto + Ucapan Teks */}
                   <div className="flex items-center justify-between">
